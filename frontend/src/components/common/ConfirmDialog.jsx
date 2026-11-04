@@ -30,17 +30,16 @@ function ConfirmDialog({
         </>
       }
     >
-      <div className="flex gap-4">
+      <div className="flex gap-4 items-start">
         <div className="shrink-0 mt-0.5">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-            <AlertTriangle size={20} className="text-red-600" />
+          <div className="w-10 h-10 rounded-2xl bg-rose-500/15 border border-rose-500/20 flex items-center justify-center">
+            <AlertTriangle size={20} className="text-rose-600 dark:text-rose-400" />
           </div>
         </div>
-        <p className="text-sm text-slate-700 leading-relaxed">{message}</p>
+        <p className="text-sm text-forest-800 dark:text-forest-200 leading-relaxed">{message}</p>
       </div>
     </Modal>
   )
 }
 
 export default ConfirmDialog
-

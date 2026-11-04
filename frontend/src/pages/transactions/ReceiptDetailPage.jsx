@@ -127,63 +127,63 @@ export default function ReceiptDetailPage() {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Card 1: Supplier & Procurement */}
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-3">
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 pb-2">
-            <Building size={14} className="text-blue-700" />
+        <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
+          <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
+            <Building size={14} className="text-emerald-600 dark:text-emerald-400" />
             Supplier & Procurement Details
           </h2>
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Supplier / Vendor:</span>
-              <span className="font-semibold text-slate-900">{receipt.supplier_name}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Supplier / Vendor:</span>
+              <span className="font-semibold text-slate-900 dark:text-white">{receipt.supplier_name}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Supplier Contact:</span>
-              <span className="font-mono text-slate-800">{receipt.supplier_contact || '—'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Supplier Contact:</span>
+              <span className="font-mono text-slate-800 dark:text-slate-200">{receipt.supplier_contact || '—'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">PO / GeM Contract No:</span>
-              <span className="font-mono font-medium text-slate-900">{receipt.po_number || 'Direct Proc.'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">PO / GeM Contract No:</span>
+              <span className="font-mono font-medium text-slate-900 dark:text-white">{receipt.po_number || 'Direct Proc.'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Supplier Invoice No:</span>
-              <span className="font-mono text-slate-800">{receipt.invoice_number || '—'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Supplier Invoice No:</span>
+              <span className="font-mono text-slate-800 dark:text-slate-200">{receipt.invoice_number || '—'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Invoice Date:</span>
-              <span className="text-slate-800">{receipt.invoice_date ? formatDate(receipt.invoice_date) : '—'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Invoice Date:</span>
+              <span className="text-slate-800 dark:text-slate-200">{receipt.invoice_date ? formatDate(receipt.invoice_date) : '—'}</span>
             </div>
           </div>
         </div>
 
         {/* Card 2: Receiving Office */}
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-3">
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 pb-2">
-            <Package size={14} className="text-blue-700" />
+        <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
+          <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
+            <Package size={14} className="text-emerald-600 dark:text-emerald-400" />
             Receiving Custody & Office
           </h2>
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Receiving Office:</span>
-              <span className="font-medium text-slate-900">{receipt.receiving_office}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Receiving Office:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{receipt.receiving_office}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Store Room / Bay:</span>
-              <span className="font-medium text-slate-800">{receipt.receiving_location || 'Central Store'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Store Room / Bay:</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">{receipt.receiving_location || 'Central Store'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Receiving Officer:</span>
-              <span className="font-medium text-slate-800">{receipt.receiving_officer || 'Store Officer'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Receiving Officer:</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">{receipt.receiving_officer || 'Store Officer'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Delivery Challan Attachment:</span>
-              <span className="font-medium text-blue-700 underline cursor-pointer">
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Delivery Challan Attachment:</span>
+              <span className="font-medium text-emerald-600 dark:text-emerald-400 underline cursor-pointer">
                 {receipt.attachment_name || 'Challan_Document.pdf'}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Total Accepted Value:</span>
-              <span className="font-mono font-bold text-sm text-slate-900">
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Total Accepted Value:</span>
+              <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                 {formatCurrency(receipt.total_accepted_value || 0)}
               </span>
             </div>
@@ -192,37 +192,37 @@ export default function ReceiptDetailPage() {
       </div>
 
       {/* Detailed Items Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <FileText size={15} className="text-blue-700" />
+      <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-emerald-500/15 flex items-center justify-between bg-slate-50/70 dark:bg-[#0A1513]">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
             Itemized Goods Inward Schedule ({receipt.items?.length || 0})
           </h2>
-          <span className="text-xs text-slate-500">Values in INR (₹)</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Values in INR (₹)</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+            <thead className="bg-slate-100/70 dark:bg-[#0A1513] border-b border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">#</th>
                 <th className="py-2.5 px-4">Item Name & Type</th>
                 <th className="py-2.5 px-3 text-center">Ordered</th>
                 <th className="py-2.5 px-3 text-center">Received</th>
-                <th className="py-2.5 px-3 text-center text-emerald-700">Accepted</th>
-                <th className="py-2.5 px-3 text-center text-red-600">Rejected</th>
+                <th className="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">Accepted</th>
+                <th className="py-2.5 px-3 text-center text-rose-600 dark:text-rose-400">Rejected</th>
                 <th className="py-2.5 px-4">Rejection Reason</th>
                 <th className="py-2.5 px-4 text-right">Unit Cost</th>
                 <th className="py-2.5 px-4 text-right">Accepted Total</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10 text-slate-800 dark:text-slate-200">
               {receipt.items?.map((line, idx) => (
-                <tr key={line.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                <tr key={line.id || idx} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
                   <td className="py-3 px-4 font-mono text-slate-400">{idx + 1}</td>
                   <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-900 block text-xs">{line.item_name}</span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="font-semibold text-slate-900 dark:text-white block text-xs">{line.item_name}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       {line.item_type === 'DURABLE_ASSET' ? 'Durable Asset' : 'Consumable Stock'} · {line.uom}
                     </span>
                     {line.serial_numbers && line.serial_numbers.length > 0 && (
@@ -230,7 +230,7 @@ export default function ReceiptDetailPage() {
                         {line.serial_numbers.map((sn, sIdx) => (
                           <span
                             key={sIdx}
-                            className="font-mono text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200"
+                            className="font-mono text-[10px] bg-slate-100 dark:bg-[#081210] text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded border border-slate-200 dark:border-emerald-500/20"
                           >
                             SN: {sn}
                           </span>
@@ -240,30 +240,30 @@ export default function ReceiptDetailPage() {
                   </td>
                   <td className="py-3 px-3 text-center font-mono">{line.quantity_ordered}</td>
                   <td className="py-3 px-3 text-center font-mono font-medium">{line.quantity_received}</td>
-                  <td className="py-3 px-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/40">
+                  <td className="py-3 px-3 text-center font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-500/10">
                     {line.quantity_accepted}
                   </td>
-                  <td className="py-3 px-3 text-center font-mono font-bold text-red-600 bg-red-50/40">
+                  <td className="py-3 px-3 text-center font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50/40 dark:bg-rose-950/20">
                     {line.quantity_rejected || 0}
                   </td>
-                  <td className="py-3 px-4 text-slate-600 max-w-xs truncate">
+                  <td className="py-3 px-4 text-slate-600 dark:text-slate-400 max-w-xs truncate">
                     {line.rejection_reason || '—'}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono text-slate-700">
+                  <td className="py-3 px-4 text-right font-mono text-slate-700 dark:text-slate-300">
                     {formatCurrency(line.unit_cost)}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+                  <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900 dark:text-white">
                     {formatCurrency(line.total_accepted_cost || (line.quantity_accepted * line.unit_cost))}
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-slate-50 border-t border-slate-200 font-semibold text-xs text-slate-900">
+            <tfoot className="bg-slate-50 dark:bg-[#0A1513] border-t border-slate-200 dark:border-emerald-500/20 font-semibold text-xs text-slate-900 dark:text-white">
               <tr>
                 <td colSpan={8} className="py-3 px-4 text-right uppercase tracking-wide">
                   Total Accepted Inward Valuation:
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-sm text-blue-900 font-bold">
+                <td className="py-3 px-4 text-right font-mono text-sm text-emerald-700 dark:text-emerald-400 font-bold">
                   {formatCurrency(receipt.total_accepted_value || 0)}
                 </td>
               </tr>

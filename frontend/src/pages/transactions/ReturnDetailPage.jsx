@@ -75,74 +75,74 @@ export default function ReturnDetailPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-3">
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 pb-2">
-            <RotateCcw size={14} className="text-blue-700" />
+        <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
+          <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
+            <RotateCcw size={14} className="text-emerald-600 dark:text-emerald-400" />
             Returning Department & Issue Reference
           </h2>
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Returning Department:</span>
-              <span className="font-semibold text-slate-900">{ret.returning_department}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Returning Department:</span>
+              <span className="font-semibold text-slate-900 dark:text-white">{ret.returning_department}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Returning Officer:</span>
-              <span className="font-medium text-slate-900">{ret.returning_employee}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Returning Officer:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{ret.returning_employee}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Original Issue Voucher:</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Original Issue Voucher:</span>
               {ret.original_issue_id ? (
                 <Link
                   to={ROUTES.ISSUE_DETAIL(ret.original_issue_id)}
-                  className="font-mono text-blue-700 hover:underline font-semibold"
+                  className="font-mono text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
                 >
                   {ret.original_issue_voucher} ↗
                 </Link>
               ) : (
-                <span className="font-mono text-slate-800">{ret.original_issue_voucher || 'Direct Return'}</span>
+                <span className="font-mono text-slate-800 dark:text-slate-200">{ret.original_issue_voucher || 'Direct Return'}</span>
               )}
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Reason for Return:</span>
-              <span className="text-slate-900 font-medium">{ret.return_reason}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Reason for Return:</span>
+              <span className="text-slate-900 dark:text-white font-medium">{ret.return_reason}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-3">
-          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 pb-2">
-            <Building2 size={14} className="text-blue-700" />
+        <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
+          <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
+            <Building2 size={14} className="text-emerald-600 dark:text-emerald-400" />
             Store Custody & Inspection Authority
           </h2>
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Receiving Store:</span>
-              <span className="font-medium text-slate-900">District Panchayat Central Store, Veraval</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Receiving Store:</span>
+              <span className="font-medium text-slate-900 dark:text-white">District Panchayat Central Store, Veraval</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Receiving Store Officer:</span>
-              <span className="font-medium text-slate-800">{ret.receiving_officer || 'Store Officer'}</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Receiving Store Officer:</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">{ret.receiving_officer || 'Store Officer'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-slate-100">
-              <span className="text-slate-500">Physical Inspection Status:</span>
-              <span className="text-emerald-700 font-semibold">Completed & Verified</span>
+            <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
+              <span className="text-slate-500 dark:text-slate-400">Physical Inspection Status:</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Completed & Verified</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Itemized Table */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <FileText size={15} className="text-blue-700" />
+      <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-emerald-500/15 flex items-center justify-between bg-slate-50/70 dark:bg-[#0A1513]">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
             Returned Items Inspection Schedule ({ret.items?.length || 0})
           </h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+            <thead className="bg-slate-100/70 dark:bg-[#0A1513] border-b border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">#</th>
                 <th className="py-2.5 px-4">Item Name & Code</th>
@@ -152,30 +152,30 @@ export default function ReturnDetailPage() {
                 <th className="py-2.5 px-4">Operational Routing</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10 text-slate-800 dark:text-slate-200">
               {ret.items?.map((line, idx) => {
                 const isDamaged = line.condition === 'DAMAGED' || line.condition === 'SCRAP'
                 return (
-                  <tr key={line.id || idx} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={line.id || idx} className="hover:bg-slate-50/70 dark:hover:bg-white/5 transition-colors">
                     <td className="py-3 px-4 font-mono text-slate-400">{idx + 1}</td>
                     <td className="py-3 px-4">
-                      <span className="font-semibold text-slate-900 block text-xs">{line.item_name}</span>
-                      <span className="text-[11px] font-mono text-slate-500">{line.item_code}</span>
+                      <span className="font-semibold text-slate-900 dark:text-white block text-xs">{line.item_name}</span>
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">{line.item_code}</span>
                     </td>
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-900 dark:text-white">
                       {line.quantity_returned} {line.uom}
                     </td>
                     <td className="py-3 px-3 text-center">
                       <StatusBadge status={line.condition} size="sm" />
                     </td>
-                    <td className="py-3 px-4 text-slate-600 max-w-xs">{line.inspection_notes || '—'}</td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs">{line.inspection_notes || '—'}</td>
                     <td className="py-3 px-4">
                       {isDamaged ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-800 text-[11px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 text-[11px] font-semibold">
                           <Wrench size={12} /> Routed to Maintenance
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[11px] font-semibold">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold">
                           <ShieldCheck size={12} /> Restored to Store Stock
                         </span>
                       )}

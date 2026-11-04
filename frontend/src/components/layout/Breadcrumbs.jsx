@@ -7,9 +7,9 @@ const SEGMENT_LABELS = {
   new: 'New',
   edit: 'Edit',
   transactions: 'Transactions',
-  receipts: 'Receipts',
-  issues: 'Issues',
-  returns: 'Returns',
+  receipts: 'Stock Receipts',
+  issues: 'Stock Issues',
+  returns: 'Stock Returns',
   transfers: 'Transfers',
   'dead-stock': 'Dead Stock',
   register: 'Register',
@@ -56,17 +56,24 @@ function Breadcrumbs() {
   }, [])
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-slate-500">
-      <Link to="/dashboard" className="hover:text-blue-700 transition-colors">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-forest-600 dark:text-forest-400">
+      <Link
+        to="/dashboard"
+        className="hover:text-forest-800 dark:hover:text-forest-200 p-1 rounded-md hover:bg-forest-500/10 transition-colors"
+        title="Dashboard"
+      >
         <Home size={13} />
       </Link>
       {crumbs.map((crumb, i) => (
         <span key={crumb.path} className="flex items-center gap-1.5">
-          <ChevronRight size={12} className="text-slate-300" />
+          <ChevronRight size={12} className="text-forest-400/50 dark:text-forest-600/60" />
           {i === crumbs.length - 1 ? (
-            <span className="font-medium text-slate-700">{crumb.label}</span>
+            <span className="font-semibold text-forest-900 dark:text-forest-100">{crumb.label}</span>
           ) : (
-            <Link to={crumb.path} className="hover:text-blue-700 transition-colors">
+            <Link
+              to={crumb.path}
+              className="hover:text-forest-800 dark:hover:text-forest-200 transition-colors"
+            >
               {crumb.label}
             </Link>
           )}
@@ -77,4 +84,3 @@ function Breadcrumbs() {
 }
 
 export default Breadcrumbs
-

@@ -231,7 +231,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveStep(activeStep === 3 ? 1 : 3)}
-              className="text-xs font-medium text-slate-600 hover:text-blue-700 flex items-center gap-1.5"
+              className="text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center gap-1.5 transition-colors"
             >
               <History size={14} />
               <span>{activeStep === 3 ? 'Back to Upload' : 'View Import History'}</span>
@@ -257,11 +257,13 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
       }
     >
       {/* Step Tabs Header */}
-      <div className="flex items-center justify-between mb-5 border-b border-slate-200 pb-3">
+      <div className="flex items-center justify-between mb-5 border-b border-slate-200 dark:border-emerald-500/20 pb-3">
         <div className="flex items-center gap-3 text-xs font-medium">
           <span
             className={`px-3 py-1 rounded-full ${
-              activeStep === 1 ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
+              activeStep === 1
+                ? 'bg-emerald-600 text-white font-semibold'
+                : 'bg-slate-100 dark:bg-[#081210] text-slate-600 dark:text-slate-400'
             }`}
           >
             1. Upload & Template
@@ -269,7 +271,9 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           <ArrowRight size={12} className="text-slate-400" />
           <span
             className={`px-3 py-1 rounded-full ${
-              activeStep === 2 ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
+              activeStep === 2
+                ? 'bg-emerald-600 text-white font-semibold'
+                : 'bg-slate-100 dark:bg-[#081210] text-slate-600 dark:text-slate-400'
             }`}
           >
             2. Validation & Preview
@@ -291,15 +295,15 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
         <div className="space-y-6">
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/30 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors text-center"
+            className="border-2 border-dashed border-slate-300 dark:border-emerald-500/30 hover:border-emerald-500 bg-slate-50/70 dark:bg-[#081210] hover:bg-emerald-50/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors text-center"
           >
-            <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-3">
               <Upload size={24} />
             </div>
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-sm font-semibold text-slate-800 dark:text-white">
               Click to select or drag and drop your spreadsheet
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)
             </p>
             <input
@@ -312,14 +316,14 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           </div>
 
           {/* Guidelines Box */}
-          <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 text-xs text-slate-700 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-blue-900">
+          <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-200">
               <HelpCircle size={15} />
               <span>Import Guidelines & Requirements</span>
             </div>
-            <ul className="list-disc list-inside space-y-1 text-slate-600 leading-relaxed">
+            <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300 leading-relaxed">
               <li>
-                <strong>Durable Assets vs Consumables:</strong> Set <code className="font-mono text-slate-800">item_type</code> to <code className="font-mono">DURABLE_ASSET</code> for equipment (quantity must be 1), or <code className="font-mono">CONSUMABLE_STOCK</code> for office supplies.
+                <strong>Durable Assets vs Consumables:</strong> Set <code className="font-mono text-slate-800 dark:text-white bg-white/80 dark:bg-black/30 px-1 py-0.5 rounded">item_type</code> to <code className="font-mono">DURABLE_ASSET</code> for equipment (quantity must be 1), or <code className="font-mono">CONSUMABLE_STOCK</code> for office supplies.
               </li>
               <li>
                 <strong>Serial Number Uniqueness:</strong> Durable assets with serial numbers will be verified against the office database. Duplicate serials will be rejected.
@@ -340,25 +344,25 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
         <div className="space-y-4">
           {/* Summary Badges */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
-              <span className="text-xs text-slate-500 block">Total Rows Analyzed</span>
-              <span className="text-lg font-bold text-slate-800 block">{parsedRows.length}</span>
+            <div className="p-3 bg-slate-50 dark:bg-[#081210] rounded-xl border border-slate-200 dark:border-emerald-500/20 text-center">
+              <span className="text-xs text-slate-500 dark:text-slate-400 block">Total Rows Analyzed</span>
+              <span className="text-lg font-bold text-slate-800 dark:text-white block">{parsedRows.length}</span>
             </div>
-            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
-              <span className="text-xs text-emerald-700 block">Valid Rows Ready</span>
-              <span className="text-lg font-bold text-emerald-700 block">{validCount}</span>
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-center">
+              <span className="text-xs text-emerald-700 dark:text-emerald-300 block">Valid Rows Ready</span>
+              <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300 block">{validCount}</span>
             </div>
-            <div className="p-3 bg-red-50 rounded-lg border border-red-200 text-center">
-              <span className="text-xs text-red-700 block">Rows with Issues</span>
-              <span className="text-lg font-bold text-red-700 block">{errorCount}</span>
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-500/20 text-center">
+              <span className="text-xs text-rose-700 dark:text-rose-400 block">Rows with Issues</span>
+              <span className="text-lg font-bold text-rose-700 dark:text-rose-400 block">{errorCount}</span>
             </div>
           </div>
 
           {/* Action Row for Error Report */}
           {errorCount > 0 && (
-            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-center justify-between text-xs text-amber-800">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-500/30 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">
               <div className="flex items-center gap-2">
-                <AlertTriangle size={16} className="shrink-0 text-amber-600" />
+                <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400" />
                 <span>
                   {errorCount} rows failed validation checks. You can download the error report to fix them or proceed with the {validCount} valid records.
                 </span>
@@ -375,7 +379,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           )}
 
           {/* Preview Table */}
-          <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg scrollbar-thin">
+          <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-emerald-500/20 rounded-xl scrollbar-thin">
             <table className="w-full text-left text-xs data-table">
               <thead>
                 <tr>
@@ -389,27 +393,27 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
               </thead>
               <tbody>
                 {parsedRows.map((r) => (
-                  <tr key={r.rowNumber} className={r.isValid ? '' : 'bg-red-50/30'}>
-                    <td className="font-mono text-slate-500">{r.rowNumber}</td>
+                  <tr key={r.rowNumber} className={r.isValid ? '' : 'bg-rose-50/30 dark:bg-rose-950/20'}>
+                    <td className="font-mono text-slate-500 dark:text-slate-400">{r.rowNumber}</td>
                     <td>
                       {r.isValid ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
                           <CheckCircle2 size={13} /> Valid
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-red-700 font-medium">
+                        <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
                           <XCircle size={13} /> Error
                         </span>
                       )}
                     </td>
-                    <td className="font-medium text-slate-800">{r.data.item_name || '—'}</td>
-                    <td>{r.data.item_type || '—'}</td>
-                    <td className="font-mono text-slate-600">{r.data.serial_number || '—'}</td>
+                    <td className="font-medium text-slate-800 dark:text-slate-200">{r.data.item_name || '—'}</td>
+                    <td className="text-slate-600 dark:text-slate-300">{r.data.item_type || '—'}</td>
+                    <td className="font-mono text-slate-600 dark:text-slate-400">{r.data.serial_number || '—'}</td>
                     <td>
                       {r.isValid ? (
-                        <span className="text-emerald-700">Passed checks</span>
+                        <span className="text-emerald-700 dark:text-emerald-400">Passed checks</span>
                       ) : (
-                        <span className="text-red-700 font-medium">
+                        <span className="text-rose-600 dark:text-rose-400 font-medium">
                           {r.errors.join('; ')}
                         </span>
                       )}
@@ -425,27 +429,27 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
       {/* Step 3: Import History */}
       {activeStep === 3 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-800">Past Batch Imports</h3>
-            <span className="text-xs text-slate-500">Historical records log</span>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-emerald-500/15">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-white">Past Batch Imports</h3>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Historical records log</span>
           </div>
 
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+          <div className="divide-y divide-slate-100 dark:divide-emerald-500/10 border border-slate-200 dark:border-emerald-500/20 rounded-xl overflow-hidden">
             {importHistory.map((h) => (
-              <div key={h.batch_id} className="p-4 flex items-center justify-between hover:bg-slate-50 text-xs">
+              <div key={h.batch_id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 text-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-semibold text-blue-700">{h.batch_id}</span>
-                    <span className="text-slate-800 font-medium">{h.filename}</span>
+                    <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">{h.batch_id}</span>
+                    <span className="text-slate-800 dark:text-white font-medium">{h.filename}</span>
                   </div>
-                  <p className="text-slate-500 mt-0.5">
+                  <p className="text-slate-500 dark:text-slate-400 mt-0.5">
                     Uploaded by {h.uploaded_by} on {h.date}
                   </p>
                 </div>
                 <div className="text-right">
-                  <span className="text-emerald-700 font-semibold">{h.successful_rows} Succeeded</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{h.successful_rows} Succeeded</span>
                   {h.failed_rows > 0 && (
-                    <span className="text-red-600 ml-2">({h.failed_rows} Failed)</span>
+                    <span className="text-rose-600 dark:text-rose-400 ml-2">({h.failed_rows} Failed)</span>
                   )}
                   <p className="text-[11px] text-slate-400 mt-0.5">Total: {h.total_rows} rows</p>
                 </div>

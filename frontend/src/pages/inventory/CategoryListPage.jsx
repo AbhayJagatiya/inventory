@@ -174,68 +174,68 @@ export default function CategoryListPage() {
       >
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Category Code</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category Code</label>
             <input
               type="text"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
               placeholder="e.g. IT-COMP or FURN"
-              className="w-full px-3 py-2 border border-slate-300 rounded font-mono text-sm"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Category Description</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category Description</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g. Computers & Peripherals"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Slow Moving Days</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Slow Moving Days</label>
               <input
                 type="number"
                 value={formData.slow_moving_threshold_days}
                 onChange={(e) => setFormData({ ...formData, slow_moving_threshold_days: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Inactivity (Non-Moving) Days</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Inactivity (Non-Moving) Days</label>
               <input
                 type="number"
                 value={formData.inactivity_threshold_days}
                 onChange={(e) => setFormData({ ...formData, inactivity_threshold_days: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Obsolescence Lifespan (Years)</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Obsolescence Lifespan (Years)</label>
               <input
                 type="number"
                 value={formData.obsolescence_years}
                 onChange={(e) => setFormData({ ...formData, obsolescence_years: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Depreciation Rate (% p.a.)</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Depreciation Rate (% p.a.)</label>
               <input
                 type="number"
                 step="0.1"
                 value={formData.depreciation_rate_pct}
                 onChange={(e) => setFormData({ ...formData, depreciation_rate_pct: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
           </div>

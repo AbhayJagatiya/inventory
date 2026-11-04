@@ -2,18 +2,23 @@ import { forwardRef } from 'react'
 import { cn } from '../../utils/cn'
 
 const VARIANTS = {
-  primary:   'bg-blue-700 text-white hover:bg-blue-800 focus:ring-blue-500 disabled:bg-blue-300',
-  secondary: 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus:ring-blue-500 disabled:text-slate-400',
-  danger:    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-red-300',
-  ghost:     'text-slate-600 hover:bg-slate-100 focus:ring-slate-400 disabled:text-slate-400',
-  link:      'text-blue-700 hover:underline p-0 focus:ring-0 disabled:text-slate-400',
+  primary:
+    'bg-forest-500 text-white hover:bg-forest-600 active:bg-forest-700 dark:bg-forest-400 dark:text-forest-950 dark:hover:bg-forest-300 shadow-sm focus:ring-forest-500 disabled:opacity-50',
+  secondary:
+    'bg-white/90 dark:bg-forest-800/90 text-forest-900 dark:text-forest-100 border border-forest-500/20 dark:border-forest-300/20 hover:bg-forest-50 dark:hover:bg-forest-700/60 focus:ring-forest-500 disabled:opacity-50 shadow-sm',
+  danger:
+    'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus:ring-red-500 disabled:opacity-50 shadow-sm',
+  ghost:
+    'text-forest-700 dark:text-forest-200 hover:bg-forest-500/10 focus:ring-forest-400 disabled:opacity-50',
+  link:
+    'text-forest-600 dark:text-forest-400 hover:underline p-0 focus:ring-0 disabled:opacity-50',
 }
 
 const SIZES = {
-  xs: 'px-2.5 py-1 text-xs',
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  xs: 'px-2.5 py-1 text-xs rounded-lg',
+  sm: 'px-3 py-1.5 text-xs rounded-xl font-medium',
+  md: 'px-4 py-2 text-sm rounded-xl font-medium',
+  lg: 'px-5 py-2.5 text-base rounded-2xl font-semibold',
 }
 
 const Button = forwardRef(function Button(
@@ -29,7 +34,7 @@ const Button = forwardRef(function Button(
     type = 'button',
     ...props
   },
-  ref,
+  ref
 ) {
   const isDisabled = disabled || isLoading
 
@@ -39,14 +44,12 @@ const Button = forwardRef(function Button(
       type={type}
       disabled={isDisabled}
       className={cn(
-        'inline-flex items-center justify-center gap-2 font-medium rounded-md',
-        'transition-colors duration-150',
-        'focus:outline-none focus:ring-2 focus:ring-offset-1',
-        'disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150',
+        'focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-forest-900',
+        'disabled:cursor-not-allowed select-none',
         VARIANTS[variant],
         SIZES[size],
-        variant !== 'link' && 'shadow-sm',
-        className,
+        className
       )}
       {...props}
     >
@@ -65,4 +68,3 @@ const Button = forwardRef(function Button(
 })
 
 export default Button
-
