@@ -9,7 +9,6 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { createReturn, getIssues } from '../../api/transactions.api'
-import { getMockIssues } from '../../services/transactionsMockData'
 import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
@@ -32,14 +31,10 @@ export default function ReturnCreatePage() {
   const { data: issuesData } = useQuery({
     queryKey: ['posted-issues-for-return'],
     queryFn: async () => {
-      try {
-        const res = await getIssues()
-        return res?.data || res
-      } catch {
-        return getMockIssues()
-      }
+      const res = await getIssues()
+      return res?.data || res || []
     },
-    initialData: getMockIssues(),
+    initialData: [],
   })
 
   const allIssues = issuesData || []
@@ -154,6 +149,7 @@ export default function ReturnCreatePage() {
         })
 
       const payload = {
+        office_id: user?.office_id,
         return_date: returnDate,
         original_issue_id: selectedIssue.id,
         original_issue_voucher: selectedIssue.voucher_number,
@@ -161,14 +157,15 @@ export default function ReturnCreatePage() {
         returning_employee: selectedIssue.receiving_employee,
         receiving_officer: receivingOfficer,
         return_reason: returnReason,
+        status: 'POSTED',
         items: linesToSubmit,
       }
 
-      const res = await createReturn(payload, user?.full_name || 'Store Officer')
+      const res = await createReturn(payload)
       toast.success('Stock return processed! Condition recorded and balances updated.')
       navigate(ROUTES.RETURN_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.message || 'Failed to record return.')
+      toast.error(err.response?.data?.error?.message || err.message || 'Failed to record return.')
     } finally {
       setIsSubmitting(false)
     }

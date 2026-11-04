@@ -14,7 +14,6 @@ import StatusBadge from '../../components/common/StatusBadge'
 import LoadingSkeleton from '../../components/feedback/LoadingSkeleton'
 import ErrorState from '../../components/feedback/ErrorState'
 import { getItem, getItemHistory } from '../../api/inventory.api'
-import { MOCK_ITEMS } from '../../services/mockData'
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
@@ -31,13 +30,8 @@ export default function AssetDetailPage() {
   const { data: itemData, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['item', id],
     queryFn: async () => {
-      try {
-        const res = await getItem(id)
-        return res?.data || res
-      } catch {
-        const found = MOCK_ITEMS.find((i) => i.id === id) || MOCK_ITEMS[0]
-        return found
-      }
+      const res = await getItem(id)
+      return res?.data || res
     },
   })
 

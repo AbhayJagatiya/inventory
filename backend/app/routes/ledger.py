@@ -1,5 +1,5 @@
-"""
-Ledger / transaction routes for the Dead Stock Inventory Management System.
+"""Ledger / transaction routes for the Dead Stock Inventory Management System.
+
 Prefix: /api/v1/transactions (registered in main.py)
 """
 
@@ -21,6 +21,7 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.get("", include_in_schema=False)
 @router.get(
     "/",
     response_model=StandardSuccessResponse[List[StockTransactionOut]],
@@ -43,17 +44,16 @@ def list_transactions(
     transactions, total = LedgerService.list_transactions(
         db,
         office_id=office_id,
-        transaction_type=transaction_type,
+        txn_type=transaction_type,
         status=status,
-        date_from=date_from,
-        date_to=date_to,
-        search=search,
+        start_date=date_from,
+        end_date=date_to,
         current_user=current_user,
         page=page,
         limit=limit,
     )
     return StandardSuccessResponse(
-        data=transactions,
+        data=[LedgerService.build_transaction_out(t) for t in transactions],
         message="Transactions retrieved successfully",
         meta=ResponseMeta(page=page, limit=limit, total=total),
     )
@@ -73,7 +73,7 @@ def get_transaction(
     """Retrieve a single stock transaction including all its line items."""
     transaction = LedgerService.get_transaction(db, transaction_id)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Transaction retrieved successfully",
     )
 
@@ -98,6 +98,6 @@ def reverse_transaction(
         actor=current_user,
     )
     return StandardSuccessResponse(
-        data=reversal,
+        data=LedgerService.build_transaction_out(reversal),
         message="Reversal voucher created successfully",
     )

@@ -130,6 +130,31 @@ class InventoryService:
 
     @staticmethod
     def create_item(db: Session, payload: ItemCreate, creator: User) -> Item:
+        # Auto-resolve office_id if not explicitly provided
+        if not payload.office_id:
+            payload.office_id = creator.office_id
+
+        # Auto-resolve uom_id from code or fallback
+        if not payload.uom_id:
+            if payload.uom:
+                uom_rec = db.query(UnitOfMeasure).filter(UnitOfMeasure.code == payload.uom.upper()).first()
+                if uom_rec:
+                    payload.uom_id = uom_rec.id
+            if not payload.uom_id:
+                first_uom = db.query(UnitOfMeasure).first()
+                if first_uom:
+                    payload.uom_id = first_uom.id
+
+        # Resolve quantity
+        if payload.quantity is not None and (payload.initial_quantity == 1.00 or payload.initial_quantity is None):
+            payload.initial_quantity = float(payload.quantity)
+
+        # Resolve supplier if name provided
+        if not payload.supplier_id and payload.supplier_name:
+            sup = db.query(Supplier).filter(Supplier.name.ilike(f"%{payload.supplier_name.strip()}%")).first()
+            if sup:
+                payload.supplier_id = sup.id
+
         # Enforce office authorization
         if ROLE_SYSTEM_ADMIN not in creator.role_names and payload.office_id != creator.office_id:
             raise OfficeAccessDeniedError("Cannot create inventory records for an office outside your assigned scope")
@@ -227,7 +252,9 @@ class InventoryService:
         return item
 
     @staticmethod
-    def update_item(db: Session, item_id: UUID, payload: ItemUpdate, updater: User) -> Item:
+    def update_item(db: Session, item_id: UUID, payload: ItemUpdate, updater: Optional[User] = None, updated_by: Optional[User] = None) -> Item:
+        user = updater or updated_by
+        updater = user
         item = InventoryService.get_item(db, item_id, current_user=updater)
         if item.operational_status == "DISPOSED":
             raise ValidationError("Disposed items are archived and immutable; further modifications are prohibited.")

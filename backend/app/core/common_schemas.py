@@ -5,7 +5,7 @@ Conforms strictly to the API envelope standard in docs/api-contract.md.
 
 from datetime import datetime, timezone
 from typing import Any, Generic, List, Optional, TypeVar
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 DataT = TypeVar("DataT")
 
@@ -18,8 +18,12 @@ class ResponseMeta(BaseModel):
     total: Optional[int] = None
     total_pages: Optional[int] = None
 
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
 
 class StandardSuccessResponse(BaseModel, Generic[DataT]):
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
     success: bool = True
     data: DataT
     message: str = "Operation completed successfully"
@@ -46,4 +50,3 @@ class StandardErrorResponse(BaseModel):
 class PaginatedParams(BaseModel):
     page: int = Field(default=1, ge=1)
     limit: int = Field(default=20, ge=1, le=100)
-

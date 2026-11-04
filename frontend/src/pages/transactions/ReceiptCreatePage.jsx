@@ -136,6 +136,7 @@ export default function ReceiptCreatePage() {
     setIsSubmitting(true)
     try {
       const payload = {
+        office_id: user?.office_id,
         receipt_date: receiptDate,
         supplier_name: supplierName,
         supplier_contact: supplierContact,
@@ -176,7 +177,7 @@ export default function ReceiptCreatePage() {
       )
       navigate(ROUTES.RECEIPT_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.message || 'Failed to save receipt voucher.')
+      toast.error(err.response?.data?.error?.message || err.message || 'Failed to save receipt voucher.')
     } finally {
       setIsSubmitting(false)
     }

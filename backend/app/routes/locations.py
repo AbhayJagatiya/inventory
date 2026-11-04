@@ -25,6 +25,7 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.get("", include_in_schema=False)
 @router.get(
     "/",
     response_model=StandardSuccessResponse[List[LocationOut]],
@@ -65,11 +66,12 @@ def list_locations(
     )
 
     return StandardSuccessResponse(
-        data=locations,
+        data=[LocationOut.model_validate(l) for l in locations],
         message="Locations retrieved successfully",
     )
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[LocationOut],
@@ -92,7 +94,7 @@ def create_location(
     )
 
     return StandardSuccessResponse(
-        data=location,
+        data=LocationOut.model_validate(location),
         message="Location created successfully",
     )
 
@@ -119,7 +121,7 @@ def get_location(
     )
 
     return StandardSuccessResponse(
-        data=location,
+        data=LocationOut.model_validate(location),
         message="Location retrieved successfully",
     )
 
@@ -148,7 +150,7 @@ def update_location(
     )
 
     return StandardSuccessResponse(
-        data=location,
+        data=LocationOut.model_validate(location),
         message="Location updated successfully",
     )
 

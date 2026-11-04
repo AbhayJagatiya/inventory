@@ -16,8 +16,10 @@ from app.core.dependencies import require_permission
 from app.core.permissions import ROLE_SYSTEM_ADMIN
 
 from app.features.users.models import User
+from app.features.verification.models import VerificationItem
 from app.features.verification.schemas import (
     VerificationCompleteRequest,
+    VerificationItemOut,
     VerificationReconcileRequest,
     VerificationScanRequest,
     VerificationScanResponse,
@@ -120,6 +122,31 @@ def get_session(
     return StandardSuccessResponse(
         data=session,
         message="Verification session retrieved successfully",
+    )
+
+
+@router.get(
+    "/sessions/{session_id}/items",
+    response_model=StandardSuccessResponse[List[VerificationItemOut]],
+    summary="List verification snapshot items and discrepancies",
+)
+def list_session_items(
+    session_id: UUID,
+    discrepancy_only: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("verify:view")),
+):
+    session = VerificationService.get_session(db, session_id)
+    _check_session_access(session, current_user)
+
+    query = db.query(VerificationItem).filter(VerificationItem.session_id == session_id)
+    if discrepancy_only:
+        query = query.filter(VerificationItem.discrepancy_type != "NONE")
+    items = query.all()
+
+    return StandardSuccessResponse(
+        data=items,
+        message="Verification items retrieved successfully",
     )
 
 

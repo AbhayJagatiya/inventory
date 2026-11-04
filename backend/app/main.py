@@ -153,6 +153,10 @@ def _register_routes(application: FastAPI) -> None:
     application.include_router(stock_issues_router, prefix=f"{PREFIX}/issues", tags=["Stock Issues"])
     application.include_router(stock_returns_router, prefix=f"{PREFIX}/returns", tags=["Stock Returns"])
     application.include_router(stock_transfers_router, prefix=f"{PREFIX}/transfers", tags=["Stock Transfers"])
+    application.include_router(stock_receipts_router, prefix=f"{PREFIX}/transactions/receipts", tags=["Stock Receipts (Alias)"])
+    application.include_router(stock_issues_router, prefix=f"{PREFIX}/transactions/issues", tags=["Stock Issues (Alias)"])
+    application.include_router(stock_returns_router, prefix=f"{PREFIX}/transactions/returns", tags=["Stock Returns (Alias)"])
+    application.include_router(stock_transfers_router, prefix=f"{PREFIX}/transactions/transfers", tags=["Stock Transfers (Alias)"])
 
     application.include_router(classification_router, prefix=f"{PREFIX}/classifications", tags=["Classification"])
     application.include_router(barcodes_router, prefix=f"{PREFIX}/barcodes", tags=["Barcodes"])
@@ -164,6 +168,7 @@ def _register_routes(application: FastAPI) -> None:
     application.include_router(disposal_router, prefix=f"{PREFIX}/disposals", tags=["Disposal"])
     application.include_router(documents_router, prefix=f"{PREFIX}/documents", tags=["Documents"])
     application.include_router(reports_router, prefix=f"{PREFIX}/reports", tags=["Reports & Dashboard"])
+    application.include_router(reports_router, prefix=f"{PREFIX}/dashboard", tags=["Dashboard (Alias)"])
     application.include_router(settings_router, prefix=f"{PREFIX}/settings", tags=["Settings"])
     application.include_router(audit_router, prefix=f"{PREFIX}/audit", tags=["Audit Logs"])
 
@@ -173,6 +178,24 @@ def _register_routes(application: FastAPI) -> None:
 # ---------------------------------------------------------------------------
 
 app = create_app()
+
+
+@app.get("/docs", include_in_schema=False)
+def docs_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/docs")
+
+
+@app.get("/redoc", include_in_schema=False)
+def redoc_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/redoc")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+def openapi_redirect():
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/api/v1/openapi.json")
 
 
 @app.get("/health", tags=["Health"])

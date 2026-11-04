@@ -6,13 +6,12 @@ import DataTable from '../../components/tables/DataTable'
 import Modal from '../../components/common/Modal'
 import Button from '../../components/common/Button'
 import { getLocations, createLocation, updateLocation } from '../../api/inventory.api'
-import { MOCK_LOCATIONS } from '../../services/mockData'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 
 export default function LocationListPage() {
-  const { hasPermission, officeName } = useAuth()
+  const { hasPermission, officeName, user } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLocation, setEditingLocation] = useState(null)
   const [formData, setFormData] = useState({
@@ -26,16 +25,12 @@ export default function LocationListPage() {
   const { data: locationsData, isLoading, refetch } = useQuery({
     queryKey: ['locations-list'],
     queryFn: async () => {
-      try {
-        const res = await getLocations()
-        return res?.data || res
-      } catch {
-        return MOCK_LOCATIONS
-      }
+      const res = await getLocations()
+      return res?.data || res || []
     },
   })
 
-  const locations = locationsData || MOCK_LOCATIONS
+  const locations = Array.isArray(locationsData) ? locationsData : (locationsData?.data || [])
 
   const handleOpenAdd = () => {
     setEditingLocation(null)
@@ -64,18 +59,21 @@ export default function LocationListPage() {
   const handleSave = async (e) => {
     e.preventDefault()
     try {
+      const payload = {
+        ...formData,
+        office_id: user?.office_id,
+      }
       if (editingLocation) {
-        await updateLocation(editingLocation.id, formData)
+        await updateLocation(editingLocation.id, payload)
         toast.success('Location updated successfully')
       } else {
-        await createLocation(formData)
+        await createLocation(payload)
         toast.success('Storage room registered successfully')
       }
       setIsModalOpen(false)
       refetch()
-    } catch {
-      toast.success(editingLocation ? 'Location updated (Demo)' : 'Location registered (Demo)')
-      setIsModalOpen(false)
+    } catch (err) {
+      toast.error(err?.response?.data?.error?.message || 'Failed to save location')
     }
   }
 
@@ -91,7 +89,7 @@ export default function LocationListPage() {
       header: 'Building',
       render: (bldg, row) => (
         <div>
-          <span className="text-sm font-medium text-slate-800">{bldg}</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{bldg}</span>
           {row.floor && <span className="text-xs text-slate-500 block">{row.floor}</span>}
         </div>
       ),
@@ -101,7 +99,7 @@ export default function LocationListPage() {
       header: 'Type',
       width: '140px',
       render: (type) => (
-        <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+        <span className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-emerald-950/40 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-emerald-500/20">
           {type?.replace(/_/g, ' ') || 'STORE ROOM'}
         </span>
       ),

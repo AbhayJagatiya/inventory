@@ -73,6 +73,10 @@ class LocationService:
 
     @staticmethod
     def create_location(db: Session, payload: LocationCreate, creator: Optional[User] = None) -> Location:
+        # Auto-resolve office_id if not explicitly provided
+        if not payload.office_id and creator:
+            payload.office_id = creator.office_id
+
         # Verify office
         office = db.query(Office).filter(Office.id == payload.office_id).first()
         if not office:

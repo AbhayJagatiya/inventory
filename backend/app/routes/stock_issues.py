@@ -1,11 +1,10 @@
-"""
-Stock Issues Routes
-Routes at /api/v1/issues for managing stock issue transactions.
+"""Stock Issues Routes
+
 Handles creation and posting of items issued from inventory.
+Routes at /api/v1/issues
 """
 
 from uuid import UUID
-
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -19,22 +18,23 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[StockTransactionOut],
     status_code=status.HTTP_201_CREATED,
     summary="Create stock issue transaction",
-    description="Create a new stock issue transaction. The transaction must be posted separately to update inventory.",
+    description="Create a new stock issue transaction.",
 )
 def create_issue(
     payload: IssueCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("MANAGE_TRANSACTIONS")),
 ) -> StandardSuccessResponse[StockTransactionOut]:
-    """Create a stock issue transaction (draft state)."""
+    """Create a stock issue transaction."""
     transaction = LedgerService.create_issue(db, payload, actor=current_user)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock issue transaction created successfully",
     )
 
@@ -54,6 +54,6 @@ def post_issue(
     """Post a stock issue transaction to inventory ledger."""
     transaction = LedgerService.post_issue(db, transaction_id, actor=current_user)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock issue posted to inventory successfully",
     )

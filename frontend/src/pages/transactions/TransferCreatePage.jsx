@@ -9,7 +9,6 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import { createTransfer } from '../../api/transactions.api'
 import { getItems } from '../../api/inventory.api'
-import { getMockItemsState } from '../../services/transactionsMockData'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -42,14 +41,10 @@ export default function TransferCreatePage() {
   const { data: itemsData } = useQuery({
     queryKey: ['available-items-for-transfer'],
     queryFn: async () => {
-      try {
-        const res = await getItems()
-        return res?.data || res
-      } catch {
-        return getMockItemsState()
-      }
+      const res = await getItems()
+      return res?.data || res || []
     },
-    initialData: getMockItemsState(),
+    initialData: [],
   })
 
   const availableItems = (itemsData || []).filter((i) => {
@@ -142,6 +137,7 @@ export default function TransferCreatePage() {
       })
 
       const payload = {
+        source_office_id: user?.office_id,
         transfer_type: transferType,
         expected_return_date: transferType === 'TEMPORARY' ? expectedReturnDate : null,
         source_office: sourceOffice,
@@ -152,11 +148,11 @@ export default function TransferCreatePage() {
         items: formattedItems,
       }
 
-      const res = await createTransfer(payload, user?.full_name || 'Store Staff')
+      const res = await createTransfer(payload)
       toast.success('Transfer request submitted! Awaiting Store Officer sanction.')
       navigate(ROUTES.TRANSFER_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.message || 'Failed to submit transfer request.')
+      toast.error(err.response?.data?.error?.message || err.message || 'Failed to submit transfer request.')
     } finally {
       setIsSubmitting(false)
     }

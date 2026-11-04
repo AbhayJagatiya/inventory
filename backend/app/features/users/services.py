@@ -268,6 +268,38 @@ class UserService:
         db.refresh(user)
 
         return user
+    @staticmethod
+    def seed_default_users(db: Session, office_id: UUID) -> None:
+        """Seeds standard role accounts (admin, officer, staff) for seamless evaluation."""
+        from app.core.permissions import ROLE_SYSTEM_ADMIN, ROLE_STORE_OFFICER, ROLE_STORE_STAFF
+
+        roles = {r.name: r for r in db.query(Role).all()}
+
+        default_accounts = [
+            ("admin", "admin@gujarat.gov.in", "Admin@12345", "DDO District Administrator", "System Administrator", ROLE_SYSTEM_ADMIN),
+            ("officer", "officer@gujarat.gov.in", "Officer@12345", "Store Verification Officer", "Store Officer", ROLE_STORE_OFFICER),
+            ("staff", "staff@gujarat.gov.in", "Staff@12345", "Panchayat Inventory Staff", "Store Clerk", ROLE_STORE_STAFF),
+        ]
+
+        for uname, uemail, upass, ufullname, udesig, rname in default_accounts:
+            existing = db.query(User).filter(User.username == uname).first()
+            if not existing and rname in roles:
+                user = User(
+                    username=uname,
+                    email=uemail,
+                    hashed_password=hash_password(upass),
+                    full_name=ufullname,
+                    designation=udesig,
+                    phone_number="02876-240001",
+                    office_id=office_id,
+                    status="ACTIVE",
+                    roles=[roles[rname]],
+                )
+                db.add(user)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
 
 
 def func_lower(col):

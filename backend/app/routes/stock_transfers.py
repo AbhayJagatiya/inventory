@@ -1,11 +1,10 @@
-"""
-Stock Transfers Routes
-Routes at /api/v1/transfers for managing inter-office stock transfer transactions.
+"""Stock Transfers Routes
+
 Handles creation, approval, and completion of transfer workflows.
+Routes at /api/v1/transfers
 """
 
 from uuid import UUID
-
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -19,15 +18,13 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[StockTransactionOut],
     status_code=status.HTTP_201_CREATED,
     summary="Create stock transfer transaction",
-    description=(
-        "Initiate a new inter-office stock transfer. "
-        "The transfer requires approval before it can be completed."
-    ),
+    description="Initiate a new inter-office stock transfer.",
 )
 def create_transfer(
     payload: TransferCreate,
@@ -37,7 +34,7 @@ def create_transfer(
     """Create a new stock transfer transaction (pending approval)."""
     transaction = LedgerService.create_transfer(db, payload, actor=current_user)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock transfer transaction created successfully",
     )
 
@@ -47,20 +44,20 @@ def create_transfer(
     response_model=StandardSuccessResponse[StockTransactionOut],
     status_code=status.HTTP_200_OK,
     summary="Approve stock transfer",
-    description="Approve a pending stock transfer. Requires APPROVE_TRANSFERS permission.",
+    description="Approve a pending stock transfer.",
 )
 def approve_transfer(
     transaction_id: UUID,
     payload: TransferAction,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("APPROVE_TRANSFERS")),
+    current_user: User = Depends(require_permission("MANAGE_TRANSACTIONS")),
 ) -> StandardSuccessResponse[StockTransactionOut]:
     """Approve a pending stock transfer transaction."""
     transaction = LedgerService.approve_transfer(
-        db, transaction_id, payload, actor=current_user
+        db, transaction_id, remarks=payload.remarks, approver=current_user
     )
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock transfer approved successfully",
     )
 
@@ -70,7 +67,7 @@ def approve_transfer(
     response_model=StandardSuccessResponse[StockTransactionOut],
     status_code=status.HTTP_200_OK,
     summary="Complete stock transfer",
-    description="Mark an approved stock transfer as completed and update inventory on both sides.",
+    description="Mark an approved stock transfer as completed and update inventory.",
 )
 def complete_transfer(
     transaction_id: UUID,
@@ -78,11 +75,15 @@ def complete_transfer(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("MANAGE_TRANSACTIONS")),
 ) -> StandardSuccessResponse[StockTransactionOut]:
-    """Complete an approved stock transfer and post inventory changes."""
+    """Mark an approved stock transfer as completed."""
     transaction = LedgerService.complete_transfer(
-        db, transaction_id, payload, actor=current_user
+        db,
+        transaction_id,
+        remarks=payload.remarks,
+        destination_location_id=payload.destination_location_id,
+        receiver=current_user,
     )
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock transfer completed successfully",
     )

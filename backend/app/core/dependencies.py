@@ -1,4 +1,3 @@
-
 """Core Security and Scope Dependencies for FastAPI
 
 Enforces authentication, RBAC permissions, and office-level boundary isolation.
@@ -85,6 +84,16 @@ def get_current_user(
     return user
 
 
+PERMISSION_ALIASES = {
+    "VIEW_INVENTORY": ["inventory:view", "VIEW_INVENTORY"],
+    "MANAGE_INVENTORY": ["inventory:create", "inventory:edit", "inventory:manage", "MANAGE_INVENTORY"],
+    "CREATE_INVENTORY": ["inventory:create", "MANAGE_INVENTORY"],
+    "EDIT_INVENTORY": ["inventory:edit", "MANAGE_INVENTORY"],
+    "EXPORT_INVENTORY": ["inventory:export", "EXPORT_INVENTORY"],
+    "VIEW_TRANSACTIONS": ["stock:receipt_view", "stock:issue_view", "stock:return_view", "stock:transfer_view", "VIEW_TRANSACTIONS"],
+}
+
+
 def require_permission(permission_code: str) -> Callable:
     """Checks whether the authenticated user has the required permission."""
 
@@ -95,7 +104,9 @@ def require_permission(permission_code: str) -> Callable:
         if ROLE_SYSTEM_ADMIN in current_user.role_names:
             return current_user
 
-        if permission_code not in current_user.permission_codes:
+        allowed_codes = PERMISSION_ALIASES.get(permission_code, [permission_code])
+        user_perms = set(current_user.permission_codes)
+        if not any(code in user_perms for code in allowed_codes):
             raise PermissionDeniedError(
                 f"Missing required permission: '{permission_code}'",
                 code="INSUFFICIENT_PERMISSIONS",

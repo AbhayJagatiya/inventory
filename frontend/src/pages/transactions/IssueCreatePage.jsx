@@ -10,7 +10,6 @@ import Button from '../../components/common/Button'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import { createIssue } from '../../api/transactions.api'
 import { getItems } from '../../api/inventory.api'
-import { getMockItemsState } from '../../services/transactionsMockData'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
@@ -47,14 +46,10 @@ export default function IssueCreatePage() {
   const { data: itemsData } = useQuery({
     queryKey: ['available-items-for-issue'],
     queryFn: async () => {
-      try {
-        const res = await getItems()
-        return res?.data || res
-      } catch {
-        return getMockItemsState()
-      }
+      const res = await getItems()
+      return res?.data || res || []
     },
-    initialData: getMockItemsState(),
+    initialData: [],
   })
 
   const allItems = itemsData || []
@@ -175,6 +170,7 @@ export default function IssueCreatePage() {
       })
 
       const payload = {
+        office_id: user?.office_id,
         issue_date: issueDate,
         department,
         receiving_employee: receivingEmployee,
@@ -182,14 +178,15 @@ export default function IssueCreatePage() {
         sanction_order_number: sanctionOrderNumber,
         purpose,
         remarks,
+        status: 'POSTED',
         items: formattedItems,
       }
 
-      const res = await createIssue(payload, user?.full_name || 'Store Staff')
+      const res = await createIssue(payload)
       toast.success('Stock issue voucher created! Inventory updated.')
       navigate(ROUTES.ISSUE_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.message || 'Failed to create issue voucher.')
+      toast.error(err.response?.data?.error?.message || err.message || 'Failed to create issue voucher.')
     } finally {
       setIsSubmitting(false)
     }

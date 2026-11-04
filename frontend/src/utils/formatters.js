@@ -70,8 +70,8 @@ export const formatFileSize = (bytes) => {
 
 // ─── Numbers ─────────────────────────────────────────────────────────────────
 export const formatNumber = (n) => {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-IN').format(n)
+  if (n == null || n === '' || n === '—' || isNaN(Number(n))) return '—'
+  return new Intl.NumberFormat('en-IN').format(Number(n))
 }
 
 // ─── Text ─────────────────────────────────────────────────────────────────────

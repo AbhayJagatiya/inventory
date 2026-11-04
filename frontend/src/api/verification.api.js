@@ -30,6 +30,11 @@ export const getVerificationSession = async (id, params = {}) => {
   return response.data
 }
 
+export const getVerificationItems = async (id, params = {}) => {
+  const response = await apiClient.get(`/verifications/sessions/${id}/items`, { params })
+  return response.data
+}
+
 export const getVerificationScans = async (id, params = {}) => {
   const response = await apiClient.get(`/verifications/sessions/${id}/scans`, { params })
   return response.data

@@ -48,6 +48,10 @@ def initialize_database() -> None:
             office_id=office.id,
             admin_role_id=admin_role.id,
         )
+        UserService.seed_default_users(
+            db=db,
+            office_id=office.id,
+        )
 
         # 5. Categories and UOMs
         CategoryService.seed_default_categories_and_uoms(db)

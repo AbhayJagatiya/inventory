@@ -21,6 +21,7 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.get("", include_in_schema=False)
 @router.get(
     "/",
     response_model=StandardSuccessResponse[List[ItemOut]],
@@ -55,12 +56,13 @@ def list_items(
         limit=limit,
     )
     return StandardSuccessResponse(
-        data=items,
+        data=[ItemOut.model_validate(i) for i in items],
         message="Items retrieved successfully",
         meta=ResponseMeta(page=page, limit=limit, total=total),
     )
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[ItemOut],
@@ -75,7 +77,7 @@ def create_item(
     """Create a new inventory item in the system."""
     item = InventoryService.create_item(db, payload, creator=current_user)
     return StandardSuccessResponse(
-        data=item,
+        data=ItemOut.model_validate(item),
         message="Item created successfully",
     )
 
@@ -146,7 +148,7 @@ def get_item(
     """Retrieve a single inventory item by ID."""
     item = InventoryService.get_item(db, item_id)
     return StandardSuccessResponse(
-        data=item,
+        data=ItemOut.model_validate(item),
         message="Item retrieved successfully",
     )
 
@@ -166,7 +168,7 @@ def update_item(
     """Partially update an existing inventory item."""
     item = InventoryService.update_item(db, item_id, payload, updated_by=current_user)
     return StandardSuccessResponse(
-        data=item,
+        data=ItemOut.model_validate(item),
         message="Item updated successfully",
     )
 

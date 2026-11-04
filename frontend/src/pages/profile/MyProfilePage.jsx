@@ -66,7 +66,7 @@ function MyProfilePage() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.designation || 'Staff Member'}</p>
           <div className="flex justify-center mb-4">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
-              {ROLE_LABELS[userRole] || userRole || 'System User'}
+              {(typeof userRole === 'string' ? (ROLE_LABELS[userRole] || userRole) : (userRole?.name ? (ROLE_LABELS[userRole.name] || userRole.name) : 'System User'))}
             </span>
           </div>
 

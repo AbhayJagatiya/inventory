@@ -55,13 +55,31 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
+    // Never redirect on authentication or credential check calls
+    if (
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/refresh') ||
+      originalRequest?.url?.includes('/auth/logout')
+    ) {
+      return Promise.reject(error)
+    }
+
+    // Never redirect if in demo / offline simulation mode
+    const isDemo = localStorage.getItem('dsims_demo_mode') === 'true'
+    if (isDemo) {
+      return Promise.reject(error)
+    }
+
     // Handle 401 – attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       const refreshToken = tokenStorage.getRefreshToken()
 
-      if (!refreshToken) {
-        tokenStorage.clearTokens()
-        window.location.href = '/login?expired=1'
+      if (!refreshToken || refreshToken === 'undefined') {
+        const hadAccessToken = tokenStorage.getAccessToken()
+        if (hadAccessToken && hadAccessToken !== 'undefined') {
+          tokenStorage.clearTokens()
+          window.location.href = '/login?expired=1'
+        }
         return Promise.reject(error)
       }
 
@@ -81,15 +99,19 @@ apiClient.interceptors.response.use(
         const response = await axios.post(`${BASE_URL}/auth/refresh`, {
           refresh_token: refreshToken,
         })
-        const { access_token } = response.data.data || response.data
+        const resData = response.data?.data || response.data
+        const access_token = resData?.access_token || response.data?.access_token
+        if (!access_token) {
+          throw new Error('Missing access token in refresh response')
+        }
         tokenStorage.setTokens(access_token, refreshToken)
         onRefreshed(access_token)
         originalRequest.headers.Authorization = `Bearer ${access_token}`
         return apiClient(originalRequest)
-      } catch {
+      } catch (refreshErr) {
         tokenStorage.clearTokens()
         window.location.href = '/login?expired=1'
-        return Promise.reject(error)
+        return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false
       }

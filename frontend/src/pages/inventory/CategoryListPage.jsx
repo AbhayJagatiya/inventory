@@ -6,7 +6,6 @@ import DataTable from '../../components/tables/DataTable'
 import Modal from '../../components/common/Modal'
 import Button from '../../components/common/Button'
 import { getCategories, createCategory, updateCategory } from '../../api/inventory.api'
-import { MOCK_CATEGORIES } from '../../services/mockData'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
@@ -27,16 +26,12 @@ export default function CategoryListPage() {
   const { data: categoriesData, isLoading, refetch } = useQuery({
     queryKey: ['categories-list'],
     queryFn: async () => {
-      try {
-        const res = await getCategories()
-        return res?.data || res
-      } catch {
-        return MOCK_CATEGORIES
-      }
+      const res = await getCategories()
+      return res?.data || res || []
     },
   })
 
-  const categories = categoriesData || MOCK_CATEGORIES
+  const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || [])
 
   const handleOpenAdd = () => {
     setEditingCategory(null)
@@ -76,9 +71,8 @@ export default function CategoryListPage() {
       }
       setIsModalOpen(false)
       refetch()
-    } catch {
-      toast.success(editingCategory ? 'Category updated (Demo)' : 'Category registered (Demo)')
-      setIsModalOpen(false)
+    } catch (err) {
+      toast.error(err?.response?.data?.error?.message || 'Failed to save category')
     }
   }
 
@@ -87,36 +81,36 @@ export default function CategoryListPage() {
       key: 'code',
       header: 'Category Code',
       width: '160px',
-      render: (code) => <span className="font-mono text-xs font-bold text-blue-700">{code}</span>,
+      render: (code) => <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400">{code}</span>,
     },
     {
       key: 'name',
       header: 'Category Name',
-      render: (name) => <span className="text-sm font-semibold text-slate-800">{name}</span>,
+      render: (name) => <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{name}</span>,
     },
     {
       key: 'slow_moving_threshold_days',
       header: 'Slow Moving Threshold',
       align: 'right',
-      render: (days) => <span className="text-xs text-slate-700">{days} days</span>,
+      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} days</span>,
     },
     {
       key: 'inactivity_threshold_days',
       header: 'Inactivity Threshold',
       align: 'right',
-      render: (days) => <span className="text-xs text-slate-700">{days} days</span>,
+      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} days</span>,
     },
     {
       key: 'obsolescence_years',
       header: 'Useful Lifespan',
       align: 'right',
-      render: (years) => <span className="text-xs font-medium text-slate-800">{years} years</span>,
+      render: (years) => <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{years} years</span>,
     },
     {
       key: 'depreciation_rate_pct',
       header: 'Annual Depreciation',
       align: 'right',
-      render: (pct) => <span className="text-xs font-semibold text-emerald-700">{pct}% p.a.</span>,
+      render: (pct) => <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{pct}% p.a.</span>,
     },
     {
       key: 'actions',
@@ -128,7 +122,7 @@ export default function CategoryListPage() {
           {hasPermission(PERMISSIONS.MASTER_CATEGORIES_MANAGE) && (
             <button
               onClick={() => handleOpenEdit(row)}
-              className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+              className="p-1.5 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-emerald-950/40 rounded"
               title="Edit Thresholds"
             >
               <Edit3 size={15} />

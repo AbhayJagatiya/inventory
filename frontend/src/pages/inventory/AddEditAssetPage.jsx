@@ -11,9 +11,9 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import { createItem, updateItem, getItem, getCategories, getLocations, getUOMs } from '../../api/inventory.api'
 import { getSuppliers } from '../../api/suppliers.api'
-import { MOCK_CATEGORIES, MOCK_LOCATIONS, MOCK_UOMS, MOCK_ITEMS } from '../../services/mockData'
 import { ROUTES } from '../../constants/routes'
 import { extractApiError } from '../../api/client'
+import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const assetSchema = z.object({
@@ -40,13 +40,14 @@ const assetSchema = z.object({
 
 export default function AddEditAssetPage() {
   const { id } = useParams()
+  const { user } = useAuth()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
   const [apiError, setApiError] = useState('')
 
-  const [categories, setCategories] = useState(MOCK_CATEGORIES)
-  const [locations, setLocations] = useState(MOCK_LOCATIONS)
-  const [uoms, setUoms] = useState(MOCK_UOMS)
+  const [categories, setCategories] = useState([])
+  const [locations, setLocations] = useState([])
+  const [uoms, setUoms] = useState([])
 
   const {
     register,
@@ -103,29 +104,8 @@ export default function AddEditAssetPage() {
             is_legacy: item.is_legacy || false,
           })
         })
-        .catch(() => {
-          // Fallback to mock item for edit preview
-          const found = MOCK_ITEMS.find((i) => i.id === id)
-          if (found) {
-            reset({
-              item_type: found.item_type,
-              item_name: found.item_name,
-              category_id: found.category?.id || 'cat-001',
-              location_id: found.location?.id || 'loc-001',
-              uom: found.uom || 'NOS',
-              brand: found.brand || '',
-              model_number: found.model_number || '',
-              serial_number: found.serial_number || '',
-              quantity: found.quantity || 1,
-              unit_purchase_cost: found.unit_purchase_cost || 0,
-              purchase_date: found.purchase_date || '',
-              invoice_number: found.invoice_number || '',
-              condition: found.condition || 'GOOD',
-              current_custodian: found.current_custodian || '',
-              current_department: found.current_department || '',
-              is_legacy: found.is_legacy || false,
-            })
-          }
+        .catch((err) => {
+          setApiError(extractApiError(err) || 'Unable to retrieve item record from database.')
         })
     }
   }, [id, isEdit, reset])
@@ -133,18 +113,26 @@ export default function AddEditAssetPage() {
   const onSubmit = async (data) => {
     setApiError('')
     try {
+      const selectedUom = uoms.find((u) => u.code === data.uom)
+      const payload = {
+        ...data,
+        office_id: user?.office_id,
+        uom_id: selectedUom?.id,
+        initial_quantity: Number(data.quantity || 1),
+      }
+
       if (isEdit) {
-        await updateItem(id, data)
+        await updateItem(id, payload)
         toast.success('Asset record updated successfully')
       } else {
-        await createItem(data)
+        await createItem(payload)
         toast.success('New inventory record registered successfully')
       }
       navigate(ROUTES.INVENTORY)
     } catch (err) {
-      // If backend is offline, simulate success for client demonstration
-      toast.success(isEdit ? 'Asset updated successfully (Demo)' : 'Asset registered successfully (Demo)')
-      navigate(ROUTES.INVENTORY)
+      const msg = extractApiError(err) || 'Failed to register asset. Please check required fields.'
+      setApiError(msg)
+      toast.error(msg)
     }
   }
 

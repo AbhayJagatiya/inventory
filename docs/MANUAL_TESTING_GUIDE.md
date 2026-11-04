@@ -705,7 +705,189 @@ Verify that all subsequent roadmap modules are properly routed and display infor
 
 ---
 
-## 6. Manual Testing Execution Scorecard
+
+---
+
+## 7. Phase 5 – Dead Stock Identification, Physical Verification, Condemnation & Disposal Test Suite
+
+#### TC-P5-01: Statutory Classification Engine Trigger & Summary
+- **Page/Module:** Dead Stock Classification Engine (`/dead-stock/classification`)
+- **Backend Endpoint:** `GET /api/v1/classifications/summary`, `POST /api/v1/classifications/run`
+- **Role Required:** Store Officer or System Admin
+- **Steps:**
+  1. Navigate to **Dead Stock** → **Classification Engine** in the sidebar.
+  2. Inspect the KPI cards: Total Evaluated, Active, Non-Moving, Obsolete, Slow-Moving, Overridden.
+  3. Inspect the statutory Gujarat GFR 5-tier precedence rule card.
+  4. Click the **Run Engine Now** button in the header.
+- **Expected Result:**
+  - System executes classification rules on the backend database.
+  - Toast notification appears: *"Classification engine executed successfully."*
+  - The aggregate counters refresh with updated calculations from PostgreSQL.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-02: Dead Stock Register, Filters, and Store Officer Override
+- **Page/Module:** Dead Stock Register (`/dead-stock/register`)
+- **Backend Endpoint:** `GET /api/v1/classifications/dead-stock`, `POST /api/v1/classifications/{id}/override`, `POST /api/v1/classifications/{id}/release-override`
+- **Role Required:** Store Officer or System Admin
+- **Steps:**
+  1. Navigate to **Dead Stock** → **Dead Stock Register**.
+  2. Inspect the data table listing assets classified as `NON_MOVING` or `OBSOLETE`.
+  3. Filter by category, condition, or classification status.
+  4. Click the **Override** action button on any eligible asset row.
+  5. In the modal, select New Status (e.g. `ACTIVE` or `OBSOLETE`), enter a mandatory justification (e.g., *"Recommissioned for election duty"*), and click **Submit Override**.
+  6. Verify the badge updates to show the overridden state.
+  7. Click the **Release** button to restore the engine-calculated classification.
+- **Expected Result:**
+  - Status updates in the database and audit trail captures the officer's justification.
+  - Overridden badge toggles seamlessly with light/dark theme contrast.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-03: Barcode Lookup & Identity Resolver
+- **Page/Module:** Barcode Lookup (`/verification/barcode-lookup`)
+- **Backend Endpoint:** `POST /api/v1/barcodes/lookup`
+- **Role Required:** Any authenticated role
+- **Steps:**
+  1. Navigate to **Verification** → **Barcode Lookup**.
+  2. In the search input, type or paste an existing Asset Code or Barcode (e.g., `AST-2024-001`).
+  3. Press Enter or click **Lookup Asset**.
+- **Expected Result:**
+  - Backend resolves the asset record and displays a comprehensive asset card.
+  - Card displays Item Description, Category, Current Custodian, Physical Condition, Valuation, and Barcode SVG preview.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-04: Create Physical Verification Audit Session
+- **Page/Module:** Verification Sessions (`/verification/sessions`)
+- **Backend Endpoint:** `GET /api/v1/verifications/sessions`, `POST /api/v1/verifications/sessions`
+- **Role Required:** Store Officer or System Admin
+- **Steps:**
+  1. Navigate to **Verification** → **Audit Sessions**.
+  2. Click **New Verification Session**.
+  3. Enter Session Title (e.g., *"Annual Store Physical Audit FY 2026-27"*).
+  4. Select Audit Scope: `Full Office Inventory` or specific Location/Category.
+  5. Select Verification Officer and Custodian Witness.
+  6. Click **Initialize Audit Session**.
+- **Expected Result:**
+  - Backend creates a new verification session and takes a frozen baseline snapshot of all expected stock items in the database.
+  - New session appears in the table with status `IN_PROGRESS`.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-05: Live Barcode Scanning & Duplicate Detection
+- **Page/Module:** Verification Detail / Live Scanner (`/verification/sessions/:id`)
+- **Backend Endpoint:** `POST /api/v1/verifications/sessions/{id}/scan`, `GET /api/v1/verifications/sessions/{id}/scans`
+- **Role Required:** Store Officer or Inventory Staff
+- **Steps:**
+  1. Open the created verification session.
+  2. In the **Live Scanner** tab, focus the Barcode input field.
+  3. Scan or enter a valid item barcode (e.g., `AST-2024-001`) and submit.
+  4. Notice the scanned items counter increments.
+  5. Scan or enter the exact same barcode a second time.
+- **Expected Result:**
+  - First scan: Successfully registered and appended to the Scan Log table.
+  - Duplicate scan: System alerts *"Duplicate scan detected: Item has already been verified in this session"*, preventing double counting.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-06: Discrepancy Investigation & Officer Reconciliation
+- **Page/Module:** Verification Detail / Discrepancies (`/verification/sessions/:id`)
+- **Backend Endpoint:** `GET /api/v1/verifications/sessions/{id}/items`, `POST /api/v1/verifications/sessions/{id}/reconcile`
+- **Role Required:** Store Officer
+- **Steps:**
+  1. Switch to the **Discrepancy Investigation** tab.
+  2. Review the list of items flagged as `SURPLUS`, `DEFICIT` (missing), or `MISPLACED`.
+  3. Click **Resolve / Reconcile** on an unverified or missing item.
+  4. Select Resolution Type: `FOUND_WRONG_LOCATION`, `DAMAGED_NOTED`, or `MISSING_EXPLAINED`.
+  5. Enter reconciliation remarks and submit.
+- **Expected Result:**
+  - Discrepancy status updates to `RECONCILED` with resolution notes recorded in the database.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-07: Session Finalization & Statutory Certification
+- **Page/Module:** Verification Detail / Finalization (`/verification/sessions/:id`)
+- **Backend Endpoint:** `POST /api/v1/verifications/sessions/{id}/complete`
+- **Role Required:** Store Officer or System Admin
+- **Steps:**
+  1. Switch to the **Finalization & Report** tab.
+  2. Inspect the audit summary (Total Expected, Verified Present, Discrepancies Resolved).
+  3. Check the statutory verification certification acknowledgment box.
+  4. Click **Certify & Close Audit Session**.
+- **Expected Result:**
+  - Session status transitions to `COMPLETED`.
+  - Verification certificate reference number is generated.
+  - Scanner is closed and the session is locked from further modifications.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-08: Draft Condemnation Proposal with Multi-Item Nomination
+- **Page/Module:** Condemnation Proposals (`/dead-stock/condemnations`)
+- **Backend Endpoint:** `GET /api/v1/condemnations`, `POST /api/v1/condemnations`
+- **Role Required:** Store Officer
+- **Steps:**
+  1. Navigate to **Dead Stock** → **Condemnation Proposals**.
+  2. Click **New Condemnation Proposal**.
+  3. Enter Proposal Title (e.g., *"Disposal of Beyond-Economic-Repair IT Equipment"*).
+  4. Select Condemnation Reason: `BEYOND_ECONOMIC_REPAIR`, `UNSERVICEABLE`, or `OBSOLETE_SURPLUS`.
+  5. Select one or more candidate items from the dead stock inventory.
+  6. Enter Assessed Scrap Value and Committee Remarks.
+  7. Click **Submit Proposal**.
+- **Expected Result:**
+  - Proposal is saved in PostgreSQL with status `SUBMITTED`.
+  - It appears in the Condemnations table with a clean tracking badge.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-09: Multi-Stage Review & Official DDO Sanction Order Approval
+- **Page/Module:** Condemnation Detail (`/dead-stock/condemnations/:id`)
+- **Backend Endpoint:** `GET /api/v1/condemnations/{id}`, `POST /api/v1/condemnations/{id}/review`, `POST /api/v1/condemnations/{id}/decision`
+- **Role Required:** System Admin / DDO (District Development Officer)
+- **Steps:**
+  1. Open the submitted proposal detail view.
+  2. Review the nominated items, original acquisition costs, and total scrap valuation.
+  3. Click **Mark Under Review** (transitions status to `UNDER_REVIEW`).
+  4. Click **Executive Decision**.
+  5. Select `APPROVE`, enter the official government **Sanction Order Number** (e.g., `DP-GS/COND/2026/044`), select Sanction Date, and add DDO approval notes.
+  6. Click **Confirm Decision**.
+- **Expected Result:**
+  - System enforces separation of duties: Sanction Order Number is strictly required for approval.
+  - Proposal status transitions to `APPROVED`.
+  - Status timeline displays the sanction order reference and approval timestamp.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+
+#### TC-P5-10: Regulated Disposal Execution & Scrap Proceeds Tracking
+- **Page/Module:** Disposal Register (`/dead-stock/disposals`)
+- **Backend Endpoint:** `GET /api/v1/disposals`, `POST /api/v1/disposals`, `GET /api/v1/condemnations?status=APPROVED`
+- **Role Required:** Store Officer or System Admin
+- **Steps:**
+  1. Navigate to **Dead Stock** → **Disposal Register**.
+  2. Click **Execute Regulated Disposal**.
+  3. In the modal, select the approved condemnation proposal from the dropdown (only proposals with status `APPROVED` appear).
+  4. Select Disposal Method: `PUBLIC_AUCTION`, `SCRAP_SALE`, or `E_WASTE_RECYCLING`.
+  5. Enter Buyer / Agency Name (e.g., *"Gujarat Scrap Processors Ltd"*).
+  6. Enter Sale Proceeds Realized (₹) and Treasury Challan / Receipt Number.
+  7. Check the irreversible asset write-off acknowledgment.
+  8. Click **Finalize & Record Disposal**.
+- **Expected Result:**
+  - Disposal record is saved in PostgreSQL with certificate number.
+  - Linked inventory items transition permanently to operational status `DISPOSED`.
+  - Financial ledger and scrap register record the realized proceeds.
+- **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] BLOCKED BY BACKEND`
+
+---
+## 8. Manual Testing Execution Scorecard
 
 Use this summary scorecard upon completing your manual testing walk-through:
 
@@ -715,11 +897,11 @@ Use this summary scorecard upon completing your manual testing walk-through:
 | **2. Role-Based Dashboards** | 3 | | | | Admin, Officer, and Staff role views. |
 | **3. Inventory Master & Assets** | 10 | | | | Asset Register, Add Durable/Consumable, Edit, Details, Timeline, Excel Import, Categories, Locations. |
 | **4. Role Permissions (RBAC)** | 2 | | | | Staff restricted from admin; Disposed record freeze. |
-| **5. Barcode & Identification** | 3 | | | | SVG rendering, Manual search fallback, Phase 6 scan placeholder. |
-| **6. Dead Stock & Classification** | 2 | | | | 3D status separation, Phase 5 engine placeholder. |
-| **7. Structured Phase Placeholders** | 13 | | | | Verifies that all Phase 4–11 routes render clean specifications. |
+| **5. Barcode & Identification** | 3 | | | | SVG rendering, Manual search fallback, Optical label preview. |
+| **6. Phase 5 Dead Stock & Verification** | 10 | | | | Classification Engine, Dead Stock Register & Override, Barcode Lookup, Audit Sessions, Scanning, Reconciliation, Finalization, Condemnation Workflow & DDO Sanction, Disposal Execution. |
+| **7. Structured Phase Placeholders** | 13 | | | | Verifies that all future routes render clean specifications. |
 | **8. Profile & Account** | 1 | | | | Profile view and password validation. |
-| **TOTAL** | **40** | | | | |
+| **TOTAL** | **48** | | | | |
 
 ---
 
@@ -728,5 +910,6 @@ Use this summary scorecard upon completing your manual testing walk-through:
 - **Test Date:** ________________________
 - **Test Environment:** `Local Vite Dev (Node v_____)` &nbsp;|&nbsp; `Production Preview Build`
 - **Backend Status:** `[ ] Offline (Demo Fixtures)` &nbsp;|&nbsp; `[ ] Online (FastAPI http://localhost:8000)`
-- **Overall Assessment:** `[ ] READY FOR PHASE 4` &nbsp;|&nbsp; `[ ] DEFECTS TO REMEDIATE FIRST`
+- **Overall Assessment:** `[ ] PHASE 5 FULLY VERIFIED - READY FOR PHASE 6` &nbsp;|&nbsp; `[ ] DEFECTS TO REMEDIATE FIRST`
+`
 

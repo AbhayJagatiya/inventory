@@ -27,6 +27,7 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.get("", include_in_schema=False)
 @router.get(
     "/",
     response_model=StandardSuccessResponse[List[CategoryOut]],
@@ -50,11 +51,12 @@ def list_categories(
     )
 
     return StandardSuccessResponse(
-        data=categories,
+        data=[CategoryOut.model_validate(c) for c in categories],
         message="Categories retrieved successfully",
     )
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[CategoryOut],
@@ -75,7 +77,7 @@ def create_category(
     )
 
     return StandardSuccessResponse(
-        data=category,
+        data=CategoryOut.model_validate(category),
         message="Category created successfully",
     )
 
@@ -107,7 +109,7 @@ def get_category(
     )
 
     return StandardSuccessResponse(
-        data=category,
+        data=CategoryOut.model_validate(category),
         message="Category retrieved successfully",
     )
 
@@ -133,7 +135,7 @@ def update_category(
     )
 
     return StandardSuccessResponse(
-        data=category,
+        data=CategoryOut.model_validate(category),
         message="Category updated successfully",
     )
 

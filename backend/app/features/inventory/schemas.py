@@ -27,7 +27,7 @@ class ItemBase(BaseModel):
     location_id: UUID
     supplier_id: Optional[UUID] = None
     procurement_item_id: Optional[UUID] = None
-    uom_id: UUID
+    uom_id: Optional[UUID] = None
     brand: Optional[str] = Field(None, max_length=100)
     model_number: Optional[str] = Field(None, max_length=100)
     serial_number: Optional[str] = Field(None, max_length=100)
@@ -43,8 +43,11 @@ class ItemBase(BaseModel):
 
 
 class ItemCreate(ItemBase):
-    office_id: UUID
+    office_id: Optional[UUID] = None
+    uom: Optional[str] = None
+    quantity: Optional[float] = None
     initial_quantity: float = Field(default=1.00, ge=0)
+    supplier_name: Optional[str] = None
 
 
 class ItemUpdate(BaseModel):
@@ -60,6 +63,7 @@ class ItemOut(ItemBase):
     id: UUID
     office_id: UUID
     item_code: str
+    uom_id: UUID
     barcode_number: Optional[str] = None
     total_cost: float
     operational_status: str
@@ -83,4 +87,3 @@ class ItemHistoryEventOut(BaseModel):
     quantity: Optional[float] = None
     condition: Optional[str] = None
     location_name: Optional[str] = None
-

@@ -6,7 +6,6 @@ import {
 import Modal from '../common/Modal'
 import Button from '../common/Button'
 import { bulkImportItems } from '../../api/inventory.api'
-import { MOCK_CATEGORIES, MOCK_LOCATIONS, MOCK_ITEMS } from '../../services/mockData'
 import toast from 'react-hot-toast'
 
 // Standard CSV template columns
@@ -104,7 +103,6 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
 
         // Existing serials from system to detect duplicates
         const existingSerials = new Set(
-          MOCK_ITEMS.filter((i) => i.serial_number).map((i) => i.serial_number.toLowerCase())
         )
 
         for (let i = 1; i < lines.length; i++) {
@@ -136,8 +134,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
             const serialLower = rowObj.serial_number.toLowerCase()
             if (seenSerials.has(serialLower)) {
               rowErrors.push(`Duplicate serial number '${rowObj.serial_number}' within this file`)
-            } else if (existingSerials.has(serialLower)) {
-              rowErrors.push(`Serial '${rowObj.serial_number}' already exists in office database`)
+            
             }
             seenSerials.add(serialLower)
           }

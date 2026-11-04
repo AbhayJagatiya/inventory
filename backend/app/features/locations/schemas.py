@@ -15,7 +15,7 @@ class LocationBase(BaseModel):
 
 
 class LocationCreate(LocationBase):
-    office_id: UUID
+    office_id: Optional[UUID] = None
 
 
 class LocationUpdate(BaseModel):
@@ -36,4 +36,3 @@ class LocationOut(LocationBase):
     active_items_count: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
-

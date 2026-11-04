@@ -4,29 +4,53 @@ import { login as apiLogin, logout as apiLogout, getMe } from '../api/auth.api'
 import { tokenStorage } from '../api/client'
 import { ROUTES } from '../constants/routes'
 import { ROLES } from '../constants/enums'
-import { MOCK_USERS } from '../services/mockData'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext(null)
 
+// Helper to reliably normalize backend user / profile schema with frontend expected attributes
+const normalizeAuthUser = (rawUser, profileData = null) => {
+  if (!rawUser) return null
+  const source = profileData || rawUser
+  const rolesList = source.roles || rawUser.roles || []
+  const roleNames = Array.isArray(rolesList)
+    ? rolesList.map((r) => (typeof r === 'string' ? r : r.name))
+    : []
+
+  const primaryRole =
+    (typeof rawUser.role === 'string' ? rawUser.role : rawUser.role?.name) ||
+    roleNames[0] ||
+    'STORE_STAFF'
+
+  let permissions = []
+  if (Array.isArray(source.permissions)) {
+    permissions = source.permissions.map((p) => (typeof p === 'string' ? p : p.code))
+  } else if (Array.isArray(rawUser.permissions)) {
+    permissions = rawUser.permissions.map((p) => (typeof p === 'string' ? p : p.code))
+  } else if (Array.isArray(rolesList)) {
+    permissions = rolesList.flatMap((r) => r.permissions?.map((p) => (typeof p === 'string' ? p : p.code)) || [])
+  }
+
+  return {
+    ...rawUser,
+    role: primaryRole,
+    roles: roleNames,
+    permissions: Array.from(new Set(permissions)),
+    office: source.office || rawUser.office,
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser]         = useState(null)
+  const [user, setUser] = useState(null)
   const [isDemoMode, setIsDemoMode] = useState(false)
-  const [isLoading, setIsLoading] = useState(true) // True until initial check done
+  const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
   // ─── Bootstrap: check for existing session ────────────────────────────────
   useEffect(() => {
     const bootstrap = async () => {
-      const isDemo = localStorage.getItem('dsims_demo_mode') === 'true'
-      const demoRole = localStorage.getItem('dsims_demo_role')
-
-      if (isDemo && demoRole && MOCK_USERS[demoRole]) {
-        setUser({ ...MOCK_USERS[demoRole], isDemoMode: true })
-        setIsDemoMode(true)
-        setIsLoading(false)
-        return
-      }
+      localStorage.removeItem('dsims_demo_mode')
+      localStorage.removeItem('dsims_demo_role')
 
       const token = tokenStorage.getAccessToken()
       if (!token) {
@@ -35,8 +59,9 @@ export function AuthProvider({ children }) {
       }
       try {
         const response = await getMe()
-        const userData = response.data || response
-        setUser(userData)
+        const profile = response.data || response
+        const normalized = normalizeAuthUser(profile.user || profile, profile)
+        setUser(normalized)
         setIsDemoMode(false)
       } catch {
         tokenStorage.clearTokens()
@@ -48,45 +73,40 @@ export function AuthProvider({ children }) {
     bootstrap()
   }, [])
 
-  // ─── Login ────────────────────────────────────────────────────────────────
+    // ─── Login ────────────────────────────────────────────────────────────────
   const login = useCallback(async (credentials) => {
     try {
       const response = await apiLogin(credentials)
-      const { access_token, refresh_token, user: userData } = response.data || response
+      const dataPayload = response?.data?.data || response?.data || response
+      const access_token = dataPayload?.access_token
+      const refresh_token = dataPayload?.refresh_token
+      const userData = dataPayload?.user
+
+      if (!access_token) {
+        throw new Error('Authentication response did not contain an access token')
+      }
 
       tokenStorage.setTokens(access_token, refresh_token)
       localStorage.removeItem('dsims_demo_mode')
       localStorage.removeItem('dsims_demo_role')
-      setUser(userData)
+
+      let normalized = normalizeAuthUser(userData)
+      try {
+        const profileRes = await getMe()
+        const pData = profileRes?.data?.data || profileRes?.data || profileRes
+        if (pData) {
+          normalized = normalizeAuthUser(pData.user || userData, pData)
+        }
+      } catch {
+        // use basic normalized user
+      }
+
+      setUser(normalized)
       setIsDemoMode(false)
 
       navigate(ROUTES.DASHBOARD)
-      return userData
+      return normalized
     } catch (err) {
-      // Check if user is using demo credentials when backend is unreachable
-      const lower = credentials.username.toLowerCase().trim()
-      const roleKey = lower.includes('admin')
-        ? 'admin'
-        : lower.includes('officer')
-        ? 'officer'
-        : lower.includes('staff')
-        ? 'staff'
-        : lower
-
-      if (MOCK_USERS[roleKey] || MOCK_USERS[lower]) {
-        const matched = MOCK_USERS[roleKey] || MOCK_USERS[lower]
-        const demoUser = { ...matched, isDemoMode: true }
-        localStorage.setItem('dsims_demo_mode', 'true')
-        localStorage.setItem('dsims_demo_role', roleKey)
-        setUser(demoUser)
-        setIsDemoMode(true)
-        toast('Logged in using Offline Demo Mode (Backend Unreachable)', {
-          icon: '⚠️',
-          duration: 5000,
-        })
-        navigate(ROUTES.DASHBOARD)
-        return demoUser
-      }
       throw err
     }
   }, [navigate])
@@ -124,7 +144,14 @@ export function AuthProvider({ children }) {
   }, [hasPermission])
 
   // ─── Role check ───────────────────────────────────────────────────────────
-  const userRole = user?.role?.name || user?.role || null
+  const userRole =
+    (typeof user?.role === 'string' ? user.role : user?.role?.name) ||
+    (Array.isArray(user?.roles)
+      ? typeof user.roles[0] === 'string'
+        ? user.roles[0]
+        : user.roles[0]?.name
+      : null) ||
+    'STORE_STAFF'
 
   const isAdmin   = userRole === ROLES.SYSTEM_ADMIN
   const isOfficer = userRole === ROLES.STORE_OFFICER
@@ -158,4 +185,3 @@ export function useAuth() {
 }
 
 export default AuthContext
-

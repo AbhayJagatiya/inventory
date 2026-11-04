@@ -156,39 +156,7 @@ function LoginPage() {
               </Button>
             </form>
 
-            {/* Offline Simulation / Demo shortcuts */}
-            <div className="mt-5 p-3 rounded-xl bg-forest-500/10 dark:bg-forest-950/60 border border-forest-500/20 text-xs text-forest-800 dark:text-forest-200 space-y-2">
-              <div className="flex items-center gap-1.5 font-bold text-forest-900 dark:text-forest-100">
-                <ShieldCheck size={14} className="shrink-0 text-forest-600 dark:text-forest-400" />
-                <span>Quick Evaluation Demo Access</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-forest-700 dark:text-forest-300">
-                Click a role shortcut below to immediately populate credentials:
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-1 border-t border-forest-500/15">
-                <button
-                  type="button"
-                  onClick={() => { setValue('username', 'admin'); setValue('password', 'demo123'); }}
-                  className="px-2.5 py-1 bg-white/80 dark:bg-forest-800/80 border border-forest-500/20 rounded-lg text-[11px] font-semibold text-forest-900 dark:text-forest-100 hover:bg-forest-500/10 transition-colors"
-                >
-                  Admin: <code className="font-mono font-bold">admin</code>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setValue('username', 'officer'); setValue('password', 'demo123'); }}
-                  className="px-2.5 py-1 bg-white/80 dark:bg-forest-800/80 border border-forest-500/20 rounded-lg text-[11px] font-semibold text-forest-900 dark:text-forest-100 hover:bg-forest-500/10 transition-colors"
-                >
-                  Officer: <code className="font-mono font-bold">officer</code>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setValue('username', 'staff'); setValue('password', 'demo123'); }}
-                  className="px-2.5 py-1 bg-white/80 dark:bg-forest-800/80 border border-forest-500/20 rounded-lg text-[11px] font-semibold text-forest-900 dark:text-forest-100 hover:bg-forest-500/10 transition-colors"
-                >
-                  Staff: <code className="font-mono font-bold">staff</code>
-                </button>
-              </div>
-            </div>
+
 
             <div className="mt-4 pt-3 border-t border-forest-500/10 dark:border-forest-300/10 text-center text-[11px] text-forest-500 dark:text-forest-400">
               Authorized Panchayat Personnel Only · Veraval, Gujarat

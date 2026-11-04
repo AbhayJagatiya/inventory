@@ -14,7 +14,6 @@ import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getItems, getCategories } from '../../api/inventory.api'
-import { MOCK_ITEMS, MOCK_CATEGORIES } from '../../services/mockData'
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
@@ -59,72 +58,32 @@ export default function AssetRegisterPage() {
   const [sortOrder, setSortOrder] = useState('asc')
 
   // Categories query
-  const { data: categoriesData } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => getCategories().catch(() => ({ data: MOCK_CATEGORIES })),
-    select: (res) => res?.data || res || MOCK_CATEGORIES,
-    initialData: { data: MOCK_CATEGORIES },
-  })
-  const categories = categoriesData?.data || categoriesData || MOCK_CATEGORIES
-
-  // Items query
-  const { data: itemsData, isLoading, refetch } = useQuery({
-    queryKey: ['items', { page, limit, sortBy, sortOrder, searchQuery, selectedCategory, selectedType, selectedStatus, selectedClassification, selectedCondition }],
     queryFn: async () => {
-      try {
-        return await getItems({
-          page,
-          limit,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-          search: searchQuery || undefined,
-          category_id: selectedCategory !== 'ALL' ? selectedCategory : undefined,
-          item_type: selectedType !== 'ALL' ? selectedType : undefined,
-          operational_status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
-          classification: selectedClassification !== 'ALL' ? selectedClassification : undefined,
-          condition: selectedCondition !== 'ALL' ? selectedCondition : undefined,
-        })
-      } catch {
-        // Fallback to local mock data for client-side demo
-        let filtered = [...MOCK_ITEMS]
-        if (searchQuery) {
-          const q = searchQuery.toLowerCase()
-          filtered = filtered.filter((i) =>
-            i.item_name.toLowerCase().includes(q) ||
-            i.item_code.toLowerCase().includes(q) ||
-            (i.serial_number && i.serial_number.toLowerCase().includes(q)) ||
-            (i.barcode_number && i.barcode_number.toLowerCase().includes(q))
-          )
-        }
-        if (selectedCategory !== 'ALL') {
-          filtered = filtered.filter((i) => i.category?.id === selectedCategory)
-        }
-        if (selectedType !== 'ALL') {
-          filtered = filtered.filter((i) => i.item_type === selectedType)
-        }
-        if (selectedStatus !== 'ALL') {
-          filtered = filtered.filter((i) => i.operational_status === selectedStatus)
-        }
-        if (selectedClassification !== 'ALL') {
-          filtered = filtered.filter((i) => i.classification === selectedClassification)
-        }
-        if (selectedCondition !== 'ALL') {
-          filtered = filtered.filter((i) => i.condition === selectedCondition)
-        }
-        return {
-          data: filtered,
-          meta: {
-            total: filtered.length,
-            total_pages: Math.ceil(filtered.length / limit) || 1,
-            page,
-            limit,
-          },
-        }
-      }
+      const res = await getCategories()
+      return res?.data || res || []
     },
   })
 
-  const rawList = itemsData?.data || []
+  // Items query
+  const { data: itemsData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['items', { page, limit, sortBy, sortOrder, searchQuery, selectedCategory, selectedType, selectedStatus, selectedClassification, selectedCondition }],
+    queryFn: () => getItems({
+      page,
+      limit,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+      search: searchQuery || undefined,
+      category_id: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+      item_type: selectedType !== 'ALL' ? selectedType : undefined,
+      operational_status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+      classification: selectedClassification !== 'ALL' ? selectedClassification : undefined,
+      condition: selectedCondition !== 'ALL' ? selectedCondition : undefined,
+    }),
+  })
+
+  const rawList = itemsData?.data || (Array.isArray(itemsData) ? itemsData : [])
   const total = itemsData?.meta?.total ?? rawList.length
   const totalPages = itemsData?.meta?.total_pages ?? Math.ceil(total / limit) ?? 1
 

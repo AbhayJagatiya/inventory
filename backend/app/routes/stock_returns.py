@@ -1,11 +1,10 @@
-"""
-Stock Returns Routes
-Routes at /api/v1/returns for managing stock return transactions.
+"""Stock Returns Routes
+
 Handles creation and posting of items returned to inventory.
+Routes at /api/v1/returns
 """
 
 from uuid import UUID
-
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -19,22 +18,23 @@ from app.features.users.models import User
 router = APIRouter()
 
 
+@router.post("", include_in_schema=False)
 @router.post(
     "/",
     response_model=StandardSuccessResponse[StockTransactionOut],
     status_code=status.HTTP_201_CREATED,
     summary="Create stock return transaction",
-    description="Create a new stock return transaction. The transaction must be posted separately to update inventory.",
+    description="Create a new stock return transaction.",
 )
 def create_return(
     payload: ReturnCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("MANAGE_TRANSACTIONS")),
 ) -> StandardSuccessResponse[StockTransactionOut]:
-    """Create a stock return transaction (draft state)."""
+    """Create a stock return transaction."""
     transaction = LedgerService.create_return(db, payload, actor=current_user)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock return transaction created successfully",
     )
 
@@ -54,6 +54,6 @@ def post_return(
     """Post a stock return transaction to inventory ledger."""
     transaction = LedgerService.post_return(db, transaction_id, actor=current_user)
     return StandardSuccessResponse(
-        data=transaction,
+        data=LedgerService.build_transaction_out(transaction),
         message="Stock return posted to inventory successfully",
     )

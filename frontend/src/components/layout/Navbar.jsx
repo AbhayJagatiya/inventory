@@ -13,7 +13,9 @@ import { ROLE_LABELS } from '../../constants/enums'
 import Breadcrumbs from './Breadcrumbs'
 
 function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
-  const { user, logout, userRole, isDemoMode } = useAuth()
+  const { user, logout, userRole } = useAuth()
+  const roleStr = typeof userRole === 'string' ? userRole : (userRole?.name || 'STORE_STAFF')
+  const displayRoleLabel = ROLE_LABELS[roleStr] || roleStr || 'Panchayat Staff'
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
@@ -71,14 +73,6 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
         </div>
       </div>
 
-      {/* Center: Demo Mode Notice */}
-      {isDemoMode && (
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-          <AlertTriangle size={13} className="text-amber-500 shrink-0" />
-          <span>Evaluation Demo Environment (Local Simulation)</span>
-        </div>
-      )}
-
       {/* Right: Notifications + User Profile */}
       <div className="flex items-center gap-2">
         {/* Notification Bell */}
@@ -116,7 +110,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
                 {user?.full_name || 'Government User'}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
-                {ROLE_LABELS[userRole] || userRole || 'Panchayat Staff'}
+                {displayRoleLabel}
               </div>
             </div>
             <ChevronDown
@@ -140,7 +134,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
                 </div>
                 <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/20 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300">
                   <Shield size={10} />
-                  {ROLE_LABELS[userRole] || userRole}
+                  {displayRoleLabel}
                 </div>
               </div>
 
