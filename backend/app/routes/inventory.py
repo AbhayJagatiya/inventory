@@ -73,7 +73,7 @@ def create_item(
     current_user: User = Depends(require_permission("MANAGE_INVENTORY")),
 ):
     """Create a new inventory item in the system."""
-    item = InventoryService.create_item(db, payload, created_by=current_user)
+    item = InventoryService.create_item(db, payload, creator=current_user)
     return StandardSuccessResponse(
         data=item,
         message="Item created successfully",
@@ -190,6 +190,7 @@ def get_item_history(
         item_id,
         page=page,
         limit=limit,
+        current_user=current_user,
     )
     return StandardSuccessResponse(
         data=events,
