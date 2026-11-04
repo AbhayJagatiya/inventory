@@ -167,64 +167,64 @@ export default function LocationListPage() {
       >
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Room Number / Yard Code</label>
+            <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Room Number / Yard Code</label>
             <input
               type="text"
               value={formData.room_number}
               onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
               placeholder="e.g. Room 102 or Store Yard A"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Building Name</label>
+              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Building Name</label>
               <input
                 type="text"
                 value={formData.building_name}
                 onChange={(e) => setFormData({ ...formData, building_name: e.target.value })}
                 placeholder="e.g. Panchayat Bhavan Main"
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block font-medium text-slate-700 mb-1">Floor</label>
+              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Floor</label>
               <input
                 type="text"
                 value={formData.floor}
                 onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
                 placeholder="e.g. Ground Floor"
-                className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Location Type</label>
+            <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Location Type</label>
             <select
               value={formData.location_type}
               onChange={(e) => setFormData({ ...formData, location_type: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm bg-white"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             >
-              <option value="STORE_ROOM">STORE ROOM (Central Inventory)</option>
-              <option value="OFFICE_ROOM">OFFICE ROOM (Department Custody)</option>
-              <option value="STORE_YARD">STORE YARD (Heavy / Condemned Goods)</option>
-              <option value="IT_ROOM">IT SERVER ROOM (Secure IT Equipment)</option>
-              <option value="ARCHIVE">ARCHIVE ROOM (Record Storage)</option>
+              <option value="STORE_ROOM" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">STORE ROOM (Central Inventory)</option>
+              <option value="OFFICE_ROOM" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">OFFICE ROOM (Department Custody)</option>
+              <option value="STORE_YARD" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">STORE YARD (Heavy / Condemned Goods)</option>
+              <option value="IT_ROOM" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">IT SERVER ROOM (Secure IT Equipment)</option>
+              <option value="ARCHIVE" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">ARCHIVE ROOM (Record Storage)</option>
             </select>
           </div>
 
           <div>
-            <label className="block font-medium text-slate-700 mb-1">Description / Notes</label>
+            <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Description / Notes</label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="e.g. Primary stationery and computer parts room"
-              className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
         </form>

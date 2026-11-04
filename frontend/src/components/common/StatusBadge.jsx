@@ -15,74 +15,122 @@ import {
 
 const STATUS_STYLES = {
   // Classification
-  [CLASSIFICATIONS.ACTIVE]:      'bg-green-100 text-green-700',
-  [CLASSIFICATIONS.SLOW_MOVING]: 'bg-amber-100 text-amber-700',
-  [CLASSIFICATIONS.NON_MOVING]:  'bg-blue-100 text-blue-700',
-  [CLASSIFICATIONS.OBSOLETE]:    'bg-red-100 text-red-700',
+  [CLASSIFICATIONS.ACTIVE]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [CLASSIFICATIONS.SLOW_MOVING]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [CLASSIFICATIONS.NON_MOVING]:
+    'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30',
+  [CLASSIFICATIONS.OBSOLETE]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
 
   // Operational Status
-  [OPERATIONAL_STATUSES.AVAILABLE_IN_STORE]:    'bg-green-100 text-green-700',
-  [OPERATIONAL_STATUSES.IN_USE]:                'bg-blue-100 text-blue-700',
-  [OPERATIONAL_STATUSES.UNDER_MAINTENANCE]:     'bg-amber-100 text-amber-700',
-  [OPERATIONAL_STATUSES.DISPATCHED_TO_VENDOR]:  'bg-purple-100 text-purple-700',
-  [OPERATIONAL_STATUSES.PENDING_CONDEMNATION]:  'bg-orange-100 text-orange-700',
-  [OPERATIONAL_STATUSES.PENDING_DISPOSAL]:      'bg-red-100 text-red-700',
-  [OPERATIONAL_STATUSES.DISPOSED]:              'bg-slate-100 text-slate-500',
+  [OPERATIONAL_STATUSES.AVAILABLE_IN_STORE]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [OPERATIONAL_STATUSES.IN_USE]:
+    'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
+  [OPERATIONAL_STATUSES.UNDER_MAINTENANCE]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [OPERATIONAL_STATUSES.DISPATCHED_TO_VENDOR]:
+    'bg-purple-500/15 text-purple-800 dark:text-purple-300 border-purple-500/30',
+  [OPERATIONAL_STATUSES.PENDING_CONDEMNATION]:
+    'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30',
+  [OPERATIONAL_STATUSES.PENDING_DISPOSAL]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [OPERATIONAL_STATUSES.DISPOSED]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
 
   // Transaction Status
-  [TRANSACTION_STATUSES.DRAFT]:  'bg-slate-100 text-slate-600',
-  [TRANSACTION_STATUSES.POSTED]: 'bg-green-100 text-green-700',
+  [TRANSACTION_STATUSES.DRAFT]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
+  [TRANSACTION_STATUSES.POSTED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
 
   // Transfer Status
-  [TRANSFER_STATUSES.SUBMITTED]: 'bg-blue-100 text-blue-700',
-  [TRANSFER_STATUSES.APPROVED]:  'bg-teal-100 text-teal-700',
-  [TRANSFER_STATUSES.IN_TRANSIT]:'bg-purple-100 text-purple-700',
-  [TRANSFER_STATUSES.COMPLETED]: 'bg-green-100 text-green-700',
-  [TRANSFER_STATUSES.REJECTED]:  'bg-red-100 text-red-700',
+  [TRANSFER_STATUSES.SUBMITTED]:
+    'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
+  [TRANSFER_STATUSES.APPROVED]:
+    'bg-teal-500/15 text-teal-800 dark:text-teal-300 border-teal-500/30',
+  [TRANSFER_STATUSES.IN_TRANSIT]:
+    'bg-purple-500/15 text-purple-800 dark:text-purple-300 border-purple-500/30',
+  [TRANSFER_STATUSES.COMPLETED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [TRANSFER_STATUSES.REJECTED]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
 
   // Condemnation Status
-  [CONDEMNATION_STATUSES.SUBMITTED]:         'bg-blue-100 text-blue-700',
-  [CONDEMNATION_STATUSES.UNDER_REVIEW]:      'bg-amber-100 text-amber-700',
-  [CONDEMNATION_STATUSES.MORE_INFO_REQUIRED]:'bg-orange-100 text-orange-700',
-  [CONDEMNATION_STATUSES.APPROVED]:          'bg-green-100 text-green-700',
-  [CONDEMNATION_STATUSES.REJECTED]:          'bg-red-100 text-red-700',
+  [CONDEMNATION_STATUSES.SUBMITTED]:
+    'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
+  [CONDEMNATION_STATUSES.UNDER_REVIEW]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [CONDEMNATION_STATUSES.MORE_INFO_REQUIRED]:
+    'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30',
+  [CONDEMNATION_STATUSES.APPROVED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [CONDEMNATION_STATUSES.REJECTED]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
 
   // Item Condition
-  [ITEM_CONDITIONS.GOOD]:    'bg-green-100 text-green-700',
-  [ITEM_CONDITIONS.FAIR]:    'bg-amber-100 text-amber-700',
-  [ITEM_CONDITIONS.DAMAGED]: 'bg-red-100 text-red-700',
-  [ITEM_CONDITIONS.SCRAP]:   'bg-slate-100 text-slate-500',
+  [ITEM_CONDITIONS.GOOD]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [ITEM_CONDITIONS.FAIR]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [ITEM_CONDITIONS.DAMAGED]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [ITEM_CONDITIONS.SCRAP]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
 
   // Alert Priority
-  [ALERT_PRIORITIES.CRITICAL]: 'bg-red-100 text-red-700',
-  [ALERT_PRIORITIES.HIGH]:     'bg-orange-100 text-orange-700',
-  [ALERT_PRIORITIES.MEDIUM]:   'bg-amber-100 text-amber-700',
-  [ALERT_PRIORITIES.LOW]:      'bg-slate-100 text-slate-600',
+  [ALERT_PRIORITIES.CRITICAL]:
+    'bg-rose-500/20 text-rose-900 dark:text-rose-200 border-rose-500/40 font-semibold',
+  [ALERT_PRIORITIES.HIGH]:
+    'bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30',
+  [ALERT_PRIORITIES.MEDIUM]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [ALERT_PRIORITIES.LOW]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
 
   // Alert Status
-  [ALERT_STATUSES.ACTIVE]:       'bg-red-100 text-red-700',
-  [ALERT_STATUSES.ACKNOWLEDGED]: 'bg-blue-100 text-blue-700',
-  [ALERT_STATUSES.SNOOZED]:      'bg-slate-100 text-slate-600',
-  [ALERT_STATUSES.RESOLVED]:     'bg-green-100 text-green-700',
+  [ALERT_STATUSES.ACTIVE]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [ALERT_STATUSES.ACKNOWLEDGED]:
+    'bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30',
+  [ALERT_STATUSES.SNOOZED]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
+  [ALERT_STATUSES.RESOLVED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
 
   // Maintenance Status
-  [MAINTENANCE_STATUSES.OPEN]:        'bg-red-100 text-red-700',
-  [MAINTENANCE_STATUSES.IN_PROGRESS]: 'bg-amber-100 text-amber-700',
-  [MAINTENANCE_STATUSES.COMPLETED]:   'bg-green-100 text-green-700',
-  [MAINTENANCE_STATUSES.CANCELLED]:   'bg-slate-100 text-slate-500',
+  [MAINTENANCE_STATUSES.OPEN]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [MAINTENANCE_STATUSES.IN_PROGRESS]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [MAINTENANCE_STATUSES.COMPLETED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [MAINTENANCE_STATUSES.CANCELLED]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
 
   // User Status
-  [USER_STATUSES.ACTIVE]:                  'bg-green-100 text-green-700',
-  [USER_STATUSES.INACTIVE]:                'bg-slate-100 text-slate-500',
-  [USER_STATUSES.LOCKED]:                  'bg-red-100 text-red-700',
-  [USER_STATUSES.PASSWORD_RESET_REQUIRED]: 'bg-amber-100 text-amber-700',
+  [USER_STATUSES.ACTIVE]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+  [USER_STATUSES.INACTIVE]:
+    'bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/20',
+  [USER_STATUSES.LOCKED]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [USER_STATUSES.PASSWORD_RESET_REQUIRED]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
 
   // Supplier Return
-  [SUPPLIER_RETURN_STATUSES.INITIATED]:            'bg-blue-100 text-blue-700',
-  [SUPPLIER_RETURN_STATUSES.DISPATCHED_TO_VENDOR]: 'bg-purple-100 text-purple-700',
-  [SUPPLIER_RETURN_STATUSES.VENDOR_ASSESSING]:     'bg-amber-100 text-amber-700',
-  [SUPPLIER_RETURN_STATUSES.REJECTED_BY_VENDOR]:   'bg-red-100 text-red-700',
-  [SUPPLIER_RETURN_STATUSES.COMPLETED_CLOSED]:     'bg-green-100 text-green-700',
+  [SUPPLIER_RETURN_STATUSES.INITIATED]:
+    'bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-500/30',
+  [SUPPLIER_RETURN_STATUSES.DISPATCHED_TO_VENDOR]:
+    'bg-purple-500/15 text-purple-800 dark:text-purple-300 border-purple-500/30',
+  [SUPPLIER_RETURN_STATUSES.VENDOR_ASSESSING]:
+    'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30',
+  [SUPPLIER_RETURN_STATUSES.REJECTED_BY_VENDOR]:
+    'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/30',
+  [SUPPLIER_RETURN_STATUSES.COMPLETED_CLOSED]:
+    'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
 }
 
 const LABEL_OVERRIDES = {
@@ -111,16 +159,22 @@ function formatLabel(status) {
 }
 
 function StatusBadge({ status, label, className, size = 'sm' }) {
-  const style = STATUS_STYLES[status] || 'bg-slate-100 text-slate-600'
+  const style = STATUS_STYLES[status] || 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
   const text = label || formatLabel(status)
-  const sizeClass = size === 'xs' ? 'text-xs px-1.5 py-0.5' : 'text-xs px-2 py-0.5'
+  const sizeClass = size === 'xs' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-0.5'
 
   return (
-    <span className={cn('inline-flex items-center font-medium rounded-full', style, sizeClass, className)}>
+    <span
+      className={cn(
+        'inline-flex items-center font-medium rounded-full border shadow-2xs transition-colors',
+        style,
+        sizeClass,
+        className
+      )}
+    >
       {text}
     </span>
   )
 }
 
 export default StatusBadge
-

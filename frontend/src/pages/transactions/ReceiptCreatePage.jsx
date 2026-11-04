@@ -217,15 +217,15 @@ export default function ReceiptCreatePage() {
       />
 
       {/* Primary Procurement Header Form */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm space-y-6">
-        <h2 className="text-sm font-semibold text-slate-800 border-b border-slate-200 pb-2 flex items-center gap-2">
-          <Building size={16} className="text-blue-700" />
+      <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-6">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-emerald-500/15 pb-2 flex items-center gap-2">
+          <Building size={16} className="text-emerald-600 dark:text-emerald-400" />
           1. Procurement & Supplier Information
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Supplier / Vendor Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -233,12 +233,12 @@ export default function ReceiptCreatePage() {
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
               placeholder="e.g. Gujarat Infotech Solutions"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Supplier Contact / Phone
             </label>
             <input
@@ -246,24 +246,24 @@ export default function ReceiptCreatePage() {
               value={supplierContact}
               onChange={(e) => setSupplierContact(e.target.value)}
               placeholder="+91 98250 XXXXX"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Receipt Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               value={receiptDate}
               onChange={(e) => setReceiptDate(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               PO / GeM Contract Number
             </label>
             <input
@@ -271,12 +271,12 @@ export default function ReceiptCreatePage() {
               value={poNumber}
               onChange={(e) => setPoNumber(e.target.value)}
               placeholder="GEM-2026-PO-XXXX"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Supplier Invoice / Challan No.
             </label>
             <input
@@ -284,37 +284,37 @@ export default function ReceiptCreatePage() {
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="INV-XXXX-2026"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Invoice Date
             </label>
             <input
               type="date"
               value={invoiceDate}
               onChange={(e) => setInvoiceDate(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Receiving Office Scope
             </label>
             <input
               type="text"
               value={receivingOffice}
               onChange={(e) => setReceivingOffice(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50 text-slate-700 font-medium cursor-not-allowed"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-slate-100 dark:bg-[#081210] text-slate-700 dark:text-slate-300 font-medium cursor-not-allowed"
               readOnly
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Store Room / Receiving Bay
             </label>
             <input
@@ -322,12 +322,12 @@ export default function ReceiptCreatePage() {
               value={receivingLocation}
               onChange={(e) => setReceivingLocation(e.target.value)}
               placeholder="e.g. Room 102"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Challan Document Name / Note
             </label>
             <input
@@ -335,17 +335,17 @@ export default function ReceiptCreatePage() {
               value={attachmentName}
               onChange={(e) => setAttachmentName(e.target.value)}
               placeholder="e.g. Delivery_Challan_Scanned.pdf"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
         </div>
       </div>
 
       {/* Multiple Line Items Section */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Package size={16} className="text-blue-700" />
+      <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-3">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Package size={16} className="text-emerald-600 dark:text-emerald-400" />
             2. Inward Line Items ({items.length})
           </h2>
           <Button
@@ -362,17 +362,17 @@ export default function ReceiptCreatePage() {
           {items.map((line, idx) => (
             <div
               key={line.id}
-              className="p-4 rounded-lg border border-slate-200 bg-slate-50/60 space-y-4 hover:border-slate-300 transition-colors"
+              className="p-4 rounded-xl border border-slate-200 dark:border-emerald-500/20 bg-slate-50/70 dark:bg-[#081210] space-y-4 hover:border-slate-300 dark:hover:border-emerald-500/40 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
                   Item #{idx + 1}
                 </span>
                 {items.length > 1 && (
                   <button
                     type="button"
                     onClick={() => handleRemoveItem(idx)}
-                    className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors text-xs flex items-center gap-1"
+                    className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-xs flex items-center gap-1"
                   >
                     <Trash2 size={13} /> Remove
                   </button>
@@ -381,7 +381,7 @@ export default function ReceiptCreatePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                 <div className="md:col-span-2">
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Item Name & Specification <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -389,18 +389,18 @@ export default function ReceiptCreatePage() {
                     value={line.item_name}
                     onChange={(e) => handleItemChange(idx, 'item_name', e.target.value)}
                     placeholder="e.g. HP LaserJet 4104dw Printer / A4 Copier Paper"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Tracking Type
                   </label>
                   <select
                     value={line.item_type}
                     onChange={(e) => handleItemChange(idx, 'item_type', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value="DURABLE_ASSET">Durable Asset (Serial Tracked)</option>
                     <option value="CONSUMABLE_STOCK">Consumable Stock (Bulk Qty)</option>
@@ -408,13 +408,13 @@ export default function ReceiptCreatePage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Unit of Measure (UOM)
                   </label>
                   <select
                     value={line.uom}
                     onChange={(e) => handleItemChange(idx, 'uom', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
                     <option value="NOS">Numbers (Units)</option>
                     <option value="BOX">Box</option>
@@ -425,7 +425,7 @@ export default function ReceiptCreatePage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Qty Ordered
                   </label>
                   <input
@@ -433,12 +433,12 @@ export default function ReceiptCreatePage() {
                     min="1"
                     value={line.quantity_ordered}
                     onChange={(e) => handleItemChange(idx, 'quantity_ordered', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Qty Received <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -446,13 +446,13 @@ export default function ReceiptCreatePage() {
                     min="1"
                     value={line.quantity_received}
                     onChange={(e) => handleItemChange(idx, 'quantity_received', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Qty Accepted <span className="text-emerald-600 font-bold">*</span>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Qty Accepted <span className="text-emerald-600 dark:text-emerald-400 font-bold">*</span>
                   </label>
                   <input
                     type="number"
@@ -460,25 +460,25 @@ export default function ReceiptCreatePage() {
                     max={line.quantity_received}
                     value={line.quantity_accepted}
                     onChange={(e) => handleItemChange(idx, 'quantity_accepted', e.target.value)}
-                    className="w-full px-3 py-2 border border-emerald-300 bg-emerald-50/50 rounded-md focus:ring-2 focus:ring-emerald-600 focus:outline-none font-semibold text-emerald-900"
+                    className="w-full px-3 py-2 border border-emerald-400/40 dark:border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-500/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none font-semibold text-emerald-900 dark:text-emerald-200 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Qty Rejected / Damaged
                   </label>
                   <input
                     type="number"
                     value={line.quantity_rejected}
                     readOnly
-                    className="w-full px-3 py-2 border border-slate-200 bg-slate-100 rounded-md font-semibold text-red-600 cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-emerald-500/20 bg-slate-100 dark:bg-[#081210] rounded-xl font-semibold text-rose-600 dark:text-rose-400 font-mono cursor-not-allowed"
                   />
                 </div>
 
                 {Number(line.quantity_rejected) > 0 && (
-                  <div className="md:col-span-4 p-2.5 rounded bg-amber-50 border border-amber-200 text-xs text-amber-900">
-                    <label className="block font-bold mb-1 flex items-center gap-1.5 text-amber-800">
+                  <div className="md:col-span-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
+                    <label className="block font-bold mb-1 flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
                       <AlertTriangle size={13} />
                       Rejection Reason (Mandatory for {line.quantity_rejected} rejected units)
                     </label>
@@ -487,13 +487,13 @@ export default function ReceiptCreatePage() {
                       value={line.rejection_reason}
                       onChange={(e) => handleItemChange(idx, 'rejection_reason', e.target.value)}
                       placeholder="e.g. Broken packaging, shattered glass, water damage..."
-                      className="w-full px-3 py-1.5 border border-amber-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="w-full px-3 py-1.5 border border-amber-300 dark:border-amber-500/30 rounded-lg bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Unit Purchase Cost (₹)
                   </label>
                   <input
@@ -501,22 +501,22 @@ export default function ReceiptCreatePage() {
                     min="0"
                     value={line.unit_cost}
                     onChange={(e) => handleItemChange(idx, 'unit_cost', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Line Total Accepted Value
                   </label>
-                  <div className="px-3 py-2 border border-slate-200 bg-slate-100 rounded-md font-mono font-bold text-slate-900 text-sm">
+                  <div className="px-3 py-2 border border-slate-200 dark:border-emerald-500/20 bg-slate-100 dark:bg-[#081210] rounded-xl font-mono font-bold text-slate-900 dark:text-white text-sm">
                     {formatCurrency((Number(line.quantity_accepted) || 0) * (Number(line.unit_cost) || 0))}
                   </div>
                 </div>
 
                 {line.item_type === 'DURABLE_ASSET' && Number(line.quantity_accepted) > 0 && (
                   <div className="md:col-span-4">
-                    <label className="block font-semibold text-slate-700 mb-1">
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
                       Serial Numbers (Comma separated for {line.quantity_accepted} units)
                     </label>
                     <input
@@ -524,7 +524,7 @@ export default function ReceiptCreatePage() {
                       value={line.serial_numbers}
                       onChange={(e) => handleItemChange(idx, 'serial_numbers', e.target.value)}
                       placeholder="e.g. SN-001, SN-002"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono text-xs"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono text-xs"
                     />
                   </div>
                 )}
@@ -534,11 +534,11 @@ export default function ReceiptCreatePage() {
         </div>
 
         {/* Total Summary Footer */}
-        <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-between">
-          <div className="text-xs text-blue-900 font-medium">
+        <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between">
+          <div className="text-xs text-emerald-900 dark:text-emerald-200 font-medium">
             Total Accepted Inward Valuation ({items.length} line items):
           </div>
-          <div className="text-lg font-bold font-mono text-blue-900">
+          <div className="text-lg font-bold font-mono text-emerald-900 dark:text-emerald-300">
             {formatCurrency(totalAcceptedValue)}
           </div>
         </div>

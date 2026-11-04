@@ -2,13 +2,16 @@ import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  PlusCircle, Download, Eye, Edit3, History, QrCode,
-  Package, FileSpreadsheet, AlertCircle
+  PlusCircle, Download, Eye, Edit3, QrCode,
+  Package, FileSpreadsheet, MapPin, User, Calendar
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import DataTable from '../../components/tables/DataTable'
+import CardView from '../../components/tables/CardView'
+import ViewToggle from '../../components/common/ViewToggle'
 import FilterBar from '../../components/forms/FilterBar'
 import Button from '../../components/common/Button'
+import GlassCard from '../../components/common/GlassCard'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getItems, getCategories } from '../../api/inventory.api'
 import { MOCK_ITEMS, MOCK_CATEGORIES } from '../../services/mockData'
@@ -18,12 +21,31 @@ import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import ExcelImportModal from '../../components/inventory/ExcelImportModal'
+import { motion } from 'framer-motion'
 
 export default function AssetRegisterPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
 
-  // State
+  // View state: 'table' or 'card'
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('dsims_inventory_view') || 'table'
+    } catch {
+      return 'table'
+    }
+  })
+
+  const handleViewChange = (mode) => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem('dsims_inventory_view', mode)
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Filter & Search State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
@@ -63,7 +85,7 @@ export default function AssetRegisterPage() {
           condition: selectedCondition !== 'ALL' ? selectedCondition : undefined,
         })
       } catch {
-        // Fallback to local mock data for client-side demo when backend API isn't running
+        // Fallback to local mock data for client-side demo
         let filtered = [...MOCK_ITEMS]
         if (searchQuery) {
           const q = searchQuery.toLowerCase()
@@ -75,7 +97,7 @@ export default function AssetRegisterPage() {
           )
         }
         if (selectedCategory !== 'ALL') {
-          filtered = filtered.filter((i) => i.category.id === selectedCategory)
+          filtered = filtered.filter((i) => i.category?.id === selectedCategory)
         }
         if (selectedType !== 'ALL') {
           filtered = filtered.filter((i) => i.item_type === selectedType)
@@ -116,11 +138,11 @@ export default function AssetRegisterPage() {
         width: '180px',
         render: (code, row) => (
           <div>
-            <span className="font-mono text-xs font-semibold text-blue-700 block">
+            <span className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 block">
               {code}
             </span>
             {row.barcode_number && (
-              <span className="font-mono text-[10px] text-slate-400">
+              <span className="font-mono text-[10px] text-forest-500/80 dark:text-forest-400/80">
                 {row.barcode_number}
               </span>
             )}
@@ -133,8 +155,8 @@ export default function AssetRegisterPage() {
         sortable: true,
         render: (name, row) => (
           <div>
-            <p className="font-medium text-slate-900 text-sm">{name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="font-semibold text-forest-950 dark:text-forest-50 text-sm">{name}</p>
+            <p className="text-xs text-forest-600 dark:text-forest-400">
               {row.brand} {row.model_number && `· ${row.model_number}`} {row.serial_number && `· S/N: ${row.serial_number}`}
             </p>
           </div>
@@ -144,7 +166,7 @@ export default function AssetRegisterPage() {
         key: 'category',
         header: 'Category',
         render: (_, row) => (
-          <span className="text-xs text-slate-700 font-medium">
+          <span className="text-xs text-forest-700 dark:text-forest-300 font-medium">
             {row.category?.name || '—'}
           </span>
         ),
@@ -154,7 +176,7 @@ export default function AssetRegisterPage() {
         header: 'Type',
         width: '130px',
         render: (type) => (
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-forest-600 dark:text-forest-400">
             {type === 'DURABLE_ASSET' ? 'Durable Asset' : 'Consumable Stock'}
           </span>
         ),
@@ -165,8 +187,8 @@ export default function AssetRegisterPage() {
         align: 'right',
         width: '110px',
         render: (qty, row) => (
-          <span className="text-sm font-semibold text-slate-800">
-            {formatNumber(qty)} <span className="text-xs font-normal text-slate-500">{row.uom}</span>
+          <span className="text-sm font-bold text-forest-900 dark:text-forest-100">
+            {formatNumber(qty)} <span className="text-xs font-normal text-forest-500">{row.uom}</span>
           </span>
         ),
       },
@@ -175,8 +197,8 @@ export default function AssetRegisterPage() {
         header: 'Location / Custodian',
         render: (_, row) => (
           <div>
-            <p className="text-xs text-slate-800 font-medium">{row.location?.room_number || 'Main Store'}</p>
-            <p className="text-[11px] text-slate-500 truncate max-w-[150px]">
+            <p className="text-xs text-forest-900 dark:text-forest-100 font-semibold">{row.location?.room_number || 'Main Store'}</p>
+            <p className="text-[11px] text-forest-500 dark:text-forest-400 truncate max-w-[150px]">
               {row.current_custodian || row.location?.description || 'In Store'}
             </p>
           </div>
@@ -206,10 +228,10 @@ export default function AssetRegisterPage() {
         align: 'right',
         width: '130px',
         render: (_, row) => (
-          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
             <Link
               to={`/inventory/${row.id}`}
-              className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+              className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
               title="View 360° Profile"
             >
               <Eye size={15} />
@@ -217,7 +239,7 @@ export default function AssetRegisterPage() {
             {hasPermission(PERMISSIONS.INVENTORY_EDIT) && row.operational_status !== 'DISPOSED' && (
               <Link
                 to={`/inventory/${row.id}/edit`}
-                className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded transition-colors"
+                className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
                 title="Edit Item"
               >
                 <Edit3 size={15} />
@@ -225,7 +247,7 @@ export default function AssetRegisterPage() {
             )}
             <Link
               to={ROUTES.BARCODE_LOOKUP}
-              className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded transition-colors"
+              className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
               title="Print Barcode / QR Label"
             >
               <QrCode size={15} />
@@ -234,7 +256,7 @@ export default function AssetRegisterPage() {
         ),
       },
     ],
-    [hasPermission],
+    [hasPermission]
   )
 
   const handleExportCSV = () => {
@@ -251,13 +273,100 @@ export default function AssetRegisterPage() {
     setPage(1)
   }
 
+  // Render individual card for Card View
+  const renderItemCard = (item) => (
+    <GlassCard
+      key={item.id}
+      level={1}
+      interactive={true}
+      cursorLight={true}
+      onClick={() => navigate(`/inventory/${item.id}`)}
+      className="p-5 flex flex-col justify-between"
+    >
+      <div>
+        {/* Top Badges */}
+        <div className="flex items-start justify-between gap-2 mb-2.5">
+          <span className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 bg-forest-500/10 px-2 py-0.5 rounded-lg border border-forest-500/20">
+            {item.item_code}
+          </span>
+          <StatusBadge status={item.operational_status} size="xs" />
+        </div>
+
+        {/* Title & Brand */}
+        <h3 className="font-bold text-forest-950 dark:text-forest-50 text-sm leading-snug line-clamp-2 mb-1">
+          {item.item_name}
+        </h3>
+        <p className="text-xs text-forest-600 dark:text-forest-400 mb-3 line-clamp-1">
+          {item.brand} {item.model_number && `· ${item.model_number}`}
+        </p>
+
+        {/* Key Attributes */}
+        <div className="space-y-1.5 py-2.5 border-y border-forest-500/10 dark:border-forest-300/10 text-xs text-forest-700 dark:text-forest-300">
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500">Stock / Quantity:</span>
+            <span className="font-bold font-mono text-forest-900 dark:text-forest-100">
+              {formatNumber(item.quantity)} {item.uom}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500">Category:</span>
+            <span className="font-medium truncate max-w-[140px]">{item.category?.name || '—'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500 flex items-center gap-1">
+              <MapPin size={12} /> Location:
+            </span>
+            <span className="font-medium truncate max-w-[140px]">
+              {item.location?.room_number || 'Main Store'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Badges & Actions */}
+      <div className="mt-4 pt-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <StatusBadge status={item.condition} size="xs" />
+          <StatusBadge status={item.classification} size="xs" />
+        </div>
+
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <Link
+            to={`/inventory/${item.id}`}
+            className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
+            title="View Details"
+          >
+            <Eye size={15} />
+          </Link>
+          {hasPermission(PERMISSIONS.INVENTORY_EDIT) && item.operational_status !== 'DISPOSED' && (
+            <Link
+              to={`/inventory/${item.id}/edit`}
+              className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
+              title="Edit Item"
+            >
+              <Edit3 size={15} />
+            </Link>
+          )}
+        </div>
+      </div>
+    </GlassCard>
+  )
+
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-6 max-w-7xl mx-auto"
+    >
       <PageHeader
         title="Asset & Item Register"
-        subtitle="Comprehensive register of government-owned durable assets and consumable store supplies"
+        subtitle="Comprehensive government inventory register covering durable capital assets and consumable store items"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* View Mode Switcher */}
+            <ViewToggle view={viewMode} onViewChange={handleViewChange} />
+
             <Button
               variant="secondary"
               size="sm"
@@ -357,28 +466,45 @@ export default function AssetRegisterPage() {
         ]}
       />
 
-      {/* Main Data Table */}
-      <DataTable
-        columns={columns}
-        data={rawList}
-        isLoading={isLoading}
-        page={page}
-        limit={limit}
-        total={total}
-        totalPages={totalPages}
-        onPageChange={setPage}
-        onLimitChange={(newLimit) => {
-          setLimit(newLimit)
-          setPage(1)
-        }}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSort={(key, order) => {
-          setSortBy(key)
-          setSortOrder(order)
-        }}
-        onRowClick={(row) => navigate(`/inventory/${row.id}`)}
-      />
+      {/* Main Content Presentation: Table or Card View */}
+      {viewMode === 'table' ? (
+        <DataTable
+          columns={columns}
+          data={rawList}
+          isLoading={isLoading}
+          page={page}
+          limit={limit}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit)
+            setPage(1)
+          }}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={(key, order) => {
+            setSortBy(key)
+            setSortOrder(order)
+          }}
+          onRowClick={(row) => navigate(`/inventory/${row.id}`)}
+        />
+      ) : (
+        <CardView
+          data={rawList}
+          renderCard={renderItemCard}
+          isLoading={isLoading}
+          page={page}
+          limit={limit}
+          total={total}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onLimitChange={(newLimit) => {
+            setLimit(newLimit)
+            setPage(1)
+          }}
+        />
+      )}
 
       {/* Excel / CSV Import Modal */}
       <ExcelImportModal
@@ -386,6 +512,6 @@ export default function AssetRegisterPage() {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={() => refetch()}
       />
-    </div>
+    </motion.div>
   )
 }

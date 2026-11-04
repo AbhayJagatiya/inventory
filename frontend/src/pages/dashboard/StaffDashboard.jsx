@@ -3,50 +3,79 @@ import { Link } from 'react-router-dom'
 import {
   Package, ArrowDownLeft, ArrowUpRight, RotateCcw,
   QrCode, PlusCircle, AlertCircle, RefreshCw, ArrowRight,
-  TrendingDown
+  TrendingDown, CheckCircle
 } from 'lucide-react'
 import { getDashboardStaff } from '../../api/dashboard.api'
 import PageHeader from '../../components/layout/PageHeader'
 import ErrorState from '../../components/feedback/ErrorState'
 import Button from '../../components/common/Button'
+import GlassCard from '../../components/common/GlassCard'
 import StatusBadge from '../../components/common/StatusBadge'
 import { formatNumber, formatDateTime } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
+import { motion } from 'framer-motion'
 
-function KPICard({ title, value, subtitle, icon: Icon, color = 'blue', loading }) {
+function KPICard({ title, value, subtitle, icon: Icon, color = 'teal', loading }) {
   const colorMap = {
-    blue:   { bg: 'bg-blue-50',   text: 'text-blue-700',   icon: 'text-blue-500' },
-    green:  { bg: 'bg-green-50',  text: 'text-green-700',  icon: 'text-green-500' },
-    amber:  { bg: 'bg-amber-50',  text: 'text-amber-700',  icon: 'text-amber-500' },
-    purple: { bg: 'bg-purple-50', text: 'text-purple-700', icon: 'text-purple-500' },
+    teal: {
+      bg: 'bg-forest-500/10 text-forest-600 dark:text-forest-300 border-forest-500/20',
+      val: 'text-forest-900 dark:text-forest-100',
+    },
+    green: {
+      bg: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20',
+      val: 'text-emerald-800 dark:text-emerald-200',
+    },
+    amber: {
+      bg: 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20',
+      val: 'text-amber-800 dark:text-amber-200',
+    },
+    purple: {
+      bg: 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border-purple-500/20',
+      val: 'text-purple-800 dark:text-purple-200',
+    },
   }
-  const c = colorMap[color] || colorMap.blue
+  const c = colorMap[color] || colorMap.teal
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-5 animate-pulse">
+      <GlassCard level={1} className="p-5 animate-pulse">
         <div className="flex items-center justify-between mb-3">
-          <div className="h-4 bg-slate-200 rounded w-24" />
-          <div className="h-9 w-9 bg-slate-200 rounded-lg" />
+          <div className="h-4 bg-forest-500/10 dark:bg-forest-300/10 rounded w-24" />
+          <div className="h-9 w-9 bg-forest-500/10 dark:bg-forest-300/10 rounded-xl" />
         </div>
-        <div className="h-8 bg-slate-200 rounded w-16 mb-2" />
-        <div className="h-3 bg-slate-100 rounded w-20" />
-      </div>
+        <div className="h-8 bg-forest-500/10 dark:bg-forest-300/10 rounded w-20 mb-2" />
+        <div className="h-3 bg-forest-500/10 dark:bg-forest-300/10 rounded w-28" />
+      </GlassCard>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <div className={`w-9 h-9 rounded-lg ${c.bg} flex items-center justify-center`}>
-          <Icon size={18} className={c.icon} />
+    <GlassCard
+      level={1}
+      tilt={true}
+      cursorLight={true}
+      className="p-5 flex flex-col justify-between"
+    >
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-forest-600/90 dark:text-forest-300/80">
+            {title}
+          </p>
+          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${c.bg}`}>
+            <Icon size={19} />
+          </div>
+        </div>
+        <div className={`text-2xl sm:text-3xl font-extrabold ${c.val} tracking-tight mb-1`}>
+          {value}
         </div>
       </div>
-      <div className={`text-2xl font-bold ${c.text} mb-1`}>{value}</div>
-      {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
-    </div>
+      {subtitle && (
+        <p className="text-xs text-forest-600 dark:text-forest-400 font-medium mt-2">
+          {subtitle}
+        </p>
+      )}
+    </GlassCard>
   )
 }
 
@@ -66,12 +95,17 @@ function StaffDashboard() {
   })
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6 max-w-7xl mx-auto"
+    >
       <PageHeader
-        title="Store Staff Operations Dashboard"
-        subtitle={`Daily Store Operations · Assigned Office: ${officeName || 'Veraval Office'}`}
+        title="Store Staff Daily Operations"
+        subtitle={`Receipts, Issues & Inventory Handover · Office: ${officeName || 'Veraval Office'}`}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Link to={ROUTES.BARCODE_LOOKUP}>
               <Button variant="secondary" size="sm" leftIcon={<QrCode size={14} />}>
                 Scan Barcode
@@ -96,10 +130,10 @@ function StaffDashboard() {
         />
       )}
 
-      {/* Operational Counts */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Operational KPI Counts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Available Stock Items"
+          title="Available Store Stock"
           value={formatNumber(dashData?.available_stock_count ?? '—')}
           subtitle="Ready for issue"
           icon={Package}
@@ -107,25 +141,25 @@ function StaffDashboard() {
           loading={isLoading}
         />
         <KPICard
-          title="My Inward Receipts"
+          title="Today's Receipts"
           value={formatNumber(dashData?.my_receipts_today ?? '—')}
-          subtitle="Entered today"
+          subtitle="Inward entries logged"
           icon={ArrowDownLeft}
-          color="blue"
+          color="teal"
           loading={isLoading}
         />
         <KPICard
-          title="My Stock Issues"
+          title="Today's Issues"
           value={formatNumber(dashData?.my_issues_today ?? '—')}
-          subtitle="Dispatched today"
+          subtitle="Dispatched to departments"
           icon={ArrowUpRight}
           color="purple"
           loading={isLoading}
         />
         <KPICard
-          title="Pending Action"
+          title="Pending Queue"
           value={formatNumber(dashData?.tasks_pending_action ?? '—')}
-          subtitle="Drafts & pending returns"
+          subtitle="Draft vouchers & returns"
           icon={AlertCircle}
           color="amber"
           loading={isLoading}
@@ -133,95 +167,101 @@ function StaffDashboard() {
       </div>
 
       {/* Quick Action Matrix */}
-      <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800 mb-4">Quick Store Actions</h2>
+      <GlassCard level={1} className="p-6">
+        <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-4">
+          Quick Operational Handover Actions
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Link
             to={ROUTES.INVENTORY_NEW}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-forest-500/15 text-forest-700 dark:text-forest-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <PlusCircle size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">New Item</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">Asset or Stock</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">New Item</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Asset or Stock</span>
           </Link>
 
           <Link
             to={ROUTES.RECEIPTS_NEW}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <ArrowDownLeft size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">Inward Receipt</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">Receive delivery</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Inward Receipt</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Receive delivery</span>
           </Link>
 
           <Link
             to={ROUTES.ISSUES_NEW}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <ArrowUpRight size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">Stock Issue</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">To branch/staff</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Stock Issue</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">To branch / officer</span>
           </Link>
 
           <Link
             to={ROUTES.RETURNS_NEW}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <RotateCcw size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">Stock Return</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">Linked return</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Stock Return</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Department return</span>
           </Link>
 
           <Link
             to={ROUTES.BARCODE_LOOKUP}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-slate-500/15 text-slate-700 dark:text-slate-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <QrCode size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">Scan Code</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">Instant identity</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Scan Code</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Lookup serial</span>
           </Link>
 
           <Link
             to={ROUTES.CONDEMNATIONS}
-            className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 text-center transition-all group"
+            className="flex flex-col items-center justify-center p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10 hover:border-forest-500/30 hover:bg-forest-500/10 text-center transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-700 dark:text-rose-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <TrendingDown size={20} />
             </div>
-            <span className="text-xs font-semibold text-slate-800">Condemnation</span>
-            <span className="text-[10px] text-slate-500 mt-0.5">Submit proposal</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Condemnation</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Submit proposal</span>
           </Link>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Operational Tasks & Recent Transactions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Transactions Created by User */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">My Recent Transactions</h2>
-            <Link to={ROUTES.RECEIPTS} className="text-xs font-medium text-blue-700 hover:underline">
+        <GlassCard level={1} className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
+              My Recent Handled Transactions
+            </h2>
+            <Link to={ROUTES.TRANSACTIONS} className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline">
               View All
             </Link>
           </div>
 
           {dashData?.my_recent_transactions?.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-forest-500/5 dark:divide-forest-300/5">
               {dashData.my_recent_transactions.map((tx, idx) => (
-                <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50/60 transition-colors">
+                <div key={idx} className="p-4 flex items-center justify-between hover:bg-forest-500/5 transition-colors">
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{tx.voucher_number || tx.reference_number}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50 font-mono">
+                      {tx.voucher_number || tx.reference_number}
+                    </p>
+                    <p className="text-xs text-forest-600 dark:text-forest-400 mt-0.5">
                       {tx.type} · {tx.item_count || 1} items · {formatDateTime(tx.created_at)}
                     </p>
                   </div>
@@ -230,46 +270,54 @@ function StaffDashboard() {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-slate-400">
+            <div className="py-10 text-center text-xs text-forest-400">
               No recent transactions recorded today
             </div>
           )}
-        </div>
+        </GlassCard>
 
         {/* Operational Tasks Requiring Attention */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">Action Queue</h2>
-            <span className="text-xs text-slate-500 font-medium">Pending operational tasks</span>
+        <GlassCard level={1} className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
+              Operational Task Queue
+            </h2>
+            <span className="text-xs text-forest-500 font-medium">Pending store tasks</span>
           </div>
 
           <div className="p-4 space-y-3">
             {dashData?.action_queue?.length > 0 ? (
               dashData.action_queue.map((task, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                  <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 p-3.5 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10"
+                >
+                  <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-800">{task.title}</p>
-                    <p className="text-[11px] text-slate-600 mt-0.5">{task.description}</p>
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">{task.title}</p>
+                    <p className="text-[11px] text-forest-600 dark:text-forest-400 mt-0.5">{task.description}</p>
                   </div>
                   {task.action_url && (
-                    <Link to={task.action_url} className="text-xs font-medium text-blue-700 hover:underline shrink-0">
+                    <Link
+                      to={task.action_url}
+                      className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline shrink-0"
+                    >
                       Open
                     </Link>
                   )}
                 </div>
               ))
             ) : (
-              <div className="py-8 text-center text-sm text-slate-400">
-                All daily store tasks up to date!
+              <div className="py-10 text-center text-xs text-forest-400 flex flex-col items-center justify-center">
+                <CheckCircle size={24} className="text-emerald-500 mb-1" />
+                <span>All daily store tasks are completed!</span>
               </div>
             )}
           </div>
-        </div>
+        </GlassCard>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 export default StaffDashboard
-

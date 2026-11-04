@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   PlusCircle, Search, Eye, RotateCcw, Building2,
-  FileText, ShieldCheck, AlertTriangle
+  FileText, ShieldCheck
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import DataTable from '../../components/tables/DataTable'
+import CardView from '../../components/tables/CardView'
+import ViewToggle from '../../components/common/ViewToggle'
+import GlassCard from '../../components/common/GlassCard'
 import Button from '../../components/common/Button'
 import StatusBadge from '../../components/common/StatusBadge'
 import { getReturns } from '../../api/transactions.api'
@@ -14,10 +17,26 @@ import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { motion } from 'framer-motion'
 
 export default function ReturnListPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('dsims_returns_view') || 'table'
+    } catch {
+      return 'table'
+    }
+  })
+
+  const handleViewChange = (mode) => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem('dsims_returns_view', mode)
+    } catch {}
+  }
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -38,12 +57,12 @@ export default function ReturnListPage() {
       render: (val, row) => (
         <div>
           <span
-            className="font-mono text-sm font-semibold text-blue-700 hover:underline cursor-pointer"
+            className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 hover:underline cursor-pointer"
             onClick={() => navigate(ROUTES.RETURN_DETAIL(row.id))}
           >
             {val}
           </span>
-          <span className="block text-xs text-slate-400 mt-0.5">
+          <span className="block text-[11px] text-forest-500 mt-0.5">
             Ref: {row.original_issue_voucher || 'Linked Issue'}
           </span>
         </div>
@@ -52,47 +71,41 @@ export default function ReturnListPage() {
     {
       key: 'return_date',
       header: 'Return Date',
-      render: (val) => <span className="text-sm text-slate-700 font-medium">{formatDate(val)}</span>,
+      render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
     },
     {
       key: 'returning_department',
       header: 'Returning Department',
       render: (val) => (
-        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-900 bg-slate-100 px-2.5 py-1 rounded">
-          <Building2 size={13} className="text-slate-500" />
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-900 dark:text-forest-100 bg-forest-500/10 px-2.5 py-1 rounded-lg border border-forest-500/15">
+          <Building2 size={13} className="text-forest-600 dark:text-forest-400" />
           {val}
         </span>
       ),
     },
     {
+      key: 'returned_by_person',
+      header: 'Returned By',
+      render: (val) => <span className="text-xs text-forest-900 dark:text-forest-100 font-semibold">{val}</span>,
+    },
+    {
       key: 'items',
       header: 'Returned Items',
-      render: (items) => {
-        const hasDamaged = items?.some((i) => i.condition === 'DAMAGED' || i.condition === 'SCRAP')
-        return (
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-mono text-xs font-medium">
-              <RotateCcw size={12} />
-              {items?.length || 0} line {items?.length === 1 ? 'item' : 'items'}
-            </span>
-            {hasDamaged && (
-              <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold flex items-center gap-1">
-                <AlertTriangle size={11} /> Damaged
-              </span>
-            )}
-          </div>
-        )
-      },
+      render: (items) => (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
+          <FileText size={12} className="text-forest-500" />
+          {items?.length || 0} line items
+        </span>
+      ),
     },
     {
       key: 'return_reason',
-      header: 'Reason for Return',
-      render: (val) => <span className="text-xs text-slate-600 max-w-xs truncate block">{val || 'Surplus re-deposit'}</span>,
-    },
-    {
-      key: 'receiving_officer',
-      header: 'Received By Store',
-      render: (val) => <span className="text-xs text-slate-800 font-medium">{val || 'Store Officer'}</span>,
+      header: 'Return Reason',
+      render: (val) => (
+        <span className="text-xs text-forest-600 dark:text-forest-300 max-w-xs truncate block" title={val}>
+          {val}
+        </span>
+      ),
     },
     {
       key: 'status',
@@ -101,16 +114,14 @@ export default function ReturnListPage() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: 'Action',
       align: 'right',
       render: (_, row) => (
-        <div className="flex items-center justify-end gap-2">
-          <Link to={ROUTES.RETURN_DETAIL(row.id)}>
-            <Button variant="ghost" size="sm" leftIcon={<Eye size={14} />}>
-              View
-            </Button>
-          </Link>
-        </div>
+        <Link to={ROUTES.RETURN_DETAIL(row.id)}>
+          <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
+            View
+          </Button>
+        </Link>
       ),
     },
   ]
@@ -118,17 +129,76 @@ export default function ReturnListPage() {
   const paginatedData = returns.slice((page - 1) * pageSize, page * pageSize)
   const totalPages = Math.ceil(returns.length / pageSize) || 1
 
+  const renderReturnCard = (row) => (
+    <GlassCard
+      key={row.id}
+      level={1}
+      interactive={true}
+      cursorLight={true}
+      onClick={() => navigate(ROUTES.RETURN_DETAIL(row.id))}
+      className="p-5 flex flex-col justify-between"
+    >
+      <div>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <span className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 bg-forest-500/10 px-2 py-0.5 rounded-lg border border-forest-500/20">
+            {row.voucher_number}
+          </span>
+          <StatusBadge status={row.status} size="xs" />
+        </div>
+
+        <h3 className="text-xs font-bold text-forest-950 dark:text-forest-50 mb-1">
+          {row.returning_department}
+        </h3>
+        <p className="text-[11px] text-forest-600 dark:text-forest-400 mb-2">
+          Returned by: <span className="font-bold">{row.returned_by_person}</span>
+        </p>
+
+        <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500">Return Date:</span>
+            <span>{formatDate(row.return_date)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500">Linked Issue:</span>
+            <span className="font-mono">{row.original_issue_voucher || 'Direct'}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-forest-500">Items:</span>
+            <span className="font-bold font-mono">{row.items?.length || 0} line items</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 pt-2 flex items-center justify-between text-xs">
+        <span className="text-[11px] text-forest-500 truncate max-w-[170px]">
+          {row.return_reason}
+        </span>
+        <Link to={ROUTES.RETURN_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
+            View
+          </Button>
+        </Link>
+      </div>
+    </GlassCard>
+  )
+
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="space-y-6 max-w-7xl mx-auto"
+    >
       <PageHeader
-        title="Stock Returns Register"
-        subtitle="Manage inventory returns from departments, inspect physical condition, and re-admit stock"
+        title="Stock Return & Redeposit Register"
+        subtitle="Manage returned equipment, unutilized consumables, and store restocking inspection"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <ViewToggle view={viewMode} onViewChange={handleViewChange} />
             {canCreate && (
               <Link to={ROUTES.RETURNS_NEW}>
-                <Button variant="primary" size="md" leftIcon={<PlusCircle size={16} />}>
-                  + Record Stock Return
+                <Button variant="primary" size="sm" leftIcon={<RotateCcw size={15} />}>
+                  + New Stock Return
                 </Button>
               </Link>
             )}
@@ -136,31 +206,49 @@ export default function ReturnListPage() {
         }
       />
 
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Filter and Search Bar */}
+      <GlassCard level={1} className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:w-80">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search by voucher, department, issue ref..."
+            placeholder="Search return voucher, officer, issue ref..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
               setPage(1)
             }}
-            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            className="w-full pl-10 pr-3 py-2 bg-forest-50/50 dark:bg-forest-950/50 border border-forest-500/15 dark:border-forest-400/20 rounded-xl text-xs sm:text-sm text-forest-950 dark:text-forest-50 placeholder:text-forest-400 focus:outline-none focus:ring-2 focus:ring-forest-500"
           />
         </div>
-      </div>
+      </GlassCard>
 
-      <DataTable
-        columns={columns}
-        data={paginatedData}
-        loading={isLoading}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-        emptyMessage="No stock return records found."
-      />
-    </div>
+      {/* Return Table / Card View */}
+      {viewMode === 'table' ? (
+        <DataTable
+          columns={columns}
+          data={paginatedData}
+          isLoading={isLoading}
+          page={page}
+          limit={pageSize}
+          total={returns.length}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          emptyTitle="No stock returns found"
+          emptyDescription="There are no stock return vouchers matching your search query."
+        />
+      ) : (
+        <CardView
+          data={paginatedData}
+          renderCard={renderReturnCard}
+          isLoading={isLoading}
+          page={page}
+          limit={pageSize}
+          total={returns.length}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+      )}
+    </motion.div>
   )
 }
