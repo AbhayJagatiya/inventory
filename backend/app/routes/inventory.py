@@ -6,7 +6,7 @@ Prefix: /api/v1/items (registered in main.py)
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -35,7 +35,10 @@ def list_items(
     location_id: Optional[UUID] = Query(None, description="Filter by location ID"),
     condition: Optional[str] = Query(None, description="Filter by condition"),
     operational_status: Optional[str] = Query(None, description="Filter by operational status"),
+    classification: Optional[str] = Query(None, description="Filter by classification"),
     search: Optional[str] = Query(None, description="Full-text search term"),
+    sort_by: str = Query("created_at", description="Field to sort by"),
+    sort_order: str = Query("desc", description="Sort direction (asc or desc)"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=200, description="Results per page"),
     db: Session = Depends(get_db),
@@ -50,10 +53,13 @@ def list_items(
         location_id=location_id,
         condition=condition,
         operational_status=operational_status,
+        classification=classification,
         search=search,
         current_user=current_user,
         page=page,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
     return StandardSuccessResponse(
         data=[ItemOut.model_validate(i) for i in items],
@@ -113,24 +119,32 @@ def export_items(
 @router.post(
     "/bulk-import",
     response_model=StandardSuccessResponse,
-    summary="Bulk import items from CSV",
+    summary="Bulk import items from CSV or Excel",
     status_code=status.HTTP_200_OK,
 )
 def bulk_import_items(
-    file: UploadFile = File(..., description="CSV file containing items to import"),
+    file: UploadFile = File(..., description="CSV or Excel (.xlsx) file containing items to import"),
+    dry_run: bool = Form(False, description="Validate only without inserting into database"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("MANAGE_INVENTORY")),
 ):
-    """Bulk import inventory items from a CSV upload."""
+    """Bulk import inventory items from a CSV or Excel upload."""
+    file_content = file.file.read()
     result = InventoryService.bulk_import_items(
         db,
-        file,
+        file_content=file_content,
+        file_name=file.filename or "import.csv",
         office_id=current_user.office_id,
-        created_by=current_user,
+        creator=current_user,
+        dry_run=dry_run,
     )
     return StandardSuccessResponse(
-        data={"imported": result["imported"], "errors": result.get("errors", [])},
-        message=f"Bulk import complete. {result['imported']} item(s) imported.",
+        data=result,
+        message=(
+            f"Validation complete. {result['valid_rows_count']} valid row(s) found."
+            if dry_run
+            else f"Bulk import complete. {result['rows_imported']} item(s) imported."
+        ),
     )
 
 
@@ -170,6 +184,41 @@ def update_item(
     return StandardSuccessResponse(
         data=ItemOut.model_validate(item),
         message="Item updated successfully",
+    )
+
+
+@router.delete(
+    "/{item_id}",
+    response_model=StandardSuccessResponse[dict],
+    summary="Delete (soft-delete) an inventory item",
+    status_code=status.HTTP_200_OK,
+)
+def delete_item(
+    item_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("MANAGE_INVENTORY")),
+):
+    """Soft-delete an inventory item by marking it as DISPOSED."""
+    item = InventoryService.get_item(db, item_id, current_user=current_user)
+    if item.operational_status == "DISPOSED":
+        from app.core.exceptions import ValidationError
+        raise ValidationError("Item is already disposed.")
+    item.operational_status = "DISPOSED"
+    item.updated_by = current_user.id
+    from app.features.audit.services import AuditService
+    AuditService.log_action(
+        db=db,
+        action="DELETE",
+        module="INVENTORY",
+        record_id=str(item.id),
+        actor=current_user,
+        office_id=item.office_id,
+        new_values={"operational_status": "DISPOSED"},
+    )
+    db.commit()
+    return StandardSuccessResponse(
+        data={"item_id": str(item_id), "operational_status": "DISPOSED"},
+        message="Item marked as disposed and archived successfully.",
     )
 
 

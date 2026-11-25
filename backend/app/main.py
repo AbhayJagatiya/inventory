@@ -198,6 +198,7 @@ def openapi_redirect():
     return RedirectResponse(url="/api/v1/openapi.json")
 
 
+@app.get("/api/v1/health", tags=["Health"])
 @app.get("/health", tags=["Health"])
 def health_check():
     """Lightweight health probe for load balancers and monitoring."""

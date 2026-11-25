@@ -21,6 +21,11 @@ export const updateItem = async (id, data) => {
   return response.data
 }
 
+export const deleteItem = async (id) => {
+  const response = await apiClient.delete(`/items/${id}`)
+  return response.data
+}
+
 export const getItemHistory = async (id, params = {}) => {
   const response = await apiClient.get(`/items/${id}/history`, { params })
   return response.data

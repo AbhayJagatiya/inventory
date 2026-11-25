@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  PlusCircle, Download, Eye, Edit3, QrCode,
-  Package, FileSpreadsheet, MapPin, User, Calendar
+  PlusCircle, Download, Trash2, Edit3, QrCode,
+  FileSpreadsheet, MapPin, AlertTriangle
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import DataTable from '../../components/tables/DataTable'
@@ -13,8 +13,8 @@ import FilterBar from '../../components/forms/FilterBar'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import StatusBadge from '../../components/common/StatusBadge'
-import { getItems, getCategories } from '../../api/inventory.api'
-import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters'
+import { getItems, getCategories, deleteItem } from '../../api/inventory.api'
+import { formatNumber } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
@@ -56,6 +56,8 @@ export default function AssetRegisterPage() {
   const [limit, setLimit] = useState(20)
   const [sortBy, setSortBy] = useState('item_code')
   const [sortOrder, setSortOrder] = useState('asc')
+  const [confirmDelete, setConfirmDelete] = useState(null) // { id, name }
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Categories query
   const { data: categories = [] } = useQuery({
@@ -86,6 +88,28 @@ export default function AssetRegisterPage() {
   const rawList = itemsData?.data || (Array.isArray(itemsData) ? itemsData : [])
   const total = itemsData?.meta?.total ?? rawList.length
   const totalPages = itemsData?.meta?.total_pages ?? Math.ceil(total / limit) ?? 1
+
+  // Delete handler
+  const handleDeleteClick = (e, row) => {
+    e.stopPropagation()
+    setConfirmDelete({ id: row.id, name: row.item_name, code: row.item_code })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) return
+    setIsDeleting(true)
+    try {
+      await deleteItem(confirmDelete.id)
+      toast.success(`"${confirmDelete.name}" has been archived (marked as Disposed).`)
+      setConfirmDelete(null)
+      refetch()
+    } catch (err) {
+      const msg = err?.response?.data?.error?.message || 'Failed to delete item. Please try again.'
+      toast.error(msg)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // Table Columns Definition
   const columns = useMemo(
@@ -185,16 +209,9 @@ export default function AssetRegisterPage() {
         key: 'actions',
         header: 'Actions',
         align: 'right',
-        width: '130px',
+        width: '100px',
         render: (_, row) => (
           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-            <Link
-              to={`/inventory/${row.id}`}
-              className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
-              title="View 360° Profile"
-            >
-              <Eye size={15} />
-            </Link>
             {hasPermission(PERMISSIONS.INVENTORY_EDIT) && row.operational_status !== 'DISPOSED' && (
               <Link
                 to={`/inventory/${row.id}/edit`}
@@ -211,6 +228,15 @@ export default function AssetRegisterPage() {
             >
               <QrCode size={15} />
             </Link>
+            {hasPermission(PERMISSIONS.INVENTORY_EDIT) && row.operational_status !== 'DISPOSED' && (
+              <button
+                onClick={(e) => handleDeleteClick(e, row)}
+                className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+                title="Delete / Dispose Item"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
           </div>
         ),
       },
@@ -290,13 +316,6 @@ export default function AssetRegisterPage() {
         </div>
 
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <Link
-            to={`/inventory/${item.id}`}
-            className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
-            title="View Details"
-          >
-            <Eye size={15} />
-          </Link>
           {hasPermission(PERMISSIONS.INVENTORY_EDIT) && item.operational_status !== 'DISPOSED' && (
             <Link
               to={`/inventory/${item.id}/edit`}
@@ -305,6 +324,15 @@ export default function AssetRegisterPage() {
             >
               <Edit3 size={15} />
             </Link>
+          )}
+          {hasPermission(PERMISSIONS.INVENTORY_EDIT) && item.operational_status !== 'DISPOSED' && (
+            <button
+              onClick={(e) => handleDeleteClick(e, item)}
+              className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+              title="Delete / Dispose Item"
+            >
+              <Trash2 size={15} />
+            </button>
           )}
         </div>
       </div>
@@ -319,7 +347,7 @@ export default function AssetRegisterPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Asset & Item Register"
+        title="Asset &amp; Item Register"
         subtitle="Comprehensive government inventory register covering durable capital assets and consumable store items"
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -463,6 +491,52 @@ export default function AssetRegisterPage() {
             setPage(1)
           }}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 shadow-xl p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/40 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Dispose / Archive Item</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">This action marks the item as permanently disposed</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
+              Are you sure you want to <strong className="text-rose-600 dark:text-rose-400">dispose</strong>:
+            </p>
+            <div className="p-3 bg-slate-50 dark:bg-[#081210] rounded-xl border border-slate-200 dark:border-emerald-500/20 mb-5">
+              <p className="font-bold text-slate-900 dark:text-white text-sm">{confirmDelete.name}</p>
+              <p className="text-xs font-mono text-emerald-700 dark:text-emerald-400">{confirmDelete.code}</p>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+              The item will be archived with status <strong>DISPOSED</strong>. All history is preserved. This action is recorded in the audit log.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmDelete(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleConfirmDelete}
+                isLoading={isDeleting}
+                leftIcon={<Trash2 size={14} />}
+              >
+                Confirm Dispose
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Excel / CSV Import Modal */}

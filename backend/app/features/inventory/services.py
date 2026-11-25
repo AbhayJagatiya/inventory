@@ -268,17 +268,34 @@ class InventoryService:
 
         update_dict = payload.model_dump(exclude_unset=True)
 
-        if "location_id" in update_dict and update_dict["location_id"]:
-            new_loc = db.query(Location).filter(Location.id == update_dict["location_id"]).first()
+        # Remove convenience / non-model fields before applying to ORM
+        convenience_fields = {"uom", "supplier_name", "quantity", "initial_quantity", "office_id"}
+        clean_dict = {k: v for k, v in update_dict.items() if k not in convenience_fields}
+
+        # Auto-resolve uom_id from uom code if only uom string was provided
+        if "uom_id" not in clean_dict and "uom" in update_dict and update_dict["uom"]:
+            uom_rec = db.query(UnitOfMeasure).filter(UnitOfMeasure.code == update_dict["uom"].upper()).first()
+            if uom_rec:
+                clean_dict["uom_id"] = uom_rec.id
+
+        if "location_id" in clean_dict and clean_dict["location_id"]:
+            new_loc = db.query(Location).filter(Location.id == clean_dict["location_id"]).first()
             if not new_loc:
                 raise NotFoundError("New location was not found", code="LOCATION_NOT_FOUND")
             if new_loc.office_id != item.office_id:
                 raise ValidationError("Cannot move item to a location belonging to another office")
-            item.location_id = update_dict["location_id"]
+            item.location_id = clean_dict["location_id"]
 
-        for field, value in update_dict.items():
-            if field != "location_id":
+        for field, value in clean_dict.items():
+            if field != "location_id" and hasattr(item, field):
                 setattr(item, field, value)
+
+        # Recalculate total_cost if unit_purchase_cost was updated
+        if "unit_purchase_cost" in clean_dict:
+            qty = sum(float(b.available_qty or 0) for b in item.stock_balances) if item.stock_balances else 1.0
+            if qty <= 0 and item.item_type == "DURABLE_ASSET":
+                qty = 1.0
+            item.total_cost = round(float(item.unit_purchase_cost) * float(qty), 2)
 
         item.updated_by = updater.id
         db.flush()
@@ -364,49 +381,103 @@ class InventoryService:
         creator: User,
         dry_run: bool = True,
     ) -> Dict[str, Any]:
-        """Validates and imports inventory records from CSV format."""
-        if not file_name.endswith(".csv"):
-            raise ValidationError("Bulk import currently supports UTF-8 CSV files.")
+        """Validates and imports inventory records from CSV or Excel (.xlsx) format."""
+        lower_name = (file_name or "").lower()
+        raw_rows: List[Dict[str, Any]] = []
 
-        decoded = file_content.decode("utf-8-sig", errors="replace")
-        reader = csv.DictReader(io.StringIO(decoded))
+        if lower_name.endswith(".csv"):
+            decoded = file_content.decode("utf-8-sig", errors="replace")
+            reader = csv.DictReader(io.StringIO(decoded))
+            for r in reader:
+                raw_rows.append({(k or "").strip().lower(): (v.strip() if isinstance(v, str) else v) for k, v in r.items() if k is not None})
+        elif lower_name.endswith(".xlsx") or lower_name.endswith(".xls"):
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
+                ws = wb.active
+                rows_iter = ws.iter_rows(values_only=True)
+                header_row = next(rows_iter, None)
+                if not header_row:
+                    raise ValidationError("Excel file is empty or missing header row.")
+                headers = [str(h).strip().lower() if h is not None else "" for h in header_row]
+                for row_vals in rows_iter:
+                    if not any(v is not None and str(v).strip() != "" for v in row_vals):
+                        continue
+                    row_dict = {}
+                    for idx, h in enumerate(headers):
+                        if not h:
+                            continue
+                        val = row_vals[idx] if idx < len(row_vals) else None
+                        if hasattr(val, "strftime"):
+                            val = val.strftime("%Y-%m-%d")
+                        elif val is not None:
+                            val = str(val).strip()
+                        row_dict[h] = val or ""
+                    raw_rows.append(row_dict)
+            except ValidationError:
+                raise
+            except Exception as exc:
+                raise ValidationError(f"Failed to read Excel file: {exc}")
+        else:
+            raise ValidationError("Bulk import supports UTF-8 CSV (.csv) and Excel (.xlsx) files.")
 
         rows_imported = 0
         errors = []
         preview = []
 
-        categories = {c.code: c.id for c in db.query(Category).all()}
-        locations = {l.room_number: l.id for l in db.query(Location).filter(Location.office_id == office_id).all()}
-        uoms = {u.code: u.id for u in db.query(UnitOfMeasure).all()}
+        categories = {c.code.upper(): c.id for c in db.query(Category).all()}
+        locations = {l.room_number.strip().lower(): l.id for l in db.query(Location).filter(Location.office_id == office_id).all()}
+        uoms = {u.code.upper(): u.id for u in db.query(UnitOfMeasure).all()}
 
-        for idx, row in enumerate(reader, start=2):
-            item_name = row.get("item_name")
-            cat_code = row.get("category_code")
-            room_no = row.get("room_number")
-            uom_code = row.get("uom_code") or "NOS"
-            cost_str = row.get("unit_purchase_cost") or "0.00"
-            qty_str = row.get("quantity") or "1.00"
-            item_type = row.get("item_type") or "DURABLE_ASSET"
+        for idx, row in enumerate(raw_rows, start=2):
+            item_name = (row.get("item_name") or "").strip()
+            cat_code = (row.get("category_code") or "").strip().upper()
+            room_no = (row.get("room_number") or row.get("room_code") or "").strip()
+            uom_code = (row.get("uom_code") or row.get("uom") or "NOS").strip().upper()
+            cost_str = str(row.get("unit_purchase_cost") or "0.00").strip()
+            qty_str = str(row.get("quantity") or "1.00").strip()
+            item_type = (row.get("item_type") or "DURABLE_ASSET").strip().upper()
+            purchase_date_str = (row.get("purchase_date") or "").strip() or None
+            condition_str = (row.get("condition") or "GOOD").strip().upper()
 
-            if not item_name or not cat_code or not room_no:
-                errors.append(f"Row {idx}: missing required fields (item_name, category_code, room_number)")
-                continue
-
-            if cat_code not in categories:
-                errors.append(f"Row {idx}: category_code '{cat_code}' not found")
-                continue
-            if room_no not in locations:
-                errors.append(f"Row {idx}: room_number '{room_no}' not found in office")
-                continue
+            row_errors = []
+            if not item_name:
+                row_errors.append("Missing item_name")
+            if item_type not in ("DURABLE_ASSET", "CONSUMABLE_STOCK"):
+                row_errors.append(f"Invalid item_type '{item_type}'")
+            if not cat_code:
+                row_errors.append("Missing category_code")
+            elif cat_code not in categories:
+                row_errors.append(f"category_code '{cat_code}' not found")
+            if not room_no:
+                row_errors.append("Missing room_number/room_code")
+            elif room_no.lower() not in locations:
+                row_errors.append(f"room '{room_no}' not found in office")
             if uom_code not in uoms:
-                errors.append(f"Row {idx}: uom_code '{uom_code}' not found")
-                continue
+                row_errors.append(f"uom '{uom_code}' not found")
 
             try:
-                cost = float(cost_str)
-                qty = float(qty_str)
+                cost = float(cost_str) if cost_str else 0.0
+                qty = float(qty_str) if qty_str else 1.0
+                if qty <= 0:
+                    row_errors.append("quantity must be positive")
+                if cost < 0:
+                    row_errors.append("unit_purchase_cost cannot be negative")
             except ValueError:
-                errors.append(f"Row {idx}: invalid numerical cost or quantity")
+                row_errors.append("invalid numerical cost or quantity")
+                cost, qty = 0.0, 1.0
+
+            if row_errors:
+                msg = "; ".join(row_errors)
+                errors.append(f"Row {idx}: {msg}")
+                preview.append({
+                    "row": idx,
+                    "item_name": item_name,
+                    "item_type": item_type,
+                    "serial_number": row.get("serial_number") or "",
+                    "is_valid": False,
+                    "errors": row_errors,
+                })
                 continue
 
             preview_item = {
@@ -415,36 +486,46 @@ class InventoryService:
                 "category_code": cat_code,
                 "room_number": room_no,
                 "item_type": item_type,
+                "serial_number": row.get("serial_number") or "",
                 "quantity": qty,
                 "unit_cost": cost,
+                "is_valid": True,
+                "errors": [],
             }
             preview.append(preview_item)
 
             if not dry_run:
-                payload = ItemCreate(
-                    office_id=office_id,
-                    category_id=categories[cat_code],
-                    location_id=locations[room_no],
-                    uom_id=uoms[uom_code],
-                    item_name=item_name,
-                    item_type=item_type,
-                    brand=row.get("brand"),
-                    model_number=row.get("model_number"),
-                    serial_number=row.get("serial_number"),
-                    unit_purchase_cost=cost,
-                    condition=row.get("condition") or "GOOD",
-                    initial_quantity=qty,
-                )
-                InventoryService.create_item(db, payload, creator)
-                rows_imported += 1
+                try:
+                    payload = ItemCreate(
+                        office_id=office_id,
+                        category_id=categories[cat_code],
+                        location_id=locations[room_no.lower()],
+                        uom_id=uoms[uom_code],
+                        item_name=item_name,
+                        item_type=item_type,
+                        brand=row.get("brand") or None,
+                        model_number=row.get("model_number") or None,
+                        serial_number=row.get("serial_number") or None,
+                        purchase_date=purchase_date_str,
+                        invoice_number=row.get("invoice_number") or None,
+                        current_custodian=row.get("current_custodian") or None,
+                        unit_purchase_cost=cost,
+                        condition=condition_str if condition_str in ("NEW", "GOOD", "FAIR", "POOR", "DAMAGED", "SCRAP") else "GOOD",
+                        initial_quantity=qty,
+                    )
+                    InventoryService.create_item(db, payload, creator)
+                    rows_imported += 1
+                except Exception as exc:
+                    errors.append(f"Row {idx}: {exc}")
 
         return {
             "dry_run": dry_run,
-            "total_rows_processed": len(preview) + len(errors),
-            "valid_rows_count": len(preview),
+            "total_rows_processed": len(preview),
+            "valid_rows_count": sum(1 for p in preview if p["is_valid"]),
             "rows_imported": rows_imported,
+            "imported": rows_imported,
             "errors": errors,
-            "preview": preview[:10],
+            "preview": preview,
         }
 
     @staticmethod

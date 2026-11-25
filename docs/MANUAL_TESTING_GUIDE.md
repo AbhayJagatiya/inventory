@@ -70,14 +70,13 @@ The frontend includes 3 pre-configured demo personas representing the operationa
 
 | Role Identifier | Role Title | Email / Username | Default Password | Primary Scope & Access Rights |
 |:---|:---|:---|:---|:---|
-| **`SYSTEM_ADMIN`** | System Administrator | `admin@girsomnath.gov.in` | `Admin@12345` | Global governance, office setup, user accounts, audit trails, master taxonomy. |
+| **`SYSTEM_ADMIN`** | System Administrator | `admin@gujarat.gov.in` | `Admin@12345` | Global governance, office setup, user accounts, audit trails, master taxonomy. |
+username - `admin.girsomnath@gujarat.gov.in` - password - `AbhiNandan%111 ` 
 | **`STORE_OFFICER`** | Store Officer (Supervisory) | `officer@girsomnath.gov.in` | `Officer@12345` | Inventory supervision, discrepancy review, disposal sanctioning, classification reviews. |
-| **`STORE_STAFF`** | Store Staff (Operator) | `staff@girsomnath.gov.in` | `Staff@12345` | Item data entry, stock inward receipts, issues, returns, Excel bulk uploads, physical scans. |
+| **`STORE_STAFF`** | Store Staff (Operator) | `staff@gujarat.gov.in` | `Staff@12345` | Item data entry, stock inward receipts, issues, returns, Excel bulk uploads, physical scans. |
 
 > **Pro Tip:** On the Login page (`/login`), click any of the 3 quick-fill pill buttons (`System Admin`, `Store Officer`, `Store Staff`) to auto-populate credentials instantly.
-
 ---
-
 ## 3. Implementation Status Classification Key
 
 Every test case in this manual is labeled with one of the following implementation statuses:
@@ -148,7 +147,6 @@ Every test case in this manual is labeled with one of the following implementati
 - **Failure Indicators:** No indication of demo mode; user misled into thinking mock credentials constitute production security.
 - **Result:** `[ ] PASS` &nbsp; `[ ] FAIL` &nbsp; `[ ] NOT IMPLEMENTED` &nbsp; `[ ] BLOCKED BY BACKEND`
 - **Observations:** __________________________________________________
-
 ---
 
 #### TC-AUTH-04: Forgot Password Policy Page

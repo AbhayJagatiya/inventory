@@ -91,6 +91,11 @@ PERMISSION_ALIASES = {
     "EDIT_INVENTORY": ["inventory:edit", "MANAGE_INVENTORY"],
     "EXPORT_INVENTORY": ["inventory:export", "EXPORT_INVENTORY"],
     "VIEW_TRANSACTIONS": ["stock:receipt_view", "stock:issue_view", "stock:return_view", "stock:transfer_view", "VIEW_TRANSACTIONS"],
+    # Category & master data: system admin and any role with master:categories_view
+    "master:categories_view": ["master:categories_view", "master:categories_manage", "MANAGE_INVENTORY", "inventory:create", "inventory:view"],
+    "master:categories_manage": ["master:categories_manage", "MANAGE_INVENTORY"],
+    "master:locations_view": ["master:locations_view", "master:locations_manage", "MANAGE_INVENTORY", "inventory:create", "inventory:view"],
+    "master:locations_manage": ["master:locations_manage", "MANAGE_INVENTORY"],
 }
 
 

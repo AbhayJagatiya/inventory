@@ -75,38 +75,61 @@ export default function AddEditAssetPage() {
   const watchIsLegacy = watch('is_legacy')
   const calculatedTotalCost = watchQty * watchUnitCost
 
-  // Load Master Data
+  // Load Master Data (and Item if editing) in sequence so select options exist before reset
   useEffect(() => {
-    getCategories().then((res) => setCategories(res.data || res)).catch(() => {})
-    getLocations().then((res) => setLocations(res.data || res)).catch(() => {})
-    getUOMs().then((res) => setUoms(res.data || res)).catch(() => {})
+    let cancelled = false
+    const loadData = async () => {
+      try {
+        const [catRes, locRes, uomRes] = await Promise.all([
+          getCategories().catch(() => []),
+          getLocations().catch(() => []),
+          getUOMs().catch(() => []),
+        ])
+        if (cancelled) return
+        const catList = catRes?.data || catRes || []
+        const locList = locRes?.data || locRes || []
+        const uomList = uomRes?.data || uomRes || []
+        setCategories(catList)
+        setLocations(locList)
+        setUoms(uomList)
 
-    if (isEdit) {
-      getItem(id)
-        .then((res) => {
-          const item = res.data || res
+        if (isEdit) {
+          const itemRes = await getItem(id)
+          if (cancelled) return
+          const item = itemRes?.data || itemRes
+          const resolvedUom =
+            item.uom ||
+            uomList.find((u) => u.id === item.uom_id)?.code ||
+            'NOS'
           reset({
             item_type: item.item_type || 'DURABLE_ASSET',
             item_name: item.item_name || '',
             category_id: item.category?.id || item.category_id || '',
             location_id: item.location?.id || item.location_id || '',
-            uom: item.uom || 'NOS',
+            uom: resolvedUom,
             brand: item.brand || '',
             model_number: item.model_number || '',
             serial_number: item.serial_number || '',
             quantity: item.quantity || 1,
-            unit_purchase_cost: item.unit_purchase_cost || 0,
-            purchase_date: item.purchase_date || '',
+            unit_purchase_cost: item.unit_purchase_cost ?? 0,
+            purchase_date: item.purchase_date || new Date().toISOString().split('T')[0],
             invoice_number: item.invoice_number || '',
             condition: item.condition || 'GOOD',
             current_custodian: item.current_custodian || '',
             current_department: item.current_department || '',
-            is_legacy: item.is_legacy || false,
+            min_stock_level: item.min_stock_level ?? 0,
+            is_legacy: Boolean(item.is_legacy),
           })
-        })
-        .catch((err) => {
+        }
+      } catch (err) {
+        if (!cancelled) {
           setApiError(extractApiError(err) || 'Unable to retrieve item record from database.')
-        })
+        }
+      }
+    }
+    loadData()
+    return () => {
+      cancelled = true
     }
   }, [id, isEdit, reset])
 
@@ -116,6 +139,14 @@ export default function AddEditAssetPage() {
       const selectedUom = uoms.find((u) => u.code === data.uom)
       const payload = {
         ...data,
+        brand: data.brand || null,
+        model_number: data.model_number || null,
+        serial_number: data.serial_number || null,
+        invoice_number: data.invoice_number || null,
+        current_custodian: data.current_custodian || null,
+        current_department: data.current_department || null,
+        supplier_name: data.supplier_name || null,
+        purchase_date: data.purchase_date || null,
         office_id: user?.office_id,
         uom_id: selectedUom?.id,
         initial_quantity: Number(data.quantity || 1),
@@ -130,7 +161,7 @@ export default function AddEditAssetPage() {
       }
       navigate(ROUTES.INVENTORY)
     } catch (err) {
-      const msg = extractApiError(err) || 'Failed to register asset. Please check required fields.'
+      const msg = extractApiError(err) || 'Failed to save asset. Please check required fields.'
       setApiError(msg)
       toast.error(msg)
     }

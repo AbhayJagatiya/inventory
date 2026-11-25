@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StockBalanceOut(BaseModel):
@@ -52,11 +52,54 @@ class ItemCreate(ItemBase):
 
 class ItemUpdate(BaseModel):
     item_name: Optional[str] = Field(None, min_length=2, max_length=200)
+    item_type: Optional[str] = Field(None, pattern="^(DURABLE_ASSET|CONSUMABLE_STOCK)$")
+    category_id: Optional[UUID] = None
+    location_id: Optional[UUID] = None
+    uom_id: Optional[UUID] = None
+    brand: Optional[str] = Field(None, max_length=100)
+    model_number: Optional[str] = Field(None, max_length=100)
+    serial_number: Optional[str] = Field(None, max_length=100)
+    purchase_date: Optional[date] = None
+    invoice_number: Optional[str] = Field(None, max_length=100)
+    unit_purchase_cost: Optional[float] = Field(None, ge=0)
     condition: Optional[str] = Field(None, pattern="^(NEW|GOOD|FAIR|POOR|DAMAGED|SCRAP)$")
     current_custodian: Optional[str] = Field(None, max_length=150)
     current_department: Optional[str] = Field(None, max_length=100)
-    location_id: Optional[UUID] = None
     min_stock_level: Optional[float] = Field(None, ge=0)
+    is_legacy: Optional[bool] = None
+    legacy_reference_number: Optional[str] = Field(None, max_length=100)
+    # Accept convenience fields that the frontend sends; they are resolved in the service layer
+    uom: Optional[str] = None
+    supplier_name: Optional[str] = None
+    quantity: Optional[float] = None
+    initial_quantity: Optional[float] = None
+    office_id: Optional[UUID] = None
+
+
+class CategorySummaryOut(BaseModel):
+    id: UUID
+    code: str
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LocationSummaryOut(BaseModel):
+    id: UUID
+    room_number: str
+    building_name: Optional[str] = None
+    floor: Optional[str] = None
+    description: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UOMSummaryOut(BaseModel):
+    id: UUID
+    code: str
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ItemOut(ItemBase):
@@ -68,14 +111,38 @@ class ItemOut(ItemBase):
     total_cost: float
     operational_status: str
     current_classification: str
+    classification: Optional[str] = None
     last_movement_date: Optional[date] = None
     created_by: UUID
     updated_by: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     stock_balances: List[StockBalanceOut] = []
+    category: Optional[CategorySummaryOut] = None
+    location: Optional[LocationSummaryOut] = None
+    uom: Optional[str] = None
+    quantity: float = 0.0
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("uom", mode="before")
+    @classmethod
+    def extract_uom_code(cls, v):
+        if v is None or isinstance(v, str):
+            return v
+        return getattr(v, "code", str(v))
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        instance = super().model_validate(obj, **kwargs)
+        if not instance.classification:
+            instance.classification = instance.current_classification
+        # Compute total available quantity from stock_balances
+        if hasattr(obj, "stock_balances") and obj.stock_balances:
+            instance.quantity = float(sum(float(b.available_qty or 0) for b in obj.stock_balances))
+        elif instance.item_type == "DURABLE_ASSET":
+            instance.quantity = 1.0
+        return instance
 
 
 class ItemHistoryEventOut(BaseModel):
