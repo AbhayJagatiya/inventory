@@ -300,6 +300,11 @@ class InventoryService:
         item.updated_by = updater.id
         db.flush()
 
+        json_safe_new_values = {
+            k: (v.isoformat() if hasattr(v, "isoformat") else str(v) if isinstance(v, UUID) else v)
+            for k, v in clean_dict.items()
+        }
+
         AuditService.log_action(
             db=db,
             action="UPDATE",
@@ -308,7 +313,7 @@ class InventoryService:
             actor=updater,
             office_id=item.office_id,
             old_values=old_values,
-            new_values=update_dict,
+            new_values=json_safe_new_values,
         )
         db.commit()
         db.refresh(item)
