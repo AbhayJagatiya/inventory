@@ -110,6 +110,28 @@ class LedgerService:
         loc = txn.destination_location or txn.source_location
         rec_loc_name = f"{loc.room_number} ({loc.building_name})" if loc else "Central Store"
 
+        # Parse transfer metadata stored in remarks
+        transfer_type_val = "PERMANENT"
+        carrier_val = None
+        waybill_val = None
+        vehicle_val = None
+        if txn.remarks:
+            if "Type: TEMPORARY" in txn.remarks:
+                transfer_type_val = "TEMPORARY"
+            elif "Type: INTER_OFFICE" in txn.remarks:
+                transfer_type_val = "INTER_OFFICE"
+            for marker, target in [("Carrier: ", "carrier"), ("Waybill: ", "waybill"), ("Vehicle: ", "vehicle")]:
+                if marker in txn.remarks:
+                    seg = txn.remarks.split(marker, 1)[1].split("|")[0].strip()
+                    if target == "carrier":
+                        carrier_val = seg
+                    elif target == "waybill":
+                        waybill_val = seg
+                    elif target == "vehicle":
+                        vehicle_val = seg
+
+        actor_name = txn.actor.full_name if getattr(txn, "actor", None) else "Store Officer"
+
         return StockTransactionOut(
             id=txn.id,
             transaction_number=txn.transaction_number,
@@ -153,6 +175,17 @@ class LedgerService:
             receiving_location=rec_loc_name,
             from_office_name=from_name,
             to_office_name=to_name,
+            source_office=from_name,
+            destination_office=to_name or "Destination Office",
+            destination_location=rec_loc_name,
+            reason=txn.remarks,
+            transfer_type=transfer_type_val,
+            initiated_by_name=actor_name,
+            carrier_name=carrier_val,
+            waybill_number=waybill_val,
+            vehicle_number=vehicle_val,
+            completed_at=txn.posted_at,
+            received_by=txn.recipient_name,
             items=lines_out,
             total_accepted_value=total_accepted_val,
         )
@@ -932,25 +965,77 @@ class LedgerService:
         return txn
 
     @staticmethod
-    def approve_transfer(db: Session, transaction_id: UUID, remarks: Optional[str] = None, approver: Optional[User] = None) -> StockTransaction:
+    def approve_transfer(
+        db: Session,
+        transaction_id: UUID,
+        action: str = "APPROVE",
+        reason: Optional[str] = None,
+        remarks: Optional[str] = None,
+        approver: Optional[User] = None,
+    ) -> StockTransaction:
         txn = LedgerService.get_transaction(db, transaction_id)
         if txn.status != "SUBMITTED":
-            raise ValidationError(f"Cannot approve transfer in status '{txn.status}'")
+            raise ValidationError(f"Cannot review transfer in status '{txn.status}'")
 
-        txn.status = "APPROVED"
-        if remarks:
-            txn.remarks = f"{txn.remarks or ''} | Approval: {remarks}"
+        is_reject = (action or "APPROVE").upper() == "REJECT"
+        txn.status = "REJECTED" if is_reject else "APPROVED"
+        note = reason or remarks
+        if note:
+            label = "Rejected" if is_reject else "Approval"
+            txn.remarks = f"{txn.remarks or ''} | {label}: {note}".strip(" |")
 
         db.flush()
         if approver:
             AuditService.log_action(
                 db=db,
-                action="APPROVE",
+                action="REJECT" if is_reject else "APPROVE",
                 module="STOCK_TRANSFERS",
                 record_id=str(txn.id),
                 actor=approver,
                 office_id=txn.office_id,
-                new_values={"status": "APPROVED"},
+                new_values={"status": txn.status},
+            )
+        db.commit()
+        db.refresh(txn)
+        return txn
+
+    @staticmethod
+    def dispatch_transfer(
+        db: Session,
+        transaction_id: UUID,
+        carrier_name: Optional[str] = None,
+        waybill_number: Optional[str] = None,
+        vehicle_number: Optional[str] = None,
+        expected_delivery_date: Optional[str] = None,
+        dispatcher: Optional[User] = None,
+    ) -> StockTransaction:
+        txn = LedgerService.get_transaction(db, transaction_id)
+        if txn.status != "APPROVED":
+            raise ValidationError(f"Cannot dispatch transfer in status '{txn.status}'")
+
+        txn.status = "IN_TRANSIT"
+        dispatch_parts = []
+        if carrier_name:
+            dispatch_parts.append(f"Carrier: {carrier_name}")
+        if waybill_number:
+            dispatch_parts.append(f"Waybill: {waybill_number}")
+        if vehicle_number:
+            dispatch_parts.append(f"Vehicle: {vehicle_number}")
+        if expected_delivery_date:
+            dispatch_parts.append(f"ETA: {expected_delivery_date}")
+        if dispatch_parts:
+            txn.remarks = f"{txn.remarks or ''} | {' | '.join(dispatch_parts)}".strip(" |")
+
+        db.flush()
+        if dispatcher:
+            AuditService.log_action(
+                db=db,
+                action="DISPATCH",
+                module="STOCK_TRANSFERS",
+                record_id=str(txn.id),
+                actor=dispatcher,
+                office_id=txn.office_id,
+                new_values={"status": "IN_TRANSIT", "waybill": waybill_number},
             )
         db.commit()
         db.refresh(txn)
@@ -961,11 +1046,12 @@ class LedgerService:
         db: Session,
         transaction_id: UUID,
         remarks: Optional[str] = None,
+        received_by: Optional[str] = None,
         destination_location_id: Optional[UUID] = None,
         receiver: Optional[User] = None,
     ) -> StockTransaction:
         txn = LedgerService.get_transaction(db, transaction_id)
-        if txn.status not in ["APPROVED", "SUBMITTED"]:
+        if txn.status not in ["APPROVED", "IN_TRANSIT", "SUBMITTED"]:
             raise ValidationError(f"Cannot complete transfer in status '{txn.status}'")
 
         dest_loc_id = destination_location_id or txn.destination_location_id
@@ -974,16 +1060,41 @@ class LedgerService:
         for line in txn.lines:
             item = db.query(Item).filter(Item.id == line.item_id).first()
 
-            src_bal = (
-                db.query(StockBalance)
-                .filter(
-                    StockBalance.office_id == txn.source_office_id,
-                    StockBalance.item_id == line.item_id,
-                    StockBalance.location_id == txn.source_location_id,
+            # Prefer the item's actual location balance, then txn.source_location_id, then any balance in source office
+            candidate_loc_ids = []
+            if item and item.location_id:
+                candidate_loc_ids.append(item.location_id)
+            if txn.source_location_id and txn.source_location_id not in candidate_loc_ids:
+                candidate_loc_ids.append(txn.source_location_id)
+
+            src_bal = None
+            for loc_id in candidate_loc_ids:
+                bal = (
+                    db.query(StockBalance)
+                    .filter(
+                        StockBalance.office_id == txn.source_office_id,
+                        StockBalance.item_id == line.item_id,
+                        StockBalance.location_id == loc_id,
+                    )
+                    .with_for_update()
+                    .first()
                 )
-                .with_for_update()
-                .first()
-            )
+                if bal and float(bal.available_qty) >= float(line.quantity):
+                    src_bal = bal
+                    break
+
+            if not src_bal:
+                src_bal = (
+                    db.query(StockBalance)
+                    .filter(
+                        StockBalance.office_id == txn.source_office_id,
+                        StockBalance.item_id == line.item_id,
+                        StockBalance.available_qty >= line.quantity,
+                    )
+                    .with_for_update()
+                    .first()
+                )
+
             if not src_bal or float(src_bal.available_qty) < float(line.quantity):
                 raise InsufficientStockError("Insufficient available quantity at source location to complete transfer")
 
@@ -1018,8 +1129,10 @@ class LedgerService:
                 item.location_id = dest_loc_id
             item.last_movement_date = today
 
-        txn.status = "POSTED"
+        txn.status = "COMPLETED"
         txn.posted_at = datetime.now(timezone.utc)
+        if received_by:
+            txn.recipient_name = received_by
         if remarks:
             txn.remarks = f"{txn.remarks or ''} | Completed: {remarks}"
 

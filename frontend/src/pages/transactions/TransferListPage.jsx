@@ -75,11 +75,21 @@ export default function TransferListPage() {
     {
       key: 'transfer_type',
       header: 'Type',
-      render: (val) => (
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-forest-500/10 text-forest-800 dark:text-forest-200 border border-forest-500/15">
-          {val === 'INTER_OFFICE' ? 'Inter-Office' : 'Intra-Office'}
-        </span>
-      ),
+      render: (val) => {
+        const label =
+          val === 'INTER_OFFICE'
+            ? 'Inter-Office'
+            : val === 'TEMPORARY'
+              ? 'Temporary Loan'
+              : val === 'PERMANENT'
+                ? 'Permanent'
+                : 'Transfer'
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-forest-500/10 text-forest-800 dark:text-forest-200 border border-forest-500/15">
+            {label}
+          </span>
+        )
+      },
     },
     {
       key: 'route',

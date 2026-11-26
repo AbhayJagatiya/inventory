@@ -207,16 +207,27 @@ def test_transactions():
     assert approved_transfer["status"] == "APPROVED"
     print(f"[PASS] 11. Stock Transfer approved: Status is now {approved_transfer['status']}")
 
-    # 12. Complete Stock Transfer
+    # 12a. Dispatch Stock Transfer
+    req = urllib.request.Request(
+        f"{BASE_URL}/transfers/{transfer_id}/dispatch",
+        data=json.dumps({"carrier_name": "GSRTC Parcel", "waybill_number": "WB-101"}).encode(),
+        headers=headers
+    )
+    res = urllib.request.urlopen(req)
+    dispatched_transfer = json.loads(res.read().decode())["data"]
+    assert dispatched_transfer["status"] == "IN_TRANSIT"
+    print(f"[PASS] 12a. Stock Transfer dispatched: Status is now {dispatched_transfer['status']}")
+
+    # 12b. Complete Stock Transfer
     req = urllib.request.Request(
         f"{BASE_URL}/transfers/{transfer_id}/complete",
-        data=json.dumps({"remarks": "Acknowledged and received in Talala store room"}).encode(),
+        data=json.dumps({"remarks": "Acknowledged and received in Talala store room", "received_by": "Talala Store Officer"}).encode(),
         headers=headers
     )
     res = urllib.request.urlopen(req)
     completed_transfer = json.loads(res.read().decode())["data"]
-    assert completed_transfer["status"] == "POSTED"
-    print(f"[PASS] 12. Stock Transfer completed: Status is now {completed_transfer['status']}")
+    assert completed_transfer["status"] == "COMPLETED"
+    print(f"[PASS] 12b. Stock Transfer completed: Status is now {completed_transfer['status']}")
 
     print("=" * 60)
     print("ALL 12 TRANSACTION OPERATIONS VERIFIED SUCCESSFULLY: 100% OPERATIONAL")

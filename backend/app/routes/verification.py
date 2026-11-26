@@ -1,4 +1,3 @@
-
 """
 Physical Verification Routes.
 Prefix: /api/v1/verifications
@@ -8,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.common_schemas import ResponseMeta, StandardSuccessResponse
@@ -16,7 +16,6 @@ from app.core.dependencies import require_permission
 from app.core.permissions import ROLE_SYSTEM_ADMIN
 
 from app.features.users.models import User
-from app.features.verification.models import VerificationItem
 from app.features.verification.schemas import (
     VerificationCompleteRequest,
     VerificationItemOut,
@@ -133,16 +132,21 @@ def get_session(
 def list_session_items(
     session_id: UUID,
     discrepancy_only: bool = Query(False),
+    discrepancy_type: Optional[str] = Query(None),
+    resolution_status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("verify:view")),
 ):
     session = VerificationService.get_session(db, session_id)
     _check_session_access(session, current_user)
 
-    query = db.query(VerificationItem).filter(VerificationItem.session_id == session_id)
-    if discrepancy_only:
-        query = query.filter(VerificationItem.discrepancy_type != "NONE")
-    items = query.all()
+    items = VerificationService.list_session_items(
+        db=db,
+        session_id=session_id,
+        discrepancy_only=discrepancy_only,
+        discrepancy_type=discrepancy_type,
+        resolution_status=resolution_status,
+    )
 
     return StandardSuccessResponse(
         data=items,
@@ -266,4 +270,24 @@ def complete_session(
     return StandardSuccessResponse(
         data=completed_session,
         message="Verification session completed successfully",
+    )
+
+
+@router.get(
+    "/sessions/{session_id}/report",
+    summary="Download physical verification reconciliation report as CSV",
+)
+def download_session_report(
+    session_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("verify:view")),
+):
+    session = VerificationService.get_session(db, session_id)
+    _check_session_access(session, current_user)
+
+    csv_data, filename = VerificationService.export_session_report_csv(db, session_id)
+    return StreamingResponse(
+        iter([csv_data]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

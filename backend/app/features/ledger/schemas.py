@@ -155,8 +155,16 @@ class TransferCreate(BaseModel):
 
 
 class TransferAction(BaseModel):
+    action: Optional[str] = "APPROVE"
+    reason: Optional[str] = None
     remarks: Optional[str] = None
     destination_location_id: Optional[UUID] = None
+    carrier_name: Optional[str] = None
+    waybill_number: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    expected_delivery_date: Optional[str] = None
+    received_by: Optional[str] = None
+    discrepancy_reported: Optional[bool] = False
 
     model_config = ConfigDict(extra="ignore")
 
@@ -211,6 +219,18 @@ class StockTransactionOut(BaseModel):
     receiving_location: Optional[str] = None
     from_office_name: Optional[str] = None
     to_office_name: Optional[str] = None
+    source_office: Optional[str] = None
+    destination_office: Optional[str] = None
+    destination_location: Optional[str] = None
+    reason: Optional[str] = None
+    transfer_type: Optional[str] = "PERMANENT"
+    initiated_by_name: Optional[str] = None
+    carrier_name: Optional[str] = None
+    waybill_number: Optional[str] = None
+    vehicle_number: Optional[str] = None
+    expected_delivery_date: Optional[str] = None
+    completed_at: Optional[datetime] = None
+    received_by: Optional[str] = None
     items: List[TransactionLineOut] = []
     total_accepted_value: Optional[float] = 0.0
 

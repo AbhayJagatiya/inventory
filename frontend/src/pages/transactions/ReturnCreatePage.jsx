@@ -31,10 +31,9 @@ export default function ReturnCreatePage() {
   const { data: issuesData } = useQuery({
     queryKey: ['posted-issues-for-return'],
     queryFn: async () => {
-      const res = await getIssues()
+      const res = await getIssues({ status: 'POSTED', limit: 200 })
       return res?.data || res || []
     },
-    initialData: [],
   })
 
   const allIssues = issuesData || []

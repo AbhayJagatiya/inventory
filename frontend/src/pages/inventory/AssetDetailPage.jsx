@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Package, ArrowLeft, ArrowUpRight, RotateCcw, ArrowLeftRight,
   Wrench, TrendingDown, QrCode, FileText, Calendar,
   Building2, User, DollarSign, Clock, ShieldCheck, Tag,
-  Printer, CheckCircle2, MapPin
+  Printer, CheckCircle2, MapPin, Download
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
@@ -14,8 +14,10 @@ import StatusBadge from '../../components/common/StatusBadge'
 import LoadingSkeleton from '../../components/feedback/LoadingSkeleton'
 import ErrorState from '../../components/feedback/ErrorState'
 import { getItem, getItemHistory } from '../../api/inventory.api'
+import { getBarcodeLabel } from '../../api/verification.api'
 import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
+import { PERMISSIONS } from '../../constants/permissions'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
@@ -25,6 +27,8 @@ export default function AssetDetailPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
+  const [labelPreviewUrl, setLabelPreviewUrl] = useState('')
+  const [downloadingFormat, setDownloadingFormat] = useState('')
 
   // Fetch Item Query
   const { data: itemData, isLoading, isError, error, refetch } = useQuery({
@@ -78,6 +82,79 @@ export default function AssetDetailPage() {
 
   const item = itemData || {}
   const historyEvents = historyData || []
+  const isDurable = item.item_type === 'DURABLE_ASSET'
+  const isDisposed = item.operational_status === 'DISPOSED'
+  const canPrintBarcode = hasPermission(PERMISSIONS.BARCODE_PRINT)
+
+  // Fetch real QR + Code 128 label image from backend
+  const { data: labelBlob, isLoading: isLabelLoading } = useQuery({
+    queryKey: ['item-barcode-label', id],
+    queryFn: async () => {
+      const res = await getBarcodeLabel(id, { format: 'png' })
+      return res.data
+    },
+    enabled: Boolean(id && item.id && !isDisposed && canPrintBarcode),
+    retry: false,
+  })
+
+  useEffect(() => {
+    if (!labelBlob) {
+      setLabelPreviewUrl('')
+      return
+    }
+    const url = URL.createObjectURL(labelBlob)
+    setLabelPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [labelBlob])
+
+  const handleDownloadLabel = async (format) => {
+    try {
+      setDownloadingFormat(format)
+      const res = await getBarcodeLabel(id, { format })
+      const blobUrl = URL.createObjectURL(res.data)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = `label-${item.item_code || id}.${format}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(blobUrl)
+      toast.success(`Downloaded ${format.toUpperCase()} QR & Barcode label.`)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || `Failed to download ${format.toUpperCase()} label.`)
+    } finally {
+      setDownloadingFormat('')
+    }
+  }
+
+  const handlePrintLabel = () => {
+    if (!labelPreviewUrl) {
+      window.print()
+      return
+    }
+    const printWin = window.open('', '_blank', 'width=820,height=520')
+    if (!printWin) {
+      toast.error('Please allow pop-ups to print the QR label.')
+      return
+    }
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Asset QR Label - ${item.item_code || ''}</title>
+          <style>
+            body { margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; }
+            img { max-width: 100%; height: auto; border: 1px solid #cbd5e1; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <img src="${labelPreviewUrl}" alt="Asset QR Label" onload="window.print();" />
+        </body>
+      </html>
+    `)
+    printWin.document.close()
+  }
 
   if (isLoading) {
     return (
@@ -94,9 +171,6 @@ export default function AssetDetailPage() {
   if (isError) {
     return <ErrorState message="Could not load asset profile." onRetry={refetch} />
   }
-
-  const isDurable = item.item_type === 'DURABLE_ASSET'
-  const isDisposed = item.operational_status === 'DISPOSED'
 
   return (
     <motion.div
@@ -214,28 +288,79 @@ export default function AssetDetailPage() {
             <GlassCard level={1} className="p-5 space-y-4">
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
                 <QrCode size={16} className="text-forest-600 dark:text-forest-300" />
-                Barcode Symbology & Physical ID
+                QR Code & Barcode Label
               </h2>
 
-              <div className="p-4 bg-forest-500/5 dark:bg-forest-950/40 rounded-xl border border-forest-500/10 flex flex-col items-center justify-center text-center">
-                {/* Visual Barcode Graphic Simulation */}
-                <div className="h-14 w-44 bg-white dark:bg-forest-900 border border-forest-500/20 rounded-xl p-2 flex items-center justify-center mb-2 shadow-2xs">
-                  <div className="w-full flex justify-between items-center h-full px-1">
-                    {[...Array(24)].map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`bg-forest-950 dark:bg-forest-50 h-full ${
-                          idx % 3 === 0 ? 'w-1.5' : idx % 2 === 0 ? 'w-0.5' : 'w-1'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <span className="font-mono text-xs font-bold text-forest-900 dark:text-forest-100">
-                  {item.barcode_number || 'BC-AST-XXXXX'}
+              <div className="p-3 bg-white rounded-xl border border-forest-500/20 flex flex-col items-center justify-center text-center space-y-2">
+                {isDisposed ? (
+                  <p className="text-xs text-slate-500 py-4">
+                    Disposed assets do not generate operational QR labels.
+                  </p>
+                ) : isLabelLoading ? (
+                  <div className="w-full h-28 bg-slate-100 rounded-lg animate-pulse" />
+                ) : labelPreviewUrl ? (
+                  <img
+                    src={labelPreviewUrl}
+                    alt={`QR and Barcode label for ${item.item_code}`}
+                    className="w-full max-w-[320px] h-auto rounded"
+                  />
+                ) : (
+                  <p className="text-xs text-slate-500 py-4">
+                    Label preview unavailable.
+                  </p>
+                )}
+
+                <span className="font-mono text-xs font-bold text-slate-900">
+                  {item.barcode_number || item.item_code || 'BC-AST-XXXXX'}
                 </span>
-                <span className="text-[10px] text-forest-500 mt-0.5">Code 128 Standard Symbology</span>
+                <span className="text-[10px] text-slate-500">
+                  Code 128 Barcode + Scannable 2D QR Tag
+                </span>
               </div>
+
+              {!isDisposed && canPrintBarcode && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="xs"
+                    leftIcon={<Printer size={12} />}
+                    onClick={handlePrintLabel}
+                  >
+                    Print QR Label
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    loading={downloadingFormat === 'png'}
+                    leftIcon={<Download size={12} />}
+                    onClick={() => handleDownloadLabel('png')}
+                  >
+                    PNG
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    loading={downloadingFormat === 'pdf'}
+                    leftIcon={<Download size={12} />}
+                    onClick={() => handleDownloadLabel('pdf')}
+                  >
+                    PDF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    loading={downloadingFormat === 'svg'}
+                    leftIcon={<Download size={12} />}
+                    onClick={() => handleDownloadLabel('svg')}
+                  >
+                    SVG
+                  </Button>
+                </div>
+              )}
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">

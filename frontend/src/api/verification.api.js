@@ -55,3 +55,9 @@ export const completeVerificationSession = async (id, data) => {
   return response.data
 }
 
+export const downloadVerificationReport = async (id) => {
+  const response = await apiClient.get(`/verifications/sessions/${id}/report`, {
+    responseType: 'blob',
+  })
+  return response
+}

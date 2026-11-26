@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  QrCode, Plus, Filter, Search, RotateCcw,
-  CheckCircle, AlertTriangle, ShieldCheck, Clock,
-  ArrowRight, Layers, FileText, X, MapPin, Tag
+  QrCode, Plus, Search, RotateCcw, CheckCircle, AlertTriangle,
+  Clock, ArrowRight, Layers, FileText
 } from 'lucide-react'
 import {
   getVerificationSessions,
@@ -17,13 +16,18 @@ import GlassCard from '../../components/common/GlassCard'
 import Modal from '../../components/common/Modal'
 import { DataTable } from '../../components/tables/DataTable'
 import ErrorState from '../../components/feedback/ErrorState'
-import EmptyState from '../../components/feedback/EmptyState'
-import { CardSkeleton } from '../../components/feedback/LoadingSkeleton'
-import { formatNumber, formatDate, formatDateTime } from '../../utils/formatters'
+import { formatNumber, formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
+
+const AUDIT_CYCLES = [
+  { value: 'MONTHLY', label: 'Monthly Routine Audit' },
+  { value: 'QUARTERLY', label: 'Quarterly Physical Verification' },
+  { value: 'ANNUAL', label: 'Annual Statutory Stocktaking' },
+  { value: 'SPOT_CHECK', label: 'Surprise / Spot Check' },
+]
 
 export default function VerificationSessionListPage() {
   const { user, hasPermission } = useAuth()
@@ -31,7 +35,7 @@ export default function VerificationSessionListPage() {
   const queryClient = useQueryClient()
   const officeId = user?.office?.id || user?.office_id
 
-  // State
+  // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedStatus, setSelectedStatus] = useState('ALL')
   const [page, setPage] = useState(1)
@@ -39,6 +43,7 @@ export default function VerificationSessionListPage() {
 
   // New session modal state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false)
+  const [auditCycle, setAuditCycle] = useState('MONTHLY')
   const [scopeType, setScopeType] = useState('FULL_OFFICE')
   const [selectedLocationId, setSelectedLocationId] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
@@ -57,7 +62,7 @@ export default function VerificationSessionListPage() {
   })
   const categoriesList = categoriesRes?.data || []
 
-  // Fetch real sessions from backend
+  // Fetch sessions from backend
   const {
     data: sessionsRes,
     isLoading,
@@ -84,9 +89,19 @@ export default function VerificationSessionListPage() {
     const q = searchQuery.toLowerCase().trim()
     return (
       s.session_number?.toLowerCase().includes(q) ||
-      s.notes?.toLowerCase().includes(q)
+      s.notes?.toLowerCase().includes(q) ||
+      s.location_name?.toLowerCase().includes(q) ||
+      s.category_name?.toLowerCase().includes(q)
     )
   })
+
+  const resetNewForm = () => {
+    setAuditCycle('MONTHLY')
+    setScopeType('FULL_OFFICE')
+    setSelectedLocationId('')
+    setSelectedCategoryId('')
+    setSessionNotes('')
+  }
 
   // Create Session Mutation
   const createMutation = useMutation({
@@ -107,13 +122,6 @@ export default function VerificationSessionListPage() {
     },
   })
 
-  const resetNewForm = () => {
-    setScopeType('FULL_OFFICE')
-    setSelectedLocationId('')
-    setSelectedCategoryId('')
-    setSessionNotes('')
-  }
-
   const handleCreateSession = (e) => {
     e.preventDefault()
     if (!officeId) {
@@ -129,12 +137,16 @@ export default function VerificationSessionListPage() {
       return
     }
 
+    const cycleLabel = AUDIT_CYCLES.find((c) => c.value === auditCycle)?.label || auditCycle
+    const trimmedNotes = sessionNotes.trim()
+    const combinedNotes = trimmedNotes ? `[${cycleLabel}] ${trimmedNotes}` : `[${cycleLabel}]`
+
     createMutation.mutate({
       office_id: officeId,
       scope_type: scopeType,
       location_id: scopeType === 'LOCATION' ? selectedLocationId : null,
       category_id: scopeType === 'CATEGORY' ? selectedCategoryId : null,
-      notes: sessionNotes.trim() || null,
+      notes: combinedNotes,
     })
   }
 
@@ -153,8 +165,15 @@ export default function VerificationSessionListPage() {
             {row.session_number}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            Scope: <span className="font-semibold text-slate-700 dark:text-slate-300">{row.scope_type}</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{row.scope_type}</span>
+            {row.location_name ? ` · ${row.location_name}` : ''}
+            {row.category_name ? ` · ${row.category_name}` : ''}
           </div>
+          {row.notes && (
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[260px]" title={row.notes}>
+              {row.notes}
+            </div>
+          )}
         </div>
       ),
     },
@@ -231,9 +250,16 @@ export default function VerificationSessionListPage() {
       key: 'created_at',
       header: 'Initiated On',
       render: (_, row) => (
-        <span className="text-xs text-slate-600 dark:text-slate-400">
-          {formatDate(row.created_at)}
-        </span>
+        <div>
+          <span className="text-xs text-slate-600 dark:text-slate-400 block">
+            {formatDate(row.created_at)}
+          </span>
+          {row.lead_verifier_name && (
+            <span className="text-[11px] text-slate-400 block">
+              By {row.lead_verifier_name}
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -243,7 +269,7 @@ export default function VerificationSessionListPage() {
       render: (_, row) => (
         <Link to={ROUTES.VERIFICATION_SESSION_DETAIL(row.id)}>
           <Button variant="secondary" size="xs" rightIcon={<ArrowRight size={12} />}>
-            Workspace
+            {row.status === 'IN_PROGRESS' ? 'Scan & Audit' : 'Workspace'}
           </Button>
         </Link>
       ),
@@ -254,12 +280,12 @@ export default function VerificationSessionListPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
         title="Physical Stock Verification & Audit Sessions"
-        subtitle="Periodic stocktaking, room-by-room inventory audits, and discrepancy reconciliation"
+        subtitle="Monthly, quarterly, and annual QR/barcode stocktaking, condition updates, and discrepancy reconciliation"
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.BARCODE_LOOKUP}>
               <Button variant="secondary" size="sm" leftIcon={<QrCode size={14} />}>
-                Barcode Lookup
+                QR / Barcode Lookup
               </Button>
             </Link>
             {hasPermission(PERMISSIONS.VERIFY_CREATE) && (
@@ -343,7 +369,7 @@ export default function VerificationSessionListPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search audit sessions by number..."
+            placeholder="Search audit sessions by number, cycle, room, or category..."
             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
@@ -437,7 +463,25 @@ export default function VerificationSessionListPage() {
         >
           <form onSubmit={handleCreateSession} className="space-y-4 text-xs">
             <div className="p-3 rounded-xl bg-forest-500/10 dark:bg-forest-950/50 border border-forest-500/20 text-forest-800 dark:text-forest-200">
-              <strong>Statutory Snapshot Notice:</strong> When starting this session, the system freezes the expected inventory baseline from the active PostgreSQL ledger at this exact moment. All physical scans will be cross-referenced against this baseline.
+              <strong>Statutory Snapshot Notice:</strong> Starting this session freezes the expected inventory baseline
+              from PostgreSQL so auditors can scan QR codes or enter numbers to verify and update asset condition & location.
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Audit Cycle / Schedule <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={auditCycle}
+                onChange={(e) => setAuditCycle(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              >
+                {AUDIT_CYCLES.map((cycle) => (
+                  <option key={cycle.value} value={cycle.value}>
+                    {cycle.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -469,7 +513,7 @@ export default function VerificationSessionListPage() {
                   <option value="">-- Select Room Location --</option>
                   {locationsList.map((loc) => (
                     <option key={loc.id} value={loc.id}>
-                      {loc.room_number} - {loc.description}
+                      {loc.building_name} - {loc.room_number}
                     </option>
                   ))}
                 </select>
@@ -505,7 +549,7 @@ export default function VerificationSessionListPage() {
                 rows={3}
                 value={sessionNotes}
                 onChange={(e) => setSessionNotes(e.target.value)}
-                placeholder="e.g. Annual physical stocktaking per DDO Order No. 412 or pre-monsoon store audit..."
+                placeholder="e.g. Q3 IT & Furniture audit per DDO Order No. 412..."
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>

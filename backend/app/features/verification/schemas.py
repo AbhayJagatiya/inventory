@@ -29,6 +29,13 @@ class VerificationScanResponse(BaseModel):
     matched_item_id: Optional[UUID] = None
     item_code: Optional[str] = None
     item_name: Optional[str] = None
+    expected_location_id: Optional[UUID] = None
+    expected_location_name: Optional[str] = None
+    observed_location_name: Optional[str] = None
+    expected_condition: Optional[str] = None
+    observed_condition: Optional[str] = None
+    item_updated: bool = False
+    updated_fields: List[str] = []
     discrepancy_detected: Optional[str] = None
     message: str
 
@@ -52,8 +59,14 @@ class VerificationItemOut(BaseModel):
     session_id: UUID
     office_id: UUID
     item_id: UUID
+    item_code: Optional[str] = None
+    item_name: Optional[str] = None
+    barcode_number: Optional[str] = None
+    item_type: Optional[str] = None
     expected_location_id: UUID
+    expected_location_name: Optional[str] = None
     observed_location_id: Optional[UUID] = None
+    observed_location_name: Optional[str] = None
     expected_condition: str
     observed_condition: Optional[str] = None
     expected_qty: float
@@ -62,6 +75,7 @@ class VerificationItemOut(BaseModel):
     resolution_status: str
     resolution_remarks: Optional[str] = None
     verified_by: Optional[UUID] = None
+    verified_by_name: Optional[str] = None
     verified_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -73,12 +87,16 @@ class VerificationScanEventOut(BaseModel):
     office_id: UUID
     scanned_barcode: str
     item_id: Optional[UUID] = None
+    item_code: Optional[str] = None
+    item_name: Optional[str] = None
     scanned_location_id: UUID
+    scanned_location_name: Optional[str] = None
     observed_condition: str
     counted_quantity: float
     scan_result: str
     is_duplicate_scan: bool
     scanned_by: UUID
+    scanned_by_name: Optional[str] = None
     scanned_at: datetime
     device_info: Optional[str] = None
     remarks: Optional[str] = None
@@ -92,10 +110,13 @@ class VerificationSessionOut(BaseModel):
     office_id: UUID
     scope_type: str
     location_id: Optional[UUID] = None
+    location_name: Optional[str] = None
     category_id: Optional[UUID] = None
+    category_name: Optional[str] = None
     status: str
     notes: Optional[str] = None
     lead_verifier_id: UUID
+    lead_verifier_name: Optional[str] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     created_at: datetime

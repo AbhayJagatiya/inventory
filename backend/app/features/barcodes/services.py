@@ -5,7 +5,8 @@ Fast scanner resolution and label generation.
 
 from typing import Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 from app.core.exceptions import NotFoundError, ValidationError
 from app.features.barcodes.schemas import BarcodeLookupOut
 from app.features.inventory.models import Item
@@ -15,10 +16,22 @@ class BarcodeService:
     @staticmethod
     def lookup_barcode(db: Session, barcode: str, office_id: Optional[UUID] = None) -> BarcodeLookupOut:
         clean_code = barcode.strip()
-        query = db.query(Item).filter(
-            (Item.barcode_number == clean_code)
-            | (Item.item_code == clean_code)
-            | (Item.serial_number == clean_code)
+        if not clean_code:
+            raise ValidationError("Barcode or asset identifier cannot be empty.")
+
+        lowered = clean_code.lower()
+        query = (
+            db.query(Item)
+            .options(
+                joinedload(Item.category),
+                joinedload(Item.location),
+                joinedload(Item.stock_balances),
+            )
+            .filter(
+                (func.lower(Item.barcode_number) == lowered)
+                | (func.lower(Item.item_code) == lowered)
+                | (func.lower(Item.serial_number) == lowered)
+            )
         )
         if office_id:
             query = query.filter(Item.office_id == office_id)
@@ -33,18 +46,32 @@ class BarcodeService:
                 code="DISPOSED_ITEM",
             )
 
+        available_qty = sum(float(b.available_qty or 0) for b in item.stock_balances) if item.stock_balances else (
+            1.0 if item.item_type == "DURABLE_ASSET" else 0.0
+        )
+
         return BarcodeLookupOut(
             item_id=item.id,
             office_id=item.office_id,
+            location_id=item.location_id,
             item_code=item.item_code,
             barcode_number=item.barcode_number or item.item_code,
             item_name=item.item_name,
+            item_type=item.item_type,
             category_name=item.category.name if item.category else "Uncategorized",
             location_name=f"{item.location.building_name} ({item.location.room_number})" if item.location else "Unknown",
+            brand=item.brand,
+            model_number=item.model_number,
+            serial_number=item.serial_number,
             condition=item.condition,
             operational_status=item.operational_status,
             current_classification=item.current_classification,
             current_custodian=item.current_custodian,
+            current_department=item.current_department,
+            purchase_date=item.purchase_date,
+            last_movement_date=item.last_movement_date,
+            is_legacy=bool(item.is_legacy),
+            available_qty=available_qty,
             unit_purchase_cost=float(item.unit_purchase_cost),
         )
 

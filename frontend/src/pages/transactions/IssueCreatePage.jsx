@@ -46,17 +46,17 @@ export default function IssueCreatePage() {
   const { data: itemsData } = useQuery({
     queryKey: ['available-items-for-issue'],
     queryFn: async () => {
-      const res = await getItems()
+      const res = await getItems({ limit: 200 })
       return res?.data || res || []
     },
-    initialData: [],
   })
 
   const allItems = itemsData || []
   // Filter items that can be issued:
   // For durable assets: operational_status must be AVAILABLE_IN_STORE
-  // For consumables: quantity must be > 0
+  // For consumables: quantity must be > 0 and not DISPOSED
   const availableItems = allItems.filter((i) => {
+    if (i.operational_status === 'DISPOSED') return false
     if (i.item_type === 'DURABLE_ASSET') {
       return i.operational_status === 'AVAILABLE_IN_STORE'
     }

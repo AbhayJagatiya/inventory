@@ -38,16 +38,16 @@ export default function TransferCreatePage() {
   const [reason, setReason] = useState('')
 
   // Query items
-  const { data: itemsData } = useQuery({
+  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
     queryKey: ['available-items-for-transfer'],
     queryFn: async () => {
-      const res = await getItems()
+      const res = await getItems({ limit: 200 })
       return res?.data || res || []
     },
-    initialData: [],
   })
 
   const availableItems = (itemsData || []).filter((i) => {
+    if (i.operational_status === 'DISPOSED') return false
     if (i.item_type === 'DURABLE_ASSET') return i.operational_status === 'AVAILABLE_IN_STORE'
     return (i.quantity || 0) > 0
   })
@@ -333,7 +333,13 @@ export default function TransferCreatePage() {
                       onChange={(e) => handleLineChange(idx, 'selected_item_id', e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     >
-                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">-- Choose Item from Available Store Stock --</option>
+                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
+                        {isLoadingItems
+                          ? 'Loading available items...'
+                          : availableItems.length === 0
+                            ? 'No available items in store'
+                            : '-- Choose Item from Available Store Stock --'}
+                      </option>
                       {availableItems.map((itm) => (
                         <option key={itm.id} value={itm.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
                           {itm.item_name} [{itm.item_code}] ·{' '}
