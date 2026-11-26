@@ -18,10 +18,12 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import { motion } from 'framer-motion'
+import { useLanguage } from '../../i18n'
 
 export default function IssueListPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -54,7 +56,7 @@ export default function IssueListPage() {
   const columns = [
     {
       key: 'voucher_number',
-      header: 'Issue Voucher No.',
+      header: t('transactions.issues.table.issueNumber'),
       render: (val, row) => (
         <div>
           <span
@@ -63,18 +65,18 @@ export default function IssueListPage() {
           >
             {val}
           </span>
-          <span className="block text-[11px] text-forest-500 mt-0.5">Order: {row.sanction_order_number || 'Internal'}</span>
+          <span className="block text-[11px] text-forest-500 mt-0.5">{t('transactions.issues.orderPrefix')} {row.sanction_order_number || t('transactions.issues.internalOrder')}</span>
         </div>
       ),
     },
     {
       key: 'issue_date',
-      header: 'Issue Date',
+      header: t('transactions.issues.table.issueDate'),
       render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
     },
     {
       key: 'department',
-      header: 'Recipient Department',
+      header: t('transactions.issues.table.department'),
       render: (val) => (
         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-900 dark:text-forest-100 bg-forest-500/10 px-2.5 py-1 rounded-lg border border-forest-500/15">
           <Building2 size={13} className="text-forest-600 dark:text-forest-400" />
@@ -84,42 +86,42 @@ export default function IssueListPage() {
     },
     {
       key: 'receiving_person',
-      header: 'Recipient Person',
+      header: t('transactions.issues.table.recipientPerson'),
       render: (val, row) => (
         <div>
           <span className="text-xs font-bold text-forest-950 dark:text-forest-50 block">{val}</span>
-          <span className="text-[11px] text-forest-500 font-medium">{row.designation || 'Staff'}</span>
+          <span className="text-[11px] text-forest-500 font-medium">{row.designation || t('transactions.issues.staffDefault')}</span>
         </div>
       ),
     },
     {
       key: 'items',
-      header: 'Issued Items',
+      header: t('transactions.issues.table.issuedItems'),
       render: (items) => (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
           <FileText size={12} className="text-forest-500" />
-          {items?.length || 0} line items
+          {t('transactions.issues.lineItemsCount', { count: items?.length || 0 })}
         </span>
       ),
     },
     {
       key: 'purpose',
-      header: 'Purpose / Office Use',
-      render: (val) => <span className="text-xs text-forest-600 dark:text-forest-300 max-w-xs truncate block" title={val}>{val || 'Official Duty'}</span>,
+      header: t('transactions.issues.table.purpose'),
+      render: (val) => <span className="text-xs text-forest-600 dark:text-forest-300 max-w-xs truncate block" title={val}>{val || t('transactions.issues.officialDuty')}</span>,
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('transactions.issues.table.status'),
       render: (val) => <StatusBadge status={val} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Action',
+      header: t('transactions.issues.table.action'),
       align: 'right',
       render: (_, row) => (
         <Link to={ROUTES.ISSUE_DETAIL(row.id)}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
-            View
+            {t('transactions.issues.viewBtn')}
           </Button>
         </Link>
       ),
@@ -150,32 +152,32 @@ export default function IssueListPage() {
           {row.department}
         </h3>
         <p className="text-[11px] text-forest-600 dark:text-forest-400 mb-2">
-          Recipient: <span className="font-bold">{row.receiving_person}</span> ({row.designation || 'Staff'})
+          {t('transactions.issues.cardRecipient')} <span className="font-bold">{row.receiving_person}</span> ({row.designation || t('transactions.issues.staffDefault')})
         </p>
 
         <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Issue Date:</span>
+            <span className="text-forest-500">{t('transactions.issues.cardIssueDate')}</span>
             <span>{formatDate(row.issue_date)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Items:</span>
-            <span className="font-bold font-mono">{row.items?.length || 0} line items</span>
+            <span className="text-forest-500">{t('transactions.issues.cardItems')}</span>
+            <span className="font-bold font-mono">{t('transactions.issues.lineItemsCount', { count: row.items?.length || 0 })}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Order Ref:</span>
-            <span className="font-mono">{row.sanction_order_number || 'Internal'}</span>
+            <span className="text-forest-500">{t('transactions.issues.cardOrderRef')}</span>
+            <span className="font-mono">{row.sanction_order_number || t('transactions.issues.internalOrder')}</span>
           </div>
         </div>
       </div>
 
       <div className="mt-3 pt-2 flex items-center justify-between text-xs">
         <span className="text-[11px] text-forest-500 truncate max-w-[170px]">
-          {row.purpose || 'Official Duty'}
+          {row.purpose || t('transactions.issues.officialDuty')}
         </span>
         <Link to={ROUTES.ISSUE_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
-            View
+            {t('transactions.issues.viewBtn')}
           </Button>
         </Link>
       </div>
@@ -190,15 +192,15 @@ export default function IssueListPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Stock Issue Register & Indents"
-        subtitle="Authorize and record physical issue of equipment and consumable inventory to departments and staff"
+        title={t('transactions.issues.title')}
+        subtitle={t('transactions.issues.subtitle')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             <ViewToggle view={viewMode} onViewChange={handleViewChange} />
             {canCreate && (
               <Link to={ROUTES.ISSUES_NEW}>
                 <Button variant="primary" size="sm" leftIcon={<PlusCircle size={15} />}>
-                  + New Stock Issue
+                  {t('transactions.issues.newIssue')}
                 </Button>
               </Link>
             )}
@@ -212,7 +214,7 @@ export default function IssueListPage() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search voucher, department, recipient..."
+            placeholder={t('transactions.issues.searchPlaceholder')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -234,8 +236,8 @@ export default function IssueListPage() {
           total={issues.length}
           totalPages={totalPages}
           onPageChange={setPage}
-          emptyTitle="No stock issues found"
-          emptyDescription="There are no stock issue vouchers matching your query."
+          emptyTitle={t('transactions.issues.emptyTitle')}
+          emptyDescription={t('transactions.issues.emptyDescription')}
         />
       ) : (
         <CardView

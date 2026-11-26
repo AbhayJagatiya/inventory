@@ -21,11 +21,13 @@ import { formatCurrency, formatNumber, formatDate, formatDateTime } from '../../
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 export default function CondemnationDetailPage() {
   const { id } = useParams()
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
   const queryClient = useQueryClient()
 
   // Modals state
@@ -58,12 +60,12 @@ export default function CondemnationDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['condemnation-detail', id] })
       queryClient.invalidateQueries({ queryKey: ['condemnations'] })
-      toast.success('Condemnation proposal status updated to UNDER_REVIEW.')
+      toast.success(t('deadStock.condemnationDetail.toastReviewSuccess'))
       setIsReviewModalOpen(false)
       setReviewRemarks('')
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Review submission failed.'
+      const msg = err.response?.data?.error?.message || err.response?.data?.detail || t('deadStock.condemnationDetail.toastReviewFail')
       toast.error(msg)
     },
   })
@@ -77,13 +79,13 @@ export default function CondemnationDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['dead-stock-register'] })
       queryClient.invalidateQueries({ queryKey: ['disposals'] })
       const updated = res?.data || res
-      toast.success(`Sanction decision recorded: ${updated.status}`)
+      toast.success(t('deadStock.condemnationDetail.toastDecisionSuccess', { status: updated.status }))
       setIsDecisionModalOpen(false)
       setDecisionRemarks('')
       setSanctionOrderNumber('')
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Decision recording failed.'
+      const msg = err.response?.data?.error?.message || err.response?.data?.detail || t('deadStock.condemnationDetail.toastDecisionFail')
       toast.error(msg)
     },
   })
@@ -91,7 +93,7 @@ export default function CondemnationDetailPage() {
   const handleReviewSubmit = (e) => {
     e.preventDefault()
     if (!reviewRemarks.trim() || reviewRemarks.trim().length < 3) {
-      toast.error('Please enter review remarks of at least 3 characters.')
+      toast.error(t('deadStock.condemnationDetail.errReviewRemarks'))
       return
     }
     reviewMutation.mutate({
@@ -103,11 +105,11 @@ export default function CondemnationDetailPage() {
   const handleDecisionSubmit = (e) => {
     e.preventDefault()
     if (decisionAction === 'APPROVE' && !sanctionOrderNumber.trim()) {
-      toast.error('Official Sanction Order Number is mandatory for approval.')
+      toast.error(t('deadStock.condemnationDetail.errOrderNum'))
       return
     }
     if (!decisionRemarks.trim() || decisionRemarks.trim().length < 3) {
-      toast.error('Please provide formal decision remarks.')
+      toast.error(t('deadStock.condemnationDetail.errDecisionRemarks'))
       return
     }
 
@@ -121,7 +123,7 @@ export default function CondemnationDetailPage() {
   if (isLoading) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
-        <PageHeader title="Loading Condemnation Dossier..." />
+        <PageHeader title={t('deadStock.condemnationDetail.loadingTitle')} />
         <CardSkeleton />
       </div>
     )
@@ -130,13 +132,13 @@ export default function CondemnationDetailPage() {
   if (isError || !request) {
     return (
       <div className="space-y-6 max-w-6xl mx-auto">
-        <PageHeader title="Condemnation Proposal Dossier" />
+        <PageHeader title={t('deadStock.condemnationDetail.defaultTitle')} />
         <ErrorState
-          title="Proposal Not Found"
+          title={t('deadStock.condemnationDetail.notFoundTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to load the requested condemnation proposal from PostgreSQL.'
+            t('deadStock.condemnationDetail.notFoundMsg')
           }
           onRetry={refetch}
         />
@@ -157,13 +159,13 @@ export default function CondemnationDetailPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <PageHeader
-        title={`Condemnation Proposal Dossier: ${request.request_number}`}
-        subtitle={`Status: ${request.status} · Submitted on ${formatDate(request.created_at)}`}
+        title={t('deadStock.condemnationDetail.titlePrefix', { number: request.request_number })}
+        subtitle={t('deadStock.condemnationDetail.subtitle', { status: request.status, date: formatDate(request.created_at) })}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.CONDEMNATIONS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                All Proposals
+                {t('deadStock.condemnationDetail.allProposals')}
               </Button>
             </Link>
 
@@ -175,7 +177,7 @@ export default function CondemnationDetailPage() {
                 leftIcon={<UserCheck size={14} />}
                 onClick={() => setIsReviewModalOpen(true)}
               >
-                Mark Under Review
+                {t('deadStock.condemnationDetail.markUnderReview')}
               </Button>
             )}
 
@@ -187,14 +189,14 @@ export default function CondemnationDetailPage() {
                 leftIcon={<ShieldCheck size={14} />}
                 onClick={() => setIsDecisionModalOpen(true)}
               >
-                Record Sanction Decision
+                {t('deadStock.condemnationDetail.recordDecision')}
               </Button>
             )}
 
             {isApproved && (
               <Link to={ROUTES.DISPOSALS}>
                 <Button variant="primary" size="sm" rightIcon={<ArrowRight size={14} />}>
-                  Proceed to Disposal Register
+                  {t('deadStock.condemnationDetail.proceedDisposal')}
                 </Button>
               </Link>
             )}
@@ -206,7 +208,7 @@ export default function CondemnationDetailPage() {
       <GlassCard level={1} className="p-5">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-            Statutory Approval Pipeline
+            {t('deadStock.condemnationDetail.pipelineTitle')}
           </span>
           <span
             className={`px-3 py-0.5 rounded-full text-xs font-extrabold ${
@@ -223,21 +225,21 @@ export default function CondemnationDetailPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">1. Submission</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">{t('deadStock.condemnationDetail.step1')}</span>
             <p className="font-bold text-slate-800 dark:text-slate-200">
               {formatDateTime(request.created_at)}
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">2. Committee Review</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">{t('deadStock.condemnationDetail.step2')}</span>
             <p className="font-bold text-slate-800 dark:text-slate-200">
-              {isSubmitted ? 'Pending Review' : 'Survey Evaluated'}
+              {isSubmitted ? t('deadStock.condemnationDetail.pendingReview') : t('deadStock.condemnationDetail.surveyEvaluated')}
             </p>
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">3. Sanction Decision</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-0.5">{t('deadStock.condemnationDetail.step3')}</span>
             <p
               className={`font-bold ${
                 isApproved
@@ -248,10 +250,10 @@ export default function CondemnationDetailPage() {
               }`}
             >
               {isApproved
-                ? 'Officially Sanctioned'
+                ? t('deadStock.condemnationDetail.officiallySanctioned')
                 : isRejected
-                ? 'Proposal Rejected'
-                : 'Awaiting Order'}
+                ? t('deadStock.condemnationDetail.proposalRejected')
+                : t('deadStock.condemnationDetail.awaitingOrder')}
             </p>
           </div>
         </div>
@@ -261,26 +263,26 @@ export default function CondemnationDetailPage() {
       <GlassCard level={2} className="p-6 space-y-4">
         <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
           <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
-          Dossier Mandate & Justification
+          {t('deadStock.condemnationDetail.mandateTitle')}
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           <div>
-            <span className="text-slate-500 dark:text-slate-400 block mb-1">Reason Code</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-1">{t('deadStock.condemnationDetail.reasonCode')}</span>
             <p className="font-mono font-bold text-slate-800 dark:text-slate-200">
               {request.reason_code}
             </p>
           </div>
 
           <div>
-            <span className="text-slate-500 dark:text-slate-400 block mb-1">Total Assets Nominated</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-1">{t('deadStock.condemnationDetail.totalNominated')}</span>
             <p className="font-bold text-slate-800 dark:text-slate-200">
-              {request.items?.length || 0} durable / obsolete items
+              {t('deadStock.condemnationDetail.nominatedCount', { count: request.items?.length || 0 })}
             </p>
           </div>
 
           <div>
-            <span className="text-slate-500 dark:text-slate-400 block mb-1">Total Assessed Scrap Value</span>
+            <span className="text-slate-500 dark:text-slate-400 block mb-1">{t('deadStock.condemnationDetail.totalScrapValue')}</span>
             <p className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-sm">
               {formatCurrency(totalScrapValuation)}
             </p>
@@ -289,7 +291,7 @@ export default function CondemnationDetailPage() {
 
         <div className="pt-2">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">
-            Condition Summary & Committee Notes
+            {t('deadStock.condemnationDetail.conditionSummary')}
           </span>
           <p className="text-xs text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-[#0A1513] p-3 rounded-xl border border-slate-200 dark:border-emerald-500/15 leading-relaxed">
             {request.condition_summary}
@@ -300,17 +302,17 @@ export default function CondemnationDetailPage() {
       {/* Candidate Items Table */}
       <GlassCard level={1} className="p-5 space-y-3">
         <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-          Nominated Items Inspection Detail ({request.items?.length || 0})
+          {t('deadStock.condemnationDetail.itemsTitle', { count: request.items?.length || 0 })}
         </h3>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs data-table">
             <thead>
               <tr>
-                <th>Item ID</th>
-                <th>Observed Condition</th>
-                <th>Assessed Scrap Value</th>
-                <th>Technical Remarks</th>
+                <th>{t('deadStock.condemnationDetail.colItemId')}</th>
+                <th>{t('deadStock.condemnationDetail.colObservedCondition')}</th>
+                <th>{t('deadStock.condemnationDetail.colScrapValue')}</th>
+                <th>{t('deadStock.condemnationDetail.colTechRemarks')}</th>
               </tr>
             </thead>
             <tbody>
@@ -347,12 +349,12 @@ export default function CondemnationDetailPage() {
       <GlassCard level={1} className="p-5 space-y-3">
         <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
           <Clock size={14} className="text-emerald-600 dark:text-emerald-400" />
-          Statutory Decision & Sanction Trail
+          {t('deadStock.condemnationDetail.trailTitle')}
         </h3>
 
         {(request.approval_actions || []).length === 0 ? (
           <p className="text-xs text-slate-500 dark:text-slate-400 py-3 text-center">
-            No formal actions recorded yet. Proposal is awaiting Survey Committee evaluation.
+            {t('deadStock.condemnationDetail.noActions')}
           </p>
         ) : (
           <div className="space-y-3">
@@ -375,7 +377,7 @@ export default function CondemnationDetailPage() {
                       {act.action}
                     </span>
                     <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      Role: {act.role_snapshot}
+                      {t('deadStock.condemnationDetail.roleLabel', { role: act.role_snapshot })}
                     </span>
                   </div>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
@@ -385,7 +387,7 @@ export default function CondemnationDetailPage() {
 
                 {act.order_number && (
                   <p className="font-mono text-emerald-700 dark:text-emerald-400 text-[11px] font-bold">
-                    Official Sanction Order No: {act.order_number}
+                    {t('deadStock.condemnationDetail.sanctionOrderLabel', { order: act.order_number })}
                   </p>
                 )}
 
@@ -403,12 +405,12 @@ export default function CondemnationDetailPage() {
         <Modal
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
-          title="Mark Proposal Under Survey Review"
+          title={t('deadStock.condemnationDetail.reviewModalTitle')}
           size="md"
           footer={
             <>
               <Button variant="secondary" size="sm" onClick={() => setIsReviewModalOpen(false)}>
-                Cancel
+                {t('transactions.transfers.create.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -416,24 +418,24 @@ export default function CondemnationDetailPage() {
                 loading={reviewMutation.isPending}
                 onClick={handleReviewSubmit}
               >
-                Confirm Review
+                {t('deadStock.condemnationDetail.confirmReview')}
               </Button>
             </>
           }
         >
           <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs">
             <p className="text-slate-600 dark:text-slate-400">
-              Moving this proposal to <strong>UNDER_REVIEW</strong> signifies that the physical survey is underway.
+              {t('deadStock.condemnationDetail.reviewModalDesc')}
             </p>
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Survey Committee Assessment Remarks <span className="text-red-500">*</span>
+                {t('deadStock.condemnationDetail.reviewRemarksLabel')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={3}
                 value={reviewRemarks}
                 onChange={(e) => setReviewRemarks(e.target.value)}
-                placeholder="Technical inspection details, findings on condition, and recommendation..."
+                placeholder={t('deadStock.condemnationDetail.reviewPlaceholder')}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 required
               />
@@ -447,12 +449,12 @@ export default function CondemnationDetailPage() {
         <Modal
           isOpen={isDecisionModalOpen}
           onClose={() => setIsDecisionModalOpen(false)}
-          title="Record Official Administrative Sanction Decision"
+          title={t('deadStock.condemnationDetail.decisionModalTitle')}
           size="md"
           footer={
             <>
               <Button variant="secondary" size="sm" onClick={() => setIsDecisionModalOpen(false)}>
-                Cancel
+                {t('transactions.transfers.create.cancel')}
               </Button>
               <Button
                 variant={decisionAction === 'APPROVE' ? 'primary' : 'danger'}
@@ -460,7 +462,7 @@ export default function CondemnationDetailPage() {
                 loading={decisionMutation.isPending}
                 onClick={handleDecisionSubmit}
               >
-                Seal Decision Order
+                {t('deadStock.condemnationDetail.sealDecision')}
               </Button>
             </>
           }
@@ -468,29 +470,29 @@ export default function CondemnationDetailPage() {
           <form onSubmit={handleDecisionSubmit} className="space-y-4 text-xs">
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Sanction Authority Action <span className="text-red-500">*</span>
+                {t('deadStock.condemnationDetail.sanctionActionLabel')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={decisionAction}
                 onChange={(e) => setDecisionAction(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="APPROVE">APPROVE (Sanction Condemnation & Proceed to Disposal)</option>
-                <option value="REJECT">REJECT (Restore Assets to Store Register)</option>
-                <option value="REQUEST_INFO">REQUEST_INFO (Return to Staff for Clarification)</option>
+                <option value="APPROVE">{t('deadStock.condemnationDetail.actionApprove')}</option>
+                <option value="REJECT">{t('deadStock.condemnationDetail.actionReject')}</option>
+                <option value="REQUEST_INFO">{t('deadStock.condemnationDetail.actionRequestInfo')}</option>
               </select>
             </div>
 
             {decisionAction === 'APPROVE' && (
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Official Sanction Order Number <span className="text-red-500">*</span>
+                  {t('deadStock.condemnationDetail.orderNumberLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={sanctionOrderNumber}
                   onChange={(e) => setSanctionOrderNumber(e.target.value)}
-                  placeholder="e.g. DDO/GS/STORE/COND-412/2026"
+                  placeholder={t('deadStock.condemnationDetail.orderNumberPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 />
@@ -499,13 +501,13 @@ export default function CondemnationDetailPage() {
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Decision Directives & Justification <span className="text-red-500">*</span>
+                {t('deadStock.condemnationDetail.decisionRemarksLabel')} <span className="text-red-500">*</span>
               </label>
               <textarea
                 rows={3}
                 value={decisionRemarks}
                 onChange={(e) => setDecisionRemarks(e.target.value)}
-                placeholder="Official remarks from competent sanction authority..."
+                placeholder={t('deadStock.condemnationDetail.decisionPlaceholder')}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 required
               />
@@ -513,7 +515,7 @@ export default function CondemnationDetailPage() {
 
             {decisionAction === 'APPROVE' && (
               <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200">
-                Approving this proposal will transition all included items to <code>PENDING_DISPOSAL</code> in PostgreSQL and unlock them in the Disposal Execution Register.
+                {t('deadStock.condemnationDetail.approveNote')}
               </div>
             )}
           </form>

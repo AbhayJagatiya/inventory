@@ -4,6 +4,7 @@ import PageHeader from '../layout/PageHeader'
 import Button from './Button'
 import GlassCard from './GlassCard'
 import { ROUTES } from '../../constants/routes'
+import { useLanguage } from '../../i18n'
 
 function ModulePlaceholder({
   title,
@@ -13,6 +14,7 @@ function ModulePlaceholder({
   endpoint,
   expectedFeatures = [],
 }) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
@@ -21,7 +23,7 @@ function ModulePlaceholder({
         actions={
           <Link to={ROUTES.DASHBOARD}>
             <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-              Back to Dashboard
+              {t('feedback.notFound.goHome')}
             </Button>
           </Link>
         }

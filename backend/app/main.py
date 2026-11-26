@@ -23,6 +23,7 @@ from app.core.exceptions import (
     validation_exception_handler,
 )
 from app.core.logging import RequestCorrelationMiddleware
+from app.core.i18n import LanguageMiddleware
 
 logger = logging.getLogger("app.main")
 
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------------
     # Middleware
     # ------------------------------------------------------------------
+    application.add_middleware(LanguageMiddleware)
     application.add_middleware(RequestCorrelationMiddleware)
 
     application.add_middleware(

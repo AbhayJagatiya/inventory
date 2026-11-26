@@ -1,7 +1,9 @@
 import { LayoutGrid, Table } from 'lucide-react'
 import { cn } from '../../utils/cn'
+import { useLanguage } from '../../i18n'
 
 export function ViewToggle({ view = 'table', onViewChange, className }) {
+  const { t } = useLanguage()
   return (
     <div
       className={cn(
@@ -9,7 +11,7 @@ export function ViewToggle({ view = 'table', onViewChange, className }) {
         className
       )}
       role="group"
-      aria-label="View switch"
+      aria-label={t('ui.viewToggle.tableView')}
     >
       <button
         type="button"
@@ -20,10 +22,10 @@ export function ViewToggle({ view = 'table', onViewChange, className }) {
             ? 'bg-white dark:bg-forest-800 text-forest-900 dark:text-forest-100 shadow-xs'
             : 'text-forest-600 dark:text-forest-400 hover:text-forest-900 dark:hover:text-forest-100'
         )}
-        title="Switch to Table view"
+        title={t('ui.viewToggle.tableView')}
       >
         <Table size={14} />
-        <span className="hidden sm:inline">Table</span>
+        <span className="hidden sm:inline">{t('ui.viewToggle.tableView')}</span>
       </button>
 
       <button
@@ -35,14 +37,13 @@ export function ViewToggle({ view = 'table', onViewChange, className }) {
             ? 'bg-white dark:bg-forest-800 text-forest-900 dark:text-forest-100 shadow-xs'
             : 'text-forest-600 dark:text-forest-400 hover:text-forest-900 dark:hover:text-forest-100'
         )}
-        title="Switch to Card view"
+        title={t('ui.viewToggle.cardView')}
       >
         <LayoutGrid size={14} />
-        <span className="hidden sm:inline">Cards</span>
+        <span className="hidden sm:inline">{t('ui.viewToggle.cardView')}</span>
       </button>
     </div>
   )
 }
 
 export default ViewToggle
-

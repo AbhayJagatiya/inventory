@@ -18,10 +18,12 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import { motion } from 'framer-motion'
+import { useLanguage } from '../../i18n'
 
 export default function ReturnListPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -53,7 +55,7 @@ export default function ReturnListPage() {
   const columns = [
     {
       key: 'voucher_number',
-      header: 'Return Voucher No.',
+      header: t('transactions.returns.voucherNo'),
       render: (val, row) => (
         <div>
           <span
@@ -63,19 +65,19 @@ export default function ReturnListPage() {
             {val}
           </span>
           <span className="block text-[11px] text-forest-500 mt-0.5">
-            Ref: {row.original_issue_voucher || 'Linked Issue'}
+            {t('transactions.returns.refPrefix')} {row.original_issue_voucher || t('transactions.returns.linkedIssue')}
           </span>
         </div>
       ),
     },
     {
       key: 'return_date',
-      header: 'Return Date',
+      header: t('transactions.returns.returnDate'),
       render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
     },
     {
       key: 'returning_department',
-      header: 'Returning Department',
+      header: t('transactions.returns.returningDept'),
       render: (val) => (
         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-900 dark:text-forest-100 bg-forest-500/10 px-2.5 py-1 rounded-lg border border-forest-500/15">
           <Building2 size={13} className="text-forest-600 dark:text-forest-400" />

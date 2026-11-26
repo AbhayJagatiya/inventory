@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { LanguageProvider } from './i18n/LanguageProvider.jsx'
 import './styles/globals.css'
 
 const queryClient = new QueryClient({
@@ -31,26 +32,28 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <AuthProvider>
-            <App />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  fontSize: '14px',
-                  maxWidth: '400px',
-                },
-                success: {
-                  iconTheme: { primary: '#087B61', secondary: '#fff' },
-                },
-                error: {
-                  iconTheme: { primary: '#dc2626', secondary: '#fff' },
-                  duration: 5000,
-                },
-              }}
-            />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <App />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    fontSize: '14px',
+                    maxWidth: '400px',
+                  },
+                  success: {
+                    iconTheme: { primary: '#087B61', secondary: '#fff' },
+                  },
+                  error: {
+                    iconTheme: { primary: '#dc2626', secondary: '#fff' },
+                    duration: 5000,
+                  },
+                }}
+              />
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>

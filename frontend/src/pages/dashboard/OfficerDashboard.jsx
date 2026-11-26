@@ -15,6 +15,8 @@ import { formatNumber, formatCurrency, formatDateTime } from '../../utils/format
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid
 } from 'recharts'
@@ -86,6 +88,7 @@ function KPICard({ title, value, subtitle, icon: Icon, color = 'teal', loading }
 function OfficerDashboard() {
   const { user, officeName } = useAuth()
   const { isDark } = useTheme()
+  const { t } = useLanguage()
 
   const {
     data: dashData,
@@ -107,7 +110,7 @@ function OfficerDashboard() {
 
   const statusDistribution = dashData?.status_distribution
     ? Object.entries(dashData.status_distribution).map(([status, count]) => ({
-        status: status.replace(/_/g, ' '),
+        status: translateEnum(t, status),
         count,
       }))
     : []
@@ -122,13 +125,13 @@ function OfficerDashboard() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Store Officer Supervisory Center"
-        subtitle={`Inventory Custody & Supervisory Review · Office: ${officeName || 'Veraval Office'}`}
+        title={t('dashboard.officer.title')}
+        subtitle={t('dashboard.officer.subtitle', { office: officeName || t('dashboard.common.defaultOffice') })}
         actions={
           <div className="flex items-center gap-2.5">
             <Link to={ROUTES.BARCODE_LOOKUP}>
               <Button variant="secondary" size="sm" leftIcon={<Search size={14} />}>
-                Barcode Scanner
+                {t('dashboard.quickActions.scanBarcode')}
               </Button>
             </Link>
             <Button
@@ -137,7 +140,7 @@ function OfficerDashboard() {
               leftIcon={<RefreshCw size={14} />}
               onClick={() => refetch()}
             >
-              Refresh
+              {t('actions.refresh')}
             </Button>
           </div>
         }
@@ -145,7 +148,7 @@ function OfficerDashboard() {
 
       {isError && (
         <ErrorState
-          message={error?.response?.data?.error?.message || 'Failed to load officer dashboard metrics.'}
+          message={error?.response?.data?.error?.message || t('dashboard.officer.loadError')}
           onRetry={refetch}
         />
       )}
@@ -153,33 +156,33 @@ function OfficerDashboard() {
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Office Stock Items"
+          title={t('dashboard.officer.kpis.officeStockItems')}
           value={formatNumber(dashData?.total_office_items ?? '—')}
-          subtitle="Assigned to this store"
+          subtitle={t('dashboard.officer.kpis.officeStockItemsSub')}
           icon={Package}
           color="teal"
           loading={isLoading}
         />
         <KPICard
-          title="Pending Condemnations"
+          title={t('dashboard.kpis.pendingCondemnations')}
           value={formatNumber(dashData?.pending_condemnations ?? '—')}
-          subtitle="Awaiting sanction review"
+          subtitle={t('dashboard.officer.kpis.pendingCondemnationsSub')}
           icon={TrendingDown}
           color="amber"
           loading={isLoading}
         />
         <KPICard
-          title="Active Transfers"
+          title={t('dashboard.officer.kpis.activeTransfers')}
           value={formatNumber(dashData?.pending_transfers ?? '—')}
-          subtitle="Inter-office transit & approval"
+          subtitle={t('dashboard.officer.kpis.activeTransfersSub')}
           icon={ClipboardCheck}
           color="blue"
           loading={isLoading}
         />
         <KPICard
-          title="Audit Discrepancies"
+          title={t('dashboard.officer.kpis.auditDiscrepancies')}
           value={formatNumber(dashData?.verification_discrepancies ?? '—')}
-          subtitle="Physical vs book count flags"
+          subtitle={t('dashboard.officer.kpis.auditDiscrepanciesSub')}
           icon={ShieldAlert}
           color="red"
           loading={isLoading}
@@ -193,17 +196,17 @@ function OfficerDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
-                Operational Status Distribution
+                {t('dashboard.officer.sections.statusDistributionTitle')}
               </h2>
               <p className="text-xs text-forest-600 dark:text-forest-400 mt-0.5">
-                Breakdown of items in store custody
+                {t('dashboard.officer.sections.statusDistributionSubtitle')}
               </p>
             </div>
             <Link
               to={ROUTES.INVENTORY}
               className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline flex items-center gap-1"
             >
-              View Register <ArrowRight size={13} />
+              {t('dashboard.officer.viewRegister')} <ArrowRight size={13} />
             </Link>
           </div>
 
@@ -223,14 +226,14 @@ function OfficerDashboard() {
                     fontSize: '12px',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                   }}
-                  formatter={(value) => [formatNumber(value), 'Items']}
+                  formatter={(value) => [formatNumber(value), t('dashboard.officer.itemsUnit')]}
                 />
                 <Bar dataKey="count" fill={barColor} radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-56 flex items-center justify-center text-sm text-forest-400">
-              No status distribution indexed
+              {t('dashboard.officer.noStatusDistribution')}
             </div>
           )}
         </GlassCard>
@@ -239,7 +242,7 @@ function OfficerDashboard() {
         <GlassCard level={1} className="p-6 flex flex-col justify-between">
           <div>
             <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-3">
-              Supervisory Quick Actions
+              {t('dashboard.officer.sections.quickActionsTitle')}
             </h2>
             <div className="space-y-2.5">
               <Link
@@ -251,8 +254,8 @@ function OfficerDashboard() {
                     <TrendingDown size={16} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">Condemnation Proposals</p>
-                    <p className="text-[11px] text-forest-600 dark:text-forest-400">Review items for disposal</p>
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.officer.actions.condemnations')}</p>
+                    <p className="text-[11px] text-forest-600 dark:text-forest-400">{t('dashboard.officer.actions.condemnationsSub')}</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-forest-400 group-hover:translate-x-0.5 transition-transform" />
@@ -267,8 +270,8 @@ function OfficerDashboard() {
                     <ClipboardCheck size={16} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">Physical Stock Verification</p>
-                    <p className="text-[11px] text-forest-600 dark:text-forest-400">Conduct annual audit sessions</p>
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.officer.actions.verification')}</p>
+                    <p className="text-[11px] text-forest-600 dark:text-forest-400">{t('dashboard.officer.actions.verificationSub')}</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-forest-400 group-hover:translate-x-0.5 transition-transform" />
@@ -283,8 +286,8 @@ function OfficerDashboard() {
                     <Package size={16} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">Dead Stock Register</p>
-                    <p className="text-[11px] text-forest-600 dark:text-forest-400">Non-moving & obsolete stock</p>
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('nav.deadStockRegister')}</p>
+                    <p className="text-[11px] text-forest-600 dark:text-forest-400">{t('dashboard.officer.actions.deadStockSub')}</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-forest-400 group-hover:translate-x-0.5 transition-transform" />
@@ -299,8 +302,8 @@ function OfficerDashboard() {
                     <FileText size={16} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">Department Reports</p>
-                    <p className="text-[11px] text-forest-600 dark:text-forest-400">Registers, movements & valuation</p>
+                    <p className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.officer.actions.reports')}</p>
+                    <p className="text-[11px] text-forest-600 dark:text-forest-400">{t('dashboard.officer.actions.reportsSub')}</p>
                   </div>
                 </div>
                 <ArrowRight size={14} className="text-forest-400 group-hover:translate-x-0.5 transition-transform" />
@@ -309,7 +312,7 @@ function OfficerDashboard() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-forest-500/10 dark:border-forest-400/10 flex items-center justify-between text-xs text-forest-600 dark:text-forest-400">
-            <span>Critical alerts active:</span>
+            <span>{t('dashboard.officer.criticalAlertsActive')}</span>
             <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
               {alertsData?.critical_count ?? 0}
             </span>
@@ -321,10 +324,10 @@ function OfficerDashboard() {
       <GlassCard level={1} className="overflow-hidden">
         <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
           <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
-            Recent Movements & Ledger Postings
+            {t('dashboard.officer.sections.recentMovementsTitle')}
           </h2>
           <Link to={ROUTES.TRANSACTIONS} className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline">
-            View All Ledger Entries
+            {t('dashboard.officer.viewAllLedger')}
           </Link>
         </div>
 
@@ -338,10 +341,10 @@ function OfficerDashboard() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-forest-950 dark:text-forest-50 font-mono">
-                      {tx.reference_number || tx.voucher_number || 'Transaction'}
+                      {tx.reference_number || tx.voucher_number || t('dashboard.officer.defaultTransaction')}
                     </p>
                     <p className="text-xs text-forest-600 dark:text-forest-400">
-                      {tx.item_name} · Qty: <span className="font-bold">{tx.quantity}</span> · {formatDateTime(tx.created_at)}
+                      {tx.item_name} · {t('inventory.table.quantity')}: <span className="font-bold">{tx.quantity}</span> · {formatDateTime(tx.created_at)}
                     </p>
                   </div>
                 </div>
@@ -354,7 +357,7 @@ function OfficerDashboard() {
           </div>
         ) : (
           <div className="py-10 text-center text-xs text-forest-400">
-            No recent store movements recorded
+            {t('dashboard.officer.noRecentMovements')}
           </div>
         )}
       </GlassCard>

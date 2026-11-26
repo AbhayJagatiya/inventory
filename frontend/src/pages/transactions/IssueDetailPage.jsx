@@ -11,9 +11,11 @@ import ErrorState from '../../components/feedback/ErrorState'
 import { getIssue } from '../../api/transactions.api'
 import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
+import { useLanguage } from '../../i18n'
 
 export default function IssueDetailPage() {
   const { id } = useParams()
+  const { t } = useLanguage()
 
   const { data: issueData, isLoading, isError, refetch } = useQuery({
     queryKey: ['issue', id],
@@ -32,19 +34,19 @@ export default function IssueDetailPage() {
   }
 
   if (isError || !issue.id) {
-    return <ErrorState message="Could not locate issue voucher." onRetry={refetch} />
+    return <ErrorState message={t('transactions.issues.detail.notFound')} onRetry={refetch} />
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Stock Issue: ${issue.voucher_number}`}
-        subtitle={`Issued on: ${formatDate(issue.issue_date)} · Recipient: ${issue.department}`}
+        title={t('transactions.issues.detail.titlePrefix', { number: issue.voucher_number })}
+        subtitle={t('transactions.issues.detail.subtitle', { date: formatDate(issue.issue_date), dept: issue.department })}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.ISSUES}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Back to Register
+                {t('transactions.issues.detail.backToRegister')}
               </Button>
             </Link>
             <Button
@@ -53,7 +55,7 @@ export default function IssueDetailPage() {
               leftIcon={<Printer size={14} />}
               onClick={() => window.print()}
             >
-              Print Issue Gate Pass
+              {t('transactions.issues.detail.printGatePass')}
             </Button>
           </div>
         }
@@ -64,8 +66,11 @@ export default function IssueDetailPage() {
         <div className="flex items-center gap-2 font-medium">
           <ShieldCheck size={18} className="text-emerald-700" />
           <span>
-            <strong>VOUCHER POSTED:</strong> Items legally issued and transferred to departmental custody on{' '}
-            {formatDate(issue.posted_at || issue.issue_date)} by {issue.issued_by || 'Store Staff'}.
+            <strong>{t('transactions.issues.detail.voucherPosted')}</strong>{' '}
+            {t('transactions.issues.detail.postedDesc', {
+              date: formatDate(issue.posted_at || issue.issue_date),
+              by: issue.issued_by || t('transactions.issues.detail.storeStaff'),
+            })}
           </span>
         </div>
         <StatusBadge status="POSTED" size="sm" />
@@ -76,27 +81,27 @@ export default function IssueDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Building2 size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Recipient Branch & Custodian
+            {t('transactions.issues.detail.sectionRecipient')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Destination Department:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.destDept')}</span>
               <span className="font-semibold text-slate-900 dark:text-white">{issue.department}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Receiving Custodian:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.receivingCustodian')}</span>
               <span className="font-medium text-slate-900 dark:text-white flex items-center gap-1">
                 <User size={12} className="text-slate-400" />
                 {issue.receiving_employee}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Employee Designation:</span>
-              <span className="text-slate-800 dark:text-slate-200">{issue.receiving_designation || 'Staff'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.empDesignation')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{issue.receiving_designation || t('transactions.issues.staffDefault')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Sanction / Order Memo:</span>
-              <span className="font-mono text-slate-900 dark:text-white font-semibold">{issue.sanction_order_number || 'Direct Sanction'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.sanctionMemo')}</span>
+              <span className="font-mono text-slate-900 dark:text-white font-semibold">{issue.sanction_order_number || t('transactions.issues.detail.directSanction')}</span>
             </div>
           </div>
         </div>
@@ -104,24 +109,24 @@ export default function IssueDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Package size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Issuing Authority & Purpose
+            {t('transactions.issues.detail.sectionAuthority')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Issuing Store:</span>
-              <span className="font-medium text-slate-900 dark:text-white">District Panchayat Central Store, Veraval</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.issuingStore')}</span>
+              <span className="font-medium text-slate-900 dark:text-white">{t('transactions.issues.detail.centralStoreName')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Issued By Officer:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{issue.issued_by || 'Store Staff'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.issuedByOfficer')}</span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">{issue.issued_by || t('transactions.issues.detail.storeStaff')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Issue Purpose:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.issuePurpose')}</span>
               <span className="font-medium text-slate-900 dark:text-white">{issue.purpose}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Handover Remarks:</span>
-              <span className="text-slate-600 dark:text-slate-300">{issue.remarks || 'Items inspected and handed over.'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.handoverRemarks')}</span>
+              <span className="text-slate-600 dark:text-slate-300">{issue.remarks || t('transactions.issues.detail.defaultRemarks')}</span>
             </div>
           </div>
         </div>
@@ -132,7 +137,7 @@ export default function IssueDetailPage() {
         <div className="px-5 py-4 border-b border-slate-200 dark:border-emerald-500/15 flex items-center justify-between bg-slate-50/70 dark:bg-[#0A1513]">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
-            Issued Inventory Schedule ({issue.items?.length || 0})
+            {t('transactions.issues.detail.scheduleTitle', { count: issue.items?.length || 0 })}
           </h2>
         </div>
 
@@ -141,13 +146,13 @@ export default function IssueDetailPage() {
             <thead className="bg-slate-100/70 dark:bg-[#0A1513] border-b border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">#</th>
-                <th className="py-2.5 px-4">Item Name & Code</th>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-4">Serial Number</th>
-                <th className="py-2.5 px-3 text-center">Issued Qty</th>
-                <th className="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">Returned Qty</th>
-                <th className="py-2.5 px-3 text-center text-amber-700 dark:text-amber-400">Outstanding Balance</th>
-                <th className="py-2.5 px-4">Remarks</th>
+                <th className="py-2.5 px-4">{t('transactions.issues.detail.colItemNameCode')}</th>
+                <th className="py-2.5 px-3">{t('transactions.issues.detail.colType')}</th>
+                <th className="py-2.5 px-4">{t('transactions.issues.detail.colSerialNumber')}</th>
+                <th className="py-2.5 px-3 text-center">{t('transactions.issues.detail.colIssuedQty')}</th>
+                <th className="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{t('transactions.issues.detail.colReturnedQty')}</th>
+                <th className="py-2.5 px-3 text-center text-amber-700 dark:text-amber-400">{t('transactions.issues.detail.colOutstanding')}</th>
+                <th className="py-2.5 px-4">{t('transactions.issues.detail.colRemarks')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10 text-slate-800 dark:text-slate-200">
@@ -160,7 +165,7 @@ export default function IssueDetailPage() {
                   </td>
                   <td className="py-3 px-3">
                     <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-[#081210] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-emerald-500/20">
-                      {line.item_type === 'DURABLE_ASSET' ? 'Durable' : 'Consumable'}
+                      {line.item_type === 'DURABLE_ASSET' ? t('transactions.issues.detail.typeDurable') : t('transactions.issues.detail.typeConsumable')}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{line.serial_number || 'N/A'}</td>
@@ -184,11 +189,11 @@ export default function IssueDetailPage() {
       {/* Custodian Sign-off Box */}
       <div className="bg-slate-50/70 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/20 rounded-2xl p-6 grid grid-cols-2 gap-8 text-xs text-slate-700 dark:text-slate-300">
         <div className="border-t border-slate-400 dark:border-emerald-500/40 pt-2 text-center mt-12">
-          <p className="font-semibold text-slate-900 dark:text-white">Issuing Store Officer / Staff</p>
-          <p className="text-slate-500 dark:text-slate-400">Store Department, Gir Somnath</p>
+          <p className="font-semibold text-slate-900 dark:text-white">{t('transactions.issues.detail.signIssuing')}</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('transactions.issues.detail.signStoreDept')}</p>
         </div>
         <div className="border-t border-slate-400 dark:border-emerald-500/40 pt-2 text-center mt-12">
-          <p className="font-semibold text-slate-900 dark:text-white">Receiving Custodian Officer Signature</p>
+          <p className="font-semibold text-slate-900 dark:text-white">{t('transactions.issues.detail.signReceiving')}</p>
           <p className="text-slate-500 dark:text-slate-400">{issue.receiving_employee} ({issue.department})</p>
         </div>
       </div>

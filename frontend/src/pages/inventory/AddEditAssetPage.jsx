@@ -15,6 +15,7 @@ import { ROUTES } from '../../constants/routes'
 import { extractApiError } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
 
 const assetSchema = z.object({
   item_type: z.enum(['DURABLE_ASSET', 'CONSUMABLE_STOCK']),
@@ -41,6 +42,7 @@ const assetSchema = z.object({
 export default function AddEditAssetPage() {
   const { id } = useParams()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
   const [apiError, setApiError] = useState('')
@@ -154,14 +156,14 @@ export default function AddEditAssetPage() {
 
       if (isEdit) {
         await updateItem(id, payload)
-        toast.success('Asset record updated successfully')
+        toast.success(t('inventory.messages.assetUpdated'))
       } else {
         await createItem(payload)
-        toast.success('New inventory record registered successfully')
+        toast.success(t('inventory.messages.assetCreated'))
       }
       navigate(ROUTES.INVENTORY)
     } catch (err) {
-      const msg = extractApiError(err) || 'Failed to save asset. Please check required fields.'
+      const msg = extractApiError(err) || t('inventory.assetForm.saveError')
       setApiError(msg)
       toast.error(msg)
     }
@@ -170,16 +172,16 @@ export default function AddEditAssetPage() {
   return (
     <div className="space-y-6 max-w-5xl">
       <PageHeader
-        title={isEdit ? 'Edit Asset Record' : 'Register New Inventory Item'}
+        title={isEdit ? t('inventory.assetForm.editTitle') : t('inventory.assetForm.createTitle')}
         subtitle={
           isEdit
-            ? 'Update location custody, condition classification, or specifications'
-            : 'Register durable assets (with unique Asset ID & barcode) or quantity-tracked consumables'
+            ? t('inventory.assetForm.editSubtitle')
+            : t('inventory.assetForm.createSubtitle')
         }
         actions={
           <Link to={ROUTES.INVENTORY}>
             <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
           </Link>
         }
@@ -197,14 +199,14 @@ export default function AddEditAssetPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-5 transition-colors">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-emerald-500/15">
             <Package size={18} className="text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">1. Item Identity & Tracking Mode</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('inventory.assetForm.section1')}</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Tracking Mode */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Tracking Mode <span className="text-red-500">*</span>
+                {t('inventory.assetForm.trackingMode')} <span className="text-red-500">*</span>
               </label>
               <select
                 {...register('item_type')}
@@ -212,29 +214,29 @@ export default function AddEditAssetPage() {
                 disabled={isEdit}
               >
                 <option value="DURABLE_ASSET" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                  Durable Asset (Individual Asset ID & Barcode)
+                  {t('inventory.assetForm.durableOption')}
                 </option>
                 <option value="CONSUMABLE_STOCK" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                  Consumable Stock (Quantity / Batch Tracked)
+                  {t('inventory.assetForm.consumableOption')}
                 </option>
               </select>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 {watchItemType === 'DURABLE_ASSET'
-                  ? 'For equipment, computers, machinery & furniture. Generates permanent unique AST code.'
-                  : 'For office supplies, paper, stationery. Tracks quantity balance without individual QR labels.'}
+                  ? t('inventory.assetForm.durableHint')
+                  : t('inventory.assetForm.consumableHint')}
               </p>
             </div>
 
             {/* Category */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Item Category <span className="text-red-500">*</span>
+                {t('inventory.assetForm.itemCategory')} <span className="text-red-500">*</span>
               </label>
               <select
                 {...register('category_id')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">-- Select Category --</option>
+                <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.selectCategoryOpt')}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
                     {c.name} ({c.code})
@@ -250,12 +252,12 @@ export default function AddEditAssetPage() {
           {/* Item Name */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Official Item Description / Name <span className="text-red-500">*</span>
+              {t('inventory.assetForm.officialName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               {...register('item_name')}
-              placeholder="e.g. HP LaserJet Pro MFP 4104dw Printer or A4 Copier Paper"
+              placeholder={t('inventory.assetForm.officialNamePlaceholder')}
               className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
             {errors.item_name && (
@@ -267,29 +269,29 @@ export default function AddEditAssetPage() {
           {watchItemType === 'DURABLE_ASSET' && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-emerald-500/15">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Brand / Manufacturer</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.assetForm.brand')}</label>
                 <input
                   type="text"
                   {...register('brand')}
-                  placeholder="e.g. HP, Godrej, Dell"
+                  placeholder={t('inventory.assetForm.brandPlaceholder')}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Model / Specs</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.assetForm.model')}</label>
                 <input
                   type="text"
                   {...register('model_number')}
-                  placeholder="e.g. OptiPlex 7090"
+                  placeholder={t('inventory.assetForm.modelPlaceholder')}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Serial Number</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.assetForm.serialNumber')}</label>
                 <input
                   type="text"
                   {...register('serial_number')}
-                  placeholder="Unique OEM serial number"
+                  placeholder={t('inventory.assetForm.serialPlaceholder')}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 />
               </div>
@@ -301,19 +303,19 @@ export default function AddEditAssetPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-4 transition-colors">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-emerald-500/15">
             <Building2 size={18} className="text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">2. Storage Location & Custody</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('inventory.assetForm.section2')}</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Storage Room / Section <span className="text-red-500">*</span>
+                {t('inventory.assetForm.storageRoom')} <span className="text-red-500">*</span>
               </label>
               <select
                 {...register('location_id')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">-- Select Store Room --</option>
+                <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.selectRoomOpt')}</option>
                 {locations.map((loc) => (
                   <option key={loc.id} value={loc.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
                     {loc.room_number} - {loc.description}
@@ -327,28 +329,28 @@ export default function AddEditAssetPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Current Custodian / Section
+                {t('inventory.assetForm.custodian')}
               </label>
               <input
                 type="text"
                 {...register('current_custodian')}
-                placeholder="e.g. Store Officer or Staff Name"
+                placeholder={t('inventory.assetForm.custodianPlaceholder')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Physical Condition <span className="text-red-500">*</span>
+                {t('inventory.assetForm.physicalCondition')} <span className="text-red-500">*</span>
               </label>
               <select
                 {...register('condition')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="GOOD" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Good (Operational & Sound)</option>
-                <option value="FAIR" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Fair (Normal Wear & Tear)</option>
-                <option value="DAMAGED" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Damaged (Requires Repair)</option>
-                <option value="SCRAP" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Scrap (Uneconomical to repair)</option>
+                <option value="GOOD" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condGood')}</option>
+                <option value="FAIR" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condFair')}</option>
+                <option value="DAMAGED" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condDamaged')}</option>
+                <option value="SCRAP" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condScrap')}</option>
               </select>
             </div>
           </div>
@@ -358,7 +360,7 @@ export default function AddEditAssetPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-4 transition-colors">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-emerald-500/15">
             <DollarSign size={18} className="text-emerald-600 dark:text-emerald-400" />
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">3. Procurement & Valuation Details</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('inventory.assetForm.section3')}</h2>
           </div>
 
           {/* Legacy Checkbox */}
@@ -370,14 +372,14 @@ export default function AddEditAssetPage() {
               className="rounded border-slate-300 dark:border-emerald-500/30 text-emerald-600 focus:ring-emerald-500"
             />
             <label htmlFor="is_legacy" className="cursor-pointer">
-              <strong>Legacy Pre-Digital Record:</strong> Check this if procurement documents/invoices are missing from historical manual registers.
+              <strong>{t('inventory.assetForm.legacyTitle')}</strong> {t('inventory.assetForm.legacyDesc')}
             </label>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Quantity <span className="text-red-500">*</span>
+                {t('inventory.assetForm.quantity')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -387,13 +389,13 @@ export default function AddEditAssetPage() {
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white disabled:bg-slate-100 dark:disabled:bg-[#081210] disabled:text-slate-500 dark:disabled:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
               {watchItemType === 'DURABLE_ASSET' && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Durable assets are 1 item per record</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{t('inventory.assetForm.durableQtyHint')}</p>
               )}
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Unit of Measure <span className="text-red-500">*</span>
+                {t('inventory.assetForm.uom')} <span className="text-red-500">*</span>
               </label>
               <select
                 {...register('uom')}
@@ -409,7 +411,7 @@ export default function AddEditAssetPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Unit Purchase Cost (₹) <span className="text-red-500">*</span>
+                {t('inventory.assetForm.unitCost')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -421,7 +423,7 @@ export default function AddEditAssetPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Total Valuation (₹)
+                {t('inventory.assetForm.totalValuation')}
               </label>
               <div className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-[#081210] border border-slate-200 dark:border-emerald-500/20 rounded-xl font-bold font-mono text-emerald-700 dark:text-emerald-400">
                 ₹{calculatedTotalCost.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -432,7 +434,7 @@ export default function AddEditAssetPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Acquisition Date <span className="text-red-500">*</span>
+                {t('inventory.assetForm.acquisitionDate')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -446,24 +448,24 @@ export default function AddEditAssetPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Invoice / PO Reference Number
+                {t('inventory.assetForm.invoiceNumber')}
               </label>
               <input
                 type="text"
                 {...register('invoice_number')}
-                placeholder={watchIsLegacy ? 'Not Available (Legacy)' : 'e.g. INV-2024-890'}
+                placeholder={watchIsLegacy ? t('inventory.assetForm.invoiceLegacyPlaceholder') : t('inventory.assetForm.invoicePlaceholder')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Supplier / Vendor Name
+                {t('inventory.assetForm.supplierName')}
               </label>
               <input
                 type="text"
                 {...register('supplier_name')}
-                placeholder={watchIsLegacy ? 'Not Available (Historic)' : 'Registered Supplier'}
+                placeholder={watchIsLegacy ? t('inventory.assetForm.supplierLegacyPlaceholder') : t('inventory.assetForm.supplierPlaceholder')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>
@@ -473,12 +475,12 @@ export default function AddEditAssetPage() {
         {/* Submit Bar */}
         <div className="flex items-center justify-between p-4 bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 shadow-sm transition-colors">
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Submission verifies composite office scoping and assigns auto-generated asset ID & barcode.
+            {t('inventory.assetForm.submitHint')}
           </p>
           <div className="flex items-center gap-3">
             <Link to={ROUTES.INVENTORY}>
               <Button variant="secondary" size="md">
-                Cancel
+                {t('actions.cancel')}
               </Button>
             </Link>
             <Button
@@ -488,7 +490,7 @@ export default function AddEditAssetPage() {
               isLoading={isSubmitting}
               leftIcon={<Save size={16} />}
             >
-              {isEdit ? 'Update Record' : 'Register Item'}
+              {isEdit ? t('inventory.assetForm.updateRecord') : t('inventory.assetForm.registerItem')}
             </Button>
           </div>
         </div>

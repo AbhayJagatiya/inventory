@@ -1,41 +1,42 @@
 import { useLocation, Link } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
+import { useLanguage } from '../../i18n'
 
-// Map route segments to human-readable labels
-const SEGMENT_LABELS = {
-  inventory: 'Inventory',
-  new: 'New',
-  edit: 'Edit',
-  transactions: 'Transactions',
-  receipts: 'Stock Receipts',
-  issues: 'Stock Issues',
-  returns: 'Stock Returns',
-  transfers: 'Transfers',
-  'dead-stock': 'Dead Stock',
-  register: 'Register',
-  condemnations: 'Condemnations',
-  disposals: 'Disposals',
-  verification: 'Verification',
-  lookup: 'Barcode Lookup',
-  sessions: 'Audit Sessions',
-  suppliers: 'Suppliers',
-  procurement: 'Procurement',
-  maintenance: 'Maintenance',
-  warranties: 'Warranties',
-  alerts: 'Alerts',
-  notifications: 'Notifications',
-  reports: 'Reports',
-  administration: 'Administration',
-  users: 'Users',
-  roles: 'Roles & Permissions',
-  offices: 'Offices',
-  'master-data': 'Master Data',
-  settings: 'Settings',
-  audit: 'Audit Trail',
-  profile: 'My Profile',
-  categories: 'Categories',
-  locations: 'Locations',
-  dashboard: 'Dashboard',
+// Map route segments to translation keys
+const SEGMENT_KEYS = {
+  inventory: 'breadcrumbs.inventory',
+  new: 'breadcrumbs.new',
+  edit: 'breadcrumbs.edit',
+  transactions: 'breadcrumbs.transactions',
+  receipts: 'breadcrumbs.receipts',
+  issues: 'breadcrumbs.issues',
+  returns: 'breadcrumbs.returns',
+  transfers: 'breadcrumbs.transfers',
+  'dead-stock': 'breadcrumbs.deadStock',
+  register: 'breadcrumbs.register',
+  condemnations: 'breadcrumbs.condemnations',
+  disposals: 'breadcrumbs.disposals',
+  verification: 'breadcrumbs.verification',
+  lookup: 'breadcrumbs.lookup',
+  sessions: 'breadcrumbs.sessions',
+  suppliers: 'breadcrumbs.suppliers',
+  procurement: 'breadcrumbs.procurement',
+  maintenance: 'breadcrumbs.maintenance',
+  warranties: 'breadcrumbs.warranties',
+  alerts: 'breadcrumbs.alerts',
+  notifications: 'breadcrumbs.notifications',
+  reports: 'breadcrumbs.reports',
+  administration: 'breadcrumbs.administration',
+  users: 'breadcrumbs.users',
+  roles: 'breadcrumbs.roles',
+  offices: 'breadcrumbs.offices',
+  'master-data': 'breadcrumbs.masterData',
+  settings: 'breadcrumbs.settings',
+  audit: 'breadcrumbs.audit',
+  profile: 'breadcrumbs.profile',
+  categories: 'breadcrumbs.categories',
+  locations: 'breadcrumbs.locations',
+  dashboard: 'breadcrumbs.dashboard',
 }
 
 function isUUID(str) {
@@ -44,13 +45,15 @@ function isUUID(str) {
 
 function Breadcrumbs() {
   const { pathname } = useLocation()
+  const { t } = useLanguage()
   const segments = pathname.split('/').filter(Boolean)
 
   if (segments.length === 0) return null
 
   const crumbs = segments.reduce((acc, seg, i) => {
     const path = '/' + segments.slice(0, i + 1).join('/')
-    const label = isUUID(seg) ? 'Detail' : (SEGMENT_LABELS[seg] || seg)
+    const key = SEGMENT_KEYS[seg]
+    const label = isUUID(seg) ? t('breadcrumbs.detail') : (key ? t(key) : seg)
     acc.push({ label, path })
     return acc
   }, [])
@@ -60,7 +63,7 @@ function Breadcrumbs() {
       <Link
         to="/dashboard"
         className="hover:text-forest-800 dark:hover:text-forest-200 p-1 rounded-md hover:bg-forest-500/10 transition-colors"
-        title="Dashboard"
+        title={t('breadcrumbs.dashboard')}
       >
         <Home size={13} />
       </Link>

@@ -10,12 +10,16 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { getUnreadNotificationCount } from '../../api/alerts.api'
 import { ROLE_LABELS } from '../../constants/enums'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
+import LanguageSelector from '../common/LanguageSelector'
 import Breadcrumbs from './Breadcrumbs'
 
 function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
   const { user, logout, userRole } = useAuth()
+  const { t } = useLanguage()
   const roleStr = typeof userRole === 'string' ? userRole : (userRole?.name || 'STORE_STAFF')
-  const displayRoleLabel = ROLE_LABELS[roleStr] || roleStr || 'Panchayat Staff'
+  const displayRoleLabel = translateEnum(t, roleStr) || ROLE_LABELS[roleStr] || roleStr
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
   const navigate = useNavigate()
@@ -53,7 +57,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
         <button
           onClick={onOpenMobile}
           className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl md:hidden transition-colors"
-          aria-label="Open navigation menu"
+          aria-label={t('nav.openNavMenu')}
         >
           <Menu size={20} />
         </button>
@@ -62,7 +66,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
         <button
           onClick={onToggleSidebar}
           className="hidden md:flex p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={sidebarCollapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
         >
           {sidebarCollapsed ? <PanelLeft size={19} /> : <PanelLeftClose size={19} />}
         </button>
@@ -73,13 +77,15 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
         </div>
       </div>
 
-      {/* Right: Notifications + User Profile */}
+      {/* Right: Language Selector + Notifications + User Profile */}
       <div className="flex items-center gap-2">
+        <LanguageSelector compact />
+
         {/* Notification Bell */}
         <Link
           to={ROUTES.NOTIFICATIONS}
           className="relative p-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-colors"
-          aria-label="View notifications"
+          aria-label={t('nav.viewNotifications')}
         >
           <Bell size={18} />
           {unreadCount > 0 && (
@@ -145,7 +151,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
                   className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                 >
                   <User size={15} />
-                  My Profile
+                  {t('nav.myProfile')}
                 </Link>
                 <Link
                   to={ROUTES.SETTINGS}
@@ -153,7 +159,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
                   className="flex items-center gap-2.5 px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
                 >
                   <Settings size={15} />
-                  Preferences & Settings
+                  {t('nav.systemSettings')}
                 </Link>
               </div>
 
@@ -163,7 +169,7 @@ function Navbar({ onToggleSidebar, onOpenMobile, sidebarCollapsed }) {
                   className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                 >
                   <LogOut size={15} />
-                  Sign Out
+                  {t('actions.logout')}
                 </button>
               </div>
             </div>

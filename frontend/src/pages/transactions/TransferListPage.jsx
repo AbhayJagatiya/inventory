@@ -18,10 +18,12 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import { motion } from 'framer-motion'
+import { useLanguage } from '../../i18n'
 
 export default function TransferListPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -54,7 +56,7 @@ export default function TransferListPage() {
   const columns = [
     {
       key: 'transfer_number',
-      header: 'Transfer Ref No.',
+      header: t('transactions.transfers.table.refNo'),
       render: (val, row) => (
         <div>
           <span
@@ -63,37 +65,27 @@ export default function TransferListPage() {
           >
             {val}
           </span>
-          <span className="block text-[11px] text-forest-500 mt-0.5">Order: {row.order_reference || 'Inter-store'}</span>
+          <span className="block text-[11px] text-forest-500 mt-0.5">{t('transactions.issues.orderPrefix')} {row.order_reference || t('transactions.transfers.interStore')}</span>
         </div>
       ),
     },
     {
       key: 'request_date',
-      header: 'Date',
+      header: t('transactions.transfers.table.date'),
       render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
     },
     {
       key: 'transfer_type',
-      header: 'Type',
-      render: (val) => {
-        const label =
-          val === 'INTER_OFFICE'
-            ? 'Inter-Office'
-            : val === 'TEMPORARY'
-              ? 'Temporary Loan'
-              : val === 'PERMANENT'
-                ? 'Permanent'
-                : 'Transfer'
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-forest-500/10 text-forest-800 dark:text-forest-200 border border-forest-500/15">
-            {label}
-          </span>
-        )
-      },
+      header: t('transactions.transfers.table.type'),
+      render: (val) => (
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-forest-500/10 text-forest-800 dark:text-forest-200 border border-forest-500/15">
+          {val === 'INTER_OFFICE' ? t('transactions.transfers.interOffice') : t('transactions.transfers.intraOffice')}
+        </span>
+      ),
     },
     {
       key: 'route',
-      header: 'Transfer Route (From ➔ To)',
+      header: t('transactions.transfers.table.route'),
       render: (_, row) => (
         <div className="flex items-center gap-1.5 text-xs text-forest-700 dark:text-forest-300 max-w-sm">
           <span className="truncate max-w-[120px]" title={row.from_office_name}>
@@ -108,32 +100,32 @@ export default function TransferListPage() {
     },
     {
       key: 'items',
-      header: 'Items',
+      header: t('transactions.transfers.table.items'),
       render: (items) => (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
           <FileText size={12} className="text-forest-500" />
-          {items?.length || 0} line items
+          {t('transactions.issues.lineItemsCount', { count: items?.length || 0 })}
         </span>
       ),
     },
     {
       key: 'initiated_by_name',
-      header: 'Requested By',
+      header: t('transactions.transfers.table.requestedBy'),
       render: (val) => <span className="text-xs text-forest-600 dark:text-forest-400 font-medium">{val}</span>,
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('transactions.transfers.table.status'),
       render: (val) => <StatusBadge status={val} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Action',
+      header: t('transactions.transfers.table.action'),
       align: 'right',
       render: (_, row) => (
         <Link to={ROUTES.TRANSFER_DETAIL(row.id)}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
-            Track
+            {t('transactions.transfers.trackBtn')}
           </Button>
         </Link>
       ),
@@ -168,27 +160,27 @@ export default function TransferListPage() {
 
         <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Date:</span>
+            <span className="text-forest-500">{t('transactions.transfers.cardDate')}</span>
             <span>{formatDate(row.request_date)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Type:</span>
-            <span className="font-semibold">{row.transfer_type}</span>
+            <span className="text-forest-500">{t('transactions.transfers.cardType')}</span>
+            <span className="font-semibold">{row.transfer_type === 'INTER_OFFICE' ? t('transactions.transfers.interOffice') : t('transactions.transfers.intraOffice')}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Items:</span>
-            <span className="font-bold font-mono">{row.items?.length || 0} line items</span>
+            <span className="text-forest-500">{t('transactions.transfers.cardItems')}</span>
+            <span className="font-bold font-mono">{t('transactions.issues.lineItemsCount', { count: row.items?.length || 0 })}</span>
           </div>
         </div>
       </div>
 
       <div className="mt-3 pt-2 flex items-center justify-between text-xs">
         <span className="text-[11px] text-forest-500 truncate max-w-[170px]">
-          By: {row.initiated_by_name}
+          {t('transactions.transfers.cardBy')} {row.initiated_by_name}
         </span>
         <Link to={ROUTES.TRANSFER_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
-            Track
+            {t('transactions.transfers.trackBtn')}
           </Button>
         </Link>
       </div>
@@ -203,15 +195,15 @@ export default function TransferListPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Inter-Store Stock Transfers"
-        subtitle="Track multi-stage inventory transit, authorizations, gate-passes, and destination receipt verifications"
+        title={t('transactions.transfers.title')}
+        subtitle={t('transactions.transfers.subtitle')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             <ViewToggle view={viewMode} onViewChange={handleViewChange} />
             {canRequest && (
               <Link to={ROUTES.TRANSFERS_NEW}>
                 <Button variant="primary" size="sm" leftIcon={<PlusCircle size={15} />}>
-                  + New Transfer Request
+                  {t('transactions.transfers.newRequest')}
                 </Button>
               </Link>
             )}
@@ -225,7 +217,7 @@ export default function TransferListPage() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search transfer ref, order, office..."
+            placeholder={t('transactions.transfers.searchPlaceholder')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -237,7 +229,7 @@ export default function TransferListPage() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-2 text-xs font-bold text-forest-700 dark:text-forest-300">
-            <Filter size={14} /> Status:
+            <Filter size={14} /> {t('transactions.transfers.statusLabel')}
           </div>
           <select
             value={statusFilter}
@@ -247,12 +239,12 @@ export default function TransferListPage() {
             }}
             className="px-3 py-1.5 bg-forest-50/70 dark:bg-forest-950/70 border border-forest-500/15 dark:border-forest-400/20 rounded-xl text-xs text-forest-900 dark:text-forest-100 font-medium focus:outline-none focus:ring-1 focus:ring-forest-500"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="SUBMITTED">Submitted (Pending Approval)</option>
-            <option value="APPROVED">Approved (Pending Dispatch)</option>
-            <option value="IN_TRANSIT">In Transit (Dispatched)</option>
-            <option value="COMPLETED">Completed (Acknowledged)</option>
-            <option value="REJECTED">Rejected</option>
+            <option value="ALL">{t('transactions.transfers.allStatuses')}</option>
+            <option value="SUBMITTED">{t('transactions.transfers.statusSubmitted')}</option>
+            <option value="APPROVED">{t('transactions.transfers.statusApproved')}</option>
+            <option value="IN_TRANSIT">{t('transactions.transfers.statusInTransit')}</option>
+            <option value="COMPLETED">{t('transactions.transfers.statusCompleted')}</option>
+            <option value="REJECTED">{t('transactions.transfers.statusRejected')}</option>
           </select>
         </div>
       </GlassCard>
@@ -268,8 +260,8 @@ export default function TransferListPage() {
           total={transfers.length}
           totalPages={totalPages}
           onPageChange={setPage}
-          emptyTitle="No stock transfers found"
-          emptyDescription="There are no transfer records matching your active filters."
+          emptyTitle={t('transactions.transfers.emptyTitle')}
+          emptyDescription={t('transactions.transfers.emptyDescription')}
         />
       ) : (
         <CardView

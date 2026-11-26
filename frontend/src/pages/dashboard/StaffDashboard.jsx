@@ -14,6 +14,8 @@ import StatusBadge from '../../components/common/StatusBadge'
 import { formatNumber, formatDateTime } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import { motion } from 'framer-motion'
 
 function KPICard({ title, value, subtitle, icon: Icon, color = 'teal', loading }) {
@@ -81,6 +83,7 @@ function KPICard({ title, value, subtitle, icon: Icon, color = 'teal', loading }
 
 function StaffDashboard() {
   const { user, officeName } = useAuth()
+  const { t } = useLanguage()
 
   const {
     data: dashData,
@@ -102,13 +105,13 @@ function StaffDashboard() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Store Staff Daily Operations"
-        subtitle={`Receipts, Issues & Inventory Handover · Office: ${officeName || 'Veraval Office'}`}
+        title={t('dashboard.staff.title')}
+        subtitle={t('dashboard.staff.subtitle', { office: officeName || t('dashboard.common.defaultOffice') })}
         actions={
           <div className="flex items-center gap-2.5">
             <Link to={ROUTES.BARCODE_LOOKUP}>
               <Button variant="secondary" size="sm" leftIcon={<QrCode size={14} />}>
-                Scan Barcode
+                {t('dashboard.quickActions.scanBarcode')}
               </Button>
             </Link>
             <Button
@@ -117,7 +120,7 @@ function StaffDashboard() {
               leftIcon={<RefreshCw size={14} />}
               onClick={() => refetch()}
             >
-              Refresh
+              {t('actions.refresh')}
             </Button>
           </div>
         }
@@ -125,7 +128,7 @@ function StaffDashboard() {
 
       {isError && (
         <ErrorState
-          message={error?.response?.data?.error?.message || 'Failed to load staff operational metrics.'}
+          message={error?.response?.data?.error?.message || t('dashboard.staff.loadError')}
           onRetry={refetch}
         />
       )}
@@ -133,33 +136,33 @@ function StaffDashboard() {
       {/* Operational KPI Counts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Available Store Stock"
+          title={t('dashboard.staff.kpis.availableStoreStock')}
           value={formatNumber(dashData?.available_stock_count ?? '—')}
-          subtitle="Ready for issue"
+          subtitle={t('dashboard.staff.kpis.availableStoreStockSub')}
           icon={Package}
           color="green"
           loading={isLoading}
         />
         <KPICard
-          title="Today's Receipts"
+          title={t('dashboard.staff.kpis.todaysReceipts')}
           value={formatNumber(dashData?.my_receipts_today ?? '—')}
-          subtitle="Inward entries logged"
+          subtitle={t('dashboard.staff.kpis.todaysReceiptsSub')}
           icon={ArrowDownLeft}
           color="teal"
           loading={isLoading}
         />
         <KPICard
-          title="Today's Issues"
+          title={t('dashboard.staff.kpis.todaysIssues')}
           value={formatNumber(dashData?.my_issues_today ?? '—')}
-          subtitle="Dispatched to departments"
+          subtitle={t('dashboard.staff.kpis.todaysIssuesSub')}
           icon={ArrowUpRight}
           color="purple"
           loading={isLoading}
         />
         <KPICard
-          title="Pending Queue"
+          title={t('dashboard.staff.kpis.pendingQueue')}
           value={formatNumber(dashData?.tasks_pending_action ?? '—')}
-          subtitle="Draft vouchers & returns"
+          subtitle={t('dashboard.staff.kpis.pendingQueueSub')}
           icon={AlertCircle}
           color="amber"
           loading={isLoading}
@@ -169,7 +172,7 @@ function StaffDashboard() {
       {/* Quick Action Matrix */}
       <GlassCard level={1} className="p-6">
         <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-4">
-          Quick Operational Handover Actions
+          {t('dashboard.staff.sections.quickActionsTitle')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <Link
@@ -179,8 +182,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-forest-500/15 text-forest-700 dark:text-forest-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <PlusCircle size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">New Item</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Asset or Stock</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.newItem')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.newItemSub')}</span>
           </Link>
 
           <Link
@@ -190,8 +193,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <ArrowDownLeft size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Inward Receipt</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Receive delivery</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.inwardReceipt')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.inwardReceiptSub')}</span>
           </Link>
 
           <Link
@@ -201,8 +204,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <ArrowUpRight size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Stock Issue</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">To branch / officer</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.stockIssue')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.stockIssueSub')}</span>
           </Link>
 
           <Link
@@ -212,8 +215,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <RotateCcw size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Stock Return</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Department return</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.stockReturn')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.stockReturnSub')}</span>
           </Link>
 
           <Link
@@ -223,8 +226,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-slate-500/15 text-slate-700 dark:text-slate-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <QrCode size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Scan Code</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Lookup serial</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.scanCode')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.scanCodeSub')}</span>
           </Link>
 
           <Link
@@ -234,8 +237,8 @@ function StaffDashboard() {
             <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-700 dark:text-rose-300 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
               <TrendingDown size={20} />
             </div>
-            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">Condemnation</span>
-            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">Submit proposal</span>
+            <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{t('dashboard.staff.actions.condemnation')}</span>
+            <span className="text-[10px] text-forest-600 dark:text-forest-400 mt-0.5">{t('dashboard.staff.actions.condemnationSub')}</span>
           </Link>
         </div>
       </GlassCard>
@@ -246,10 +249,10 @@ function StaffDashboard() {
         <GlassCard level={1} className="overflow-hidden">
           <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
             <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
-              My Recent Handled Transactions
+              {t('dashboard.staff.sections.recentTransactionsTitle')}
             </h2>
             <Link to={ROUTES.TRANSACTIONS} className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline">
-              View All
+              {t('actions.viewAll')}
             </Link>
           </div>
 
@@ -262,7 +265,7 @@ function StaffDashboard() {
                       {tx.voucher_number || tx.reference_number}
                     </p>
                     <p className="text-xs text-forest-600 dark:text-forest-400 mt-0.5">
-                      {tx.type} · {tx.item_count || 1} items · {formatDateTime(tx.created_at)}
+                      {translateEnum(t, tx.type)} · {t('dashboard.admin.itemsCount', { count: tx.item_count || 1 })} · {formatDateTime(tx.created_at)}
                     </p>
                   </div>
                   <StatusBadge status={tx.status} />
@@ -271,7 +274,7 @@ function StaffDashboard() {
             </div>
           ) : (
             <div className="py-10 text-center text-xs text-forest-400">
-              No recent transactions recorded today
+              {t('dashboard.staff.noRecentTransactions')}
             </div>
           )}
         </GlassCard>
@@ -280,9 +283,9 @@ function StaffDashboard() {
         <GlassCard level={1} className="overflow-hidden">
           <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
             <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
-              Operational Task Queue
+              {t('dashboard.staff.sections.taskQueueTitle')}
             </h2>
-            <span className="text-xs text-forest-500 font-medium">Pending store tasks</span>
+            <span className="text-xs text-forest-500 font-medium">{t('dashboard.staff.pendingStoreTasks')}</span>
           </div>
 
           <div className="p-4 space-y-3">
@@ -302,7 +305,7 @@ function StaffDashboard() {
                       to={task.action_url}
                       className="text-xs font-semibold text-forest-600 dark:text-forest-300 hover:underline shrink-0"
                     >
-                      Open
+                      {t('dashboard.staff.openTask')}
                     </Link>
                   )}
                 </div>
@@ -310,7 +313,7 @@ function StaffDashboard() {
             ) : (
               <div className="py-10 text-center text-xs text-forest-400 flex flex-col items-center justify-center">
                 <CheckCircle size={24} className="text-emerald-500 mb-1" />
-                <span>All daily store tasks are completed!</span>
+                <span>{t('dashboard.staff.allTasksCompleted')}</span>
               </div>
             )}
           </div>

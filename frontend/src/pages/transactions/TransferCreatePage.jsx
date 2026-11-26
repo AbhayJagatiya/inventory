@@ -11,6 +11,7 @@ import { createTransfer } from '../../api/transactions.api'
 import { getItems } from '../../api/inventory.api'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 const OFFICES = [
@@ -25,6 +26,7 @@ const OFFICES = [
 export default function TransferCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -38,16 +40,16 @@ export default function TransferCreatePage() {
   const [reason, setReason] = useState('')
 
   // Query items
-  const { data: itemsData, isLoading: isLoadingItems } = useQuery({
+  const { data: itemsData } = useQuery({
     queryKey: ['available-items-for-transfer'],
     queryFn: async () => {
-      const res = await getItems({ limit: 200 })
+      const res = await getItems()
       return res?.data || res || []
     },
+    initialData: [],
   })
 
   const availableItems = (itemsData || []).filter((i) => {
-    if (i.operational_status === 'DISPOSED') return false
     if (i.item_type === 'DURABLE_ASSET') return i.operational_status === 'AVAILABLE_IN_STORE'
     return (i.quantity || 0) > 0
   })
@@ -67,7 +69,7 @@ export default function TransferCreatePage() {
 
   const handleRemoveLine = (idx) => {
     if (lines.length === 1) {
-      toast.error('A transfer request must have at least one item.')
+      toast.error(t('transactions.transfers.create.errMinOne'))
       return
     }
     setLines(lines.filter((_, i) => i !== idx))
@@ -81,36 +83,36 @@ export default function TransferCreatePage() {
 
   const validate = () => {
     if (!destinationOffice) {
-      toast.error('Please select destination office.')
+      toast.error(t('transactions.transfers.create.errDestOffice'))
       return false
     }
     if (transferType === 'TEMPORARY' && !expectedReturnDate) {
-      toast.error('Please specify expected return date for temporary loan transfer.')
+      toast.error(t('transactions.transfers.create.errReturnDate'))
       return false
     }
     if (!orderReference.trim()) {
-      toast.error('Please enter sanction order / memo reference.')
+      toast.error(t('transactions.transfers.create.errOrderRef'))
       return false
     }
     if (!reason.trim()) {
-      toast.error('Please enter transfer reason / justification.')
+      toast.error(t('transactions.transfers.create.errReason'))
       return false
     }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       if (!line.selected_item_id) {
-        toast.error(`Line ${i + 1}: Please select an item to transfer.`)
+        toast.error(t('transactions.transfers.create.errLineSelect', { num: i + 1 }))
         return false
       }
       const item = availableItems.find((itm) => itm.id === line.selected_item_id)
       const qty = Number(line.quantity) || 0
       if (qty <= 0) {
-        toast.error(`Line ${i + 1}: Quantity must be greater than 0.`)
+        toast.error(t('transactions.transfers.create.errLineQty', { num: i + 1 }))
         return false
       }
       if (item && item.item_type === 'CONSUMABLE_STOCK' && qty > item.quantity) {
-        toast.error(`Line ${i + 1}: Quantity exceeds available balance (${item.quantity} ${item.uom}).`)
+        toast.error(t('transactions.transfers.create.errLineExceed', { num: i + 1, available: item.quantity, uom: item.uom }))
         return false
       }
     }
@@ -149,10 +151,10 @@ export default function TransferCreatePage() {
       }
 
       const res = await createTransfer(payload)
-      toast.success('Transfer request submitted! Awaiting Store Officer sanction.')
+      toast.success(t('transactions.transfers.create.successMsg'))
       navigate(ROUTES.TRANSFER_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || err.message || 'Failed to submit transfer request.')
+      toast.error(err.response?.data?.error?.message || err.message || t('transactions.transfers.create.failMsg'))
     } finally {
       setIsSubmitting(false)
     }
@@ -161,13 +163,13 @@ export default function TransferCreatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New Inter-Office Transfer Request"
-        subtitle="Initiate an asset or inventory transfer between Panchayat store locations"
+        title={t('transactions.transfers.create.title')}
+        subtitle={t('transactions.transfers.create.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.TRANSFERS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Cancel
+                {t('transactions.transfers.create.cancel')}
               </Button>
             </Link>
             <Button
@@ -177,7 +179,7 @@ export default function TransferCreatePage() {
               loading={isSubmitting}
               onClick={handleSubmit}
             >
-              Submit Transfer Request
+              {t('transactions.transfers.create.submitBtn')}
             </Button>
           </div>
         }
@@ -187,28 +189,28 @@ export default function TransferCreatePage() {
       <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-6">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-emerald-500/15 pb-2 flex items-center gap-2">
           <ArrowRightLeft size={16} className="text-emerald-600 dark:text-emerald-400" />
-          1. Relocation Route & Transfer Classification
+          {t('transactions.transfers.create.section1')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Transfer Classification <span className="text-red-500">*</span>
+              {t('transactions.transfers.create.classification')} <span className="text-red-500">*</span>
             </label>
             <select
               value={transferType}
               onChange={(e) => setTransferType(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-semibold text-slate-900 dark:text-white bg-white dark:bg-[#0A1513] focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             >
-              <option value="PERMANENT" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Permanent Reallocation</option>
-              <option value="TEMPORARY" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">Temporary Loan (Returnable)</option>
+              <option value="PERMANENT" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('transactions.transfers.create.permanentOpt')}</option>
+              <option value="TEMPORARY" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('transactions.transfers.create.temporaryOpt')}</option>
             </select>
           </div>
 
           {transferType === 'TEMPORARY' && (
             <div>
               <label className="block text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1 flex items-center gap-1">
-                <Calendar size={13} /> Expected Return Date <span className="text-red-500">*</span>
+                <Calendar size={13} /> {t('transactions.transfers.create.expectedReturnDate')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -221,7 +223,7 @@ export default function TransferCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Source Office (Current Location)
+              {t('transactions.transfers.create.sourceOffice')}
             </label>
             <input
               type="text"
@@ -233,7 +235,7 @@ export default function TransferCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Destination Office / Store <span className="text-red-500">*</span>
+              {t('transactions.transfers.create.destOffice')} <span className="text-red-500">*</span>
             </label>
             <select
               value={destinationOffice}
@@ -250,39 +252,39 @@ export default function TransferCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Destination Room / Receiving Location
+              {t('transactions.transfers.create.destLocation')}
             </label>
             <input
               type="text"
               value={destinationLocation}
               onChange={(e) => setDestinationLocation(e.target.value)}
-              placeholder="e.g. Talala Store Room 1"
+              placeholder={t('transactions.transfers.create.destLocationPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Sanction / Administrative Order No. <span className="text-red-500">*</span>
+              {t('transactions.transfers.create.orderRef')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={orderReference}
               onChange={(e) => setOrderReference(e.target.value)}
-              placeholder="e.g. DDO/GS/TRF/2026/108"
+              placeholder={t('transactions.transfers.create.orderRefPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
             />
           </div>
 
           <div className="md:col-span-3">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Transfer Justification / Directive Reason <span className="text-red-500">*</span>
+              {t('transactions.transfers.create.reason')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Official inter-taluka reallocation as per District Development Committee resolution..."
+              placeholder={t('transactions.transfers.create.reasonPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
@@ -294,10 +296,10 @@ export default function TransferCreatePage() {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Package size={16} className="text-emerald-600 dark:text-emerald-400" />
-            2. Assets & Items to Relocate ({lines.length})
+            {t('transactions.transfers.create.section2', { count: lines.length })}
           </h2>
           <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />} onClick={handleAddLine}>
-            Add Item
+            {t('transactions.transfers.create.addItem')}
           </Button>
         </div>
 
@@ -310,7 +312,7 @@ export default function TransferCreatePage() {
               <div key={line.id} className="p-4 rounded-xl border border-slate-200 dark:border-emerald-500/20 bg-slate-50/70 dark:bg-[#081210] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
-                    Transfer Item #{idx + 1}
+                    {t('transactions.transfers.create.transferItem', { num: idx + 1 })}
                   </span>
                   {lines.length > 1 && (
                     <button
@@ -318,7 +320,7 @@ export default function TransferCreatePage() {
                       onClick={() => handleRemoveLine(idx)}
                       className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1"
                     >
-                      <Trash2 size={13} /> Remove
+                      <Trash2 size={13} /> {t('transactions.transfers.create.remove')}
                     </button>
                   )}
                 </div>
@@ -326,26 +328,20 @@ export default function TransferCreatePage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                   <div className="md:col-span-2">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Select Item from Source Store <span className="text-red-500">*</span>
+                      {t('transactions.transfers.create.selectItem')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={line.selected_item_id}
                       onChange={(e) => handleLineChange(idx, 'selected_item_id', e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     >
-                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                        {isLoadingItems
-                          ? 'Loading available items...'
-                          : availableItems.length === 0
-                            ? 'No available items in store'
-                            : '-- Choose Item from Available Store Stock --'}
-                      </option>
+                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('transactions.transfers.create.chooseItem')}</option>
                       {availableItems.map((itm) => (
                         <option key={itm.id} value={itm.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
                           {itm.item_name} [{itm.item_code}] ·{' '}
                           {itm.item_type === 'DURABLE_ASSET'
-                            ? `Durable (SN: ${itm.serial_number || 'N/A'})`
-                            : `Consumable (Available: ${itm.quantity} ${itm.uom})`}
+                            ? t('transactions.issues.create.durableOption', { sn: itm.serial_number || 'N/A' })
+                            : t('transactions.issues.create.consumableOption', { qty: itm.quantity, uom: itm.uom })}
                         </option>
                       ))}
                     </select>
@@ -353,7 +349,7 @@ export default function TransferCreatePage() {
 
                   <div>
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Transfer Quantity <span className="text-red-500">*</span>
+                      {t('transactions.transfers.create.transferQty')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -365,21 +361,21 @@ export default function TransferCreatePage() {
                     />
                     {isDurable && (
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
-                        Locked to 1 (Individually tracked asset)
+                        {t('transactions.issues.create.lockedTo1')}
                       </span>
                     )}
                   </div>
 
                   <div>
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Available In Source Store
+                      {t('transactions.transfers.create.availableSource')}
                     </label>
                     <div className="px-3 py-2 border border-slate-200 dark:border-emerald-500/20 bg-slate-100 dark:bg-[#081210] rounded-xl font-mono text-slate-700 dark:text-slate-300 font-semibold">
                       {selectedItem
                         ? selectedItem.item_type === 'DURABLE_ASSET'
-                          ? '1 Unit (In Store)'
+                          ? t('transactions.transfers.create.unitInStore')
                           : `${selectedItem.quantity} ${selectedItem.uom}`
-                        : 'Select item'}
+                        : t('transactions.issues.create.selectItemPlaceholder')}
                     </div>
                   </div>
                 </div>

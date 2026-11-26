@@ -21,11 +21,13 @@ import { PERMISSIONS } from '../../constants/permissions'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
+import { useLanguage } from '../../i18n'
 
 export default function AssetDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('overview')
   const [labelPreviewUrl, setLabelPreviewUrl] = useState('')
   const [downloadingFormat, setDownloadingFormat] = useState('')
@@ -138,7 +140,7 @@ export default function AssetDetailPage() {
   }
 
   if (isError) {
-    return <ErrorState message="Could not load asset profile." onRetry={refetch} />
+    return <ErrorState message={t('feedback.error.message')} onRetry={refetch} />
   }
 
   return (
@@ -149,13 +151,13 @@ export default function AssetDetailPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title={item.item_name || 'Asset Details'}
-        subtitle={`System Identifier: ${item.item_code} · ${isDurable ? 'Individually Tracked Durable Asset' : 'Quantity-Tracked Consumable Stock'}`}
+        title={item.item_name || t('inventory.assetDetail')}
+        subtitle={`${t('inventory.table.assetCode')}: ${item.item_code} · ${isDurable ? t('itemType.durableAsset') : t('itemType.consumableStock')}`}
         actions={
           <div className="flex items-center gap-2.5">
             <Link to={ROUTES.INVENTORY}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Back to Register
+                {t('actions.back')}
               </Button>
             </Link>
             <Button
@@ -164,7 +166,7 @@ export default function AssetDetailPage() {
               leftIcon={<Printer size={14} />}
               onClick={() => window.print()}
             >
-              Print Card
+              {t('actions.print')}
             </Button>
           </div>
         }

@@ -13,6 +13,7 @@ import { getItems } from '../../api/inventory.api'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
 
 const DEPARTMENTS = [
   'Accounts & Audit Branch',
@@ -29,6 +30,7 @@ const DEPARTMENTS = [
 export default function IssueCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -87,7 +89,7 @@ export default function IssueCreatePage() {
 
   const handleRemoveLine = (idx) => {
     if (issueLines.length === 1) {
-      toast.error('An issue voucher must contain at least one line item.')
+      toast.error(t('transactions.issues.create.errMinOneLine'))
       return
     }
     setIssueLines(issueLines.filter((_, i) => i !== idx))
@@ -109,37 +111,42 @@ export default function IssueCreatePage() {
 
   const validate = () => {
     if (!department) {
-      toast.error('Please select recipient department.')
+      toast.error(t('transactions.issues.create.errDept'))
       return false
     }
     if (!receivingEmployee.trim()) {
-      toast.error('Please enter receiving employee / custodian name.')
+      toast.error(t('transactions.issues.create.errEmp'))
       return false
     }
     if (!purpose.trim()) {
-      toast.error('Please specify purpose of issue.')
+      toast.error(t('transactions.issues.create.errPurpose'))
       return false
     }
 
     for (let i = 0; i < issueLines.length; i++) {
       const line = issueLines[i]
       if (!line.selected_item_id) {
-        toast.error(`Line ${i + 1}: Please select an item to issue.`)
+        toast.error(t('transactions.issues.create.errLineSelect', { num: i + 1 }))
         return false
       }
       const item = availableItems.find((itm) => itm.id === line.selected_item_id)
       if (!item) {
-        toast.error(`Line ${i + 1}: Selected item is invalid.`)
+        toast.error(t('transactions.issues.create.errLineInvalid', { num: i + 1 }))
         return false
       }
       const qty = Number(line.quantity_issued) || 0
       if (qty <= 0) {
-        toast.error(`Line ${i + 1}: Issued quantity must be greater than 0.`)
+        toast.error(t('transactions.issues.create.errLineQty', { num: i + 1 }))
         return false
       }
       if (item.item_type === 'CONSUMABLE_STOCK' && qty > item.quantity) {
         toast.error(
-          `Line ${i + 1}: Issued quantity (${qty} ${item.uom}) exceeds available balance (${item.quantity} ${item.uom}).`
+          t('transactions.issues.create.errLineExceed', {
+            num: i + 1,
+            qty,
+            uom: item.uom,
+            available: item.quantity,
+          })
         )
         return false
       }
@@ -183,10 +190,10 @@ export default function IssueCreatePage() {
       }
 
       const res = await createIssue(payload)
-      toast.success('Stock issue voucher created! Inventory updated.')
+      toast.success(t('transactions.issues.create.successMsg'))
       navigate(ROUTES.ISSUE_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || err.message || 'Failed to create issue voucher.')
+      toast.error(err.response?.data?.error?.message || err.message || t('transactions.issues.create.failMsg'))
     } finally {
       setIsSubmitting(false)
     }
@@ -195,13 +202,13 @@ export default function IssueCreatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New Stock Issue Voucher"
-        subtitle="Issue store supplies and durable assets to panchayat departments and personnel"
+        title={t('transactions.issues.create.title')}
+        subtitle={t('transactions.issues.create.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.ISSUES}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Cancel
+                {t('transactions.issues.create.cancel')}
               </Button>
             </Link>
             <Button
@@ -213,7 +220,7 @@ export default function IssueCreatePage() {
                 if (validate()) setShowConfirm(true)
               }}
             >
-              Post & Hand Over
+              {t('transactions.issues.create.postAndHandOver')}
             </Button>
           </div>
         }
@@ -223,13 +230,13 @@ export default function IssueCreatePage() {
       <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-6">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-emerald-500/15 pb-2 flex items-center gap-2">
           <Building size={16} className="text-emerald-600 dark:text-emerald-400" />
-          1. Destination & Recipient Custodian
+          {t('transactions.issues.create.section1')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Issue Date <span className="text-red-500">*</span>
+              {t('transactions.issues.create.issueDate')} <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -241,7 +248,7 @@ export default function IssueCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Recipient Department / Branch <span className="text-red-500">*</span>
+              {t('transactions.issues.create.department')} <span className="text-red-500">*</span>
             </label>
             <select
               value={department}
@@ -258,52 +265,52 @@ export default function IssueCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Sanction / Order Memo Number
+              {t('transactions.issues.create.sanctionOrder')}
             </label>
             <input
               type="text"
               value={sanctionOrderNumber}
               onChange={(e) => setSanctionOrderNumber(e.target.value)}
-              placeholder="e.g. DDO/GS/ACC/2026/102"
+              placeholder={t('transactions.issues.create.sanctionOrderPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Receiving Employee / Custodian <span className="text-red-500">*</span>
+              {t('transactions.issues.create.receivingEmployee')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={receivingEmployee}
               onChange={(e) => setReceivingEmployee(e.target.value)}
-              placeholder="e.g. Ramesh Dave"
+              placeholder={t('transactions.issues.create.receivingEmployeePlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Employee Designation
+              {t('transactions.issues.create.designation')}
             </label>
             <input
               type="text"
               value={receivingDesignation}
               onChange={(e) => setReceivingDesignation(e.target.value)}
-              placeholder="e.g. Head Accountant / Senior Clerk"
+              placeholder={t('transactions.issues.create.designationPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Official Purpose of Issue <span className="text-red-500">*</span>
+              {t('transactions.issues.create.purpose')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              placeholder="e.g. Desk setup for audit verification..."
+              placeholder={t('transactions.issues.create.purposePlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
@@ -315,10 +322,10 @@ export default function IssueCreatePage() {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Package size={16} className="text-emerald-600 dark:text-emerald-400" />
-            2. Select Items to Issue from Available Store Stock ({issueLines.length})
+            {t('transactions.issues.create.section2', { count: issueLines.length })}
           </h2>
           <Button variant="secondary" size="sm" leftIcon={<Plus size={14} />} onClick={handleAddLine}>
-            Add Item to Issue
+            {t('transactions.issues.create.addItem')}
           </Button>
         </div>
 
@@ -338,7 +345,7 @@ export default function IssueCreatePage() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">
-                    Issue Line #{idx + 1}
+                    {t('transactions.issues.create.issueLine', { num: idx + 1 })}
                   </span>
                   {issueLines.length > 1 && (
                     <button
@@ -346,7 +353,7 @@ export default function IssueCreatePage() {
                       onClick={() => handleRemoveLine(idx)}
                       className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center gap-1"
                     >
-                      <Trash2 size={13} /> Remove
+                      <Trash2 size={13} /> {t('transactions.issues.create.remove')}
                     </button>
                   )}
                 </div>
@@ -354,20 +361,20 @@ export default function IssueCreatePage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                   <div className="md:col-span-2">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Select Item from Store Inventory <span className="text-red-500">*</span>
+                      {t('transactions.issues.create.selectItem')} <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={line.selected_item_id}
                       onChange={(e) => handleLineChange(idx, 'selected_item_id', e.target.value)}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] font-medium text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     >
-                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">-- Choose Item from Available Stock --</option>
+                      <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('transactions.issues.create.chooseItem')}</option>
                       {availableItems.map((itm) => (
                         <option key={itm.id} value={itm.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
                           {itm.item_name} [{itm.item_code}] ·{' '}
                           {itm.item_type === 'DURABLE_ASSET'
-                            ? `Durable Asset (SN: ${itm.serial_number || 'N/A'})`
-                            : `Consumable (Available: ${itm.quantity} ${itm.uom})`}
+                            ? t('transactions.issues.create.durableOption', { sn: itm.serial_number || 'N/A' })
+                            : t('transactions.issues.create.consumableOption', { qty: itm.quantity, uom: itm.uom })}
                         </option>
                       ))}
                     </select>
@@ -375,7 +382,7 @@ export default function IssueCreatePage() {
 
                   <div>
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Quantity to Issue <span className="text-red-500">*</span>
+                      {t('transactions.issues.create.qtyToIssue')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -391,21 +398,21 @@ export default function IssueCreatePage() {
                     />
                     {isDurable && (
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block">
-                        Locked to 1 (Individually tracked asset)
+                        {t('transactions.issues.create.lockedTo1')}
                       </span>
                     )}
                   </div>
 
                   <div>
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Available In Store
+                      {t('transactions.issues.create.availableInStore')}
                     </label>
                     <div className="px-3 py-2 border border-slate-200 dark:border-emerald-500/20 bg-slate-100 dark:bg-[#081210] rounded-xl font-mono text-slate-700 dark:text-slate-300 font-semibold">
                       {selectedItem
                         ? selectedItem.item_type === 'DURABLE_ASSET'
-                          ? '1 Unit (Available)'
+                          ? t('transactions.issues.create.unitAvailable')
                           : `${selectedItem.quantity} ${selectedItem.uom}`
-                        : 'Select item'}
+                        : t('transactions.issues.create.selectItemPlaceholder')}
                     </div>
                   </div>
 
@@ -413,19 +420,23 @@ export default function IssueCreatePage() {
                     <div className="md:col-span-4 p-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-500/30 text-xs text-red-700 dark:text-red-300 flex items-center gap-2">
                       <AlertTriangle size={14} className="shrink-0" />
                       <span>
-                        <strong>Cannot Issue:</strong> Requested quantity ({line.quantity_issued}) exceeds
-                        available stock balance ({selectedItem.quantity} {selectedItem.uom}). Please adjust quantity.
+                        <strong>{t('transactions.issues.create.cannotIssuePrefix')}</strong>{' '}
+                        {t('transactions.issues.create.overIssueMsg', {
+                          qty: line.quantity_issued,
+                          available: selectedItem.quantity,
+                          uom: selectedItem.uom,
+                        })}
                       </span>
                     </div>
                   )}
 
                   <div className="md:col-span-4">
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Line Remarks / Handover Notes</label>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('transactions.issues.create.lineRemarks')}</label>
                     <input
                       type="text"
                       value={line.remarks}
                       onChange={(e) => handleLineChange(idx, 'remarks', e.target.value)}
-                      placeholder="e.g. Issued with power cable, tested working on arrival..."
+                      placeholder={t('transactions.issues.create.lineRemarksPlaceholder')}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>
@@ -444,9 +455,9 @@ export default function IssueCreatePage() {
           setShowConfirm(false)
           handlePostIssue()
         }}
-        title="Confirm Stock Issue Voucher"
-        message="Posting this issue voucher will immediately update stock balances. Durable assets will be assigned to the recipient custodian and marked IN_USE. Proceed?"
-        confirmText="Confirm & Issue Items"
+        title={t('transactions.issues.create.confirmTitle')}
+        message={t('transactions.issues.create.confirmMessage')}
+        confirmText={t('transactions.issues.create.confirmBtn')}
         variant="primary"
       />
     </div>

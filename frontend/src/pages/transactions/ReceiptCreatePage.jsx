@@ -11,11 +11,13 @@ import { createReceipt } from '../../api/transactions.api'
 import { formatCurrency } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 export default function ReceiptCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmPost, setShowConfirmPost] = useState(false)
@@ -72,7 +74,7 @@ export default function ReceiptCreatePage() {
 
   const handleRemoveItem = (index) => {
     if (items.length === 1) {
-      toast.error('Receipt must have at least one line item.')
+      toast.error(t('transactions.receipts.create.errMinOne'))
       return
     }
     setItems(items.filter((_, idx) => idx !== index))
@@ -105,25 +107,25 @@ export default function ReceiptCreatePage() {
 
   const validateForm = () => {
     if (!supplierName.trim()) {
-      toast.error('Please enter supplier name.')
+      toast.error(t('validation.required'))
       return false
     }
     if (!receiptDate) {
-      toast.error('Please select receipt date.')
+      toast.error(t('validation.required'))
       return false
     }
     for (let i = 0; i < items.length; i++) {
       const line = items[i]
       if (!line.item_name.trim()) {
-        toast.error(`Line ${i + 1}: Item name is required.`)
+        toast.error(t('validation.required'))
         return false
       }
       if (Number(line.quantity_received) <= 0) {
-        toast.error(`Line ${i + 1}: Quantity received must be greater than 0.`)
+        toast.error(t('validation.positiveNumber'))
         return false
       }
       if (Number(line.quantity_rejected) > 0 && !line.rejection_reason.trim()) {
-        toast.error(`Line ${i + 1}: Please specify a rejection reason for rejected items.`)
+        toast.error(t('validation.required'))
         return false
       }
     }
@@ -172,12 +174,12 @@ export default function ReceiptCreatePage() {
       const res = await createReceipt(payload)
       toast.success(
         targetStatus === 'POSTED'
-          ? 'Goods inward voucher posted! Stock balances updated.'
-          : 'Receipt draft saved successfully.'
+          ? t('transactions.receipts.create.successPosted')
+          : t('transactions.receipts.create.successDraft')
       )
       navigate(ROUTES.RECEIPT_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || err.message || 'Failed to save receipt voucher.')
+      toast.error(err.response?.data?.error?.message || err.message || t('transactions.receipts.create.failMsg'))
     } finally {
       setIsSubmitting(false)
     }
@@ -186,13 +188,13 @@ export default function ReceiptCreatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New Goods Inward Receipt (GRN)"
-        subtitle="Create a procurement delivery receipt voucher and record received items"
+        title={t('transactions.receipts.create.title')}
+        subtitle={t('transactions.receipts.create.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.RECEIPTS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Cancel
+                {t('transactions.issues.create.cancel')}
               </Button>
             </Link>
             <Button
@@ -202,7 +204,7 @@ export default function ReceiptCreatePage() {
               loading={isSubmitting}
               onClick={() => handleSave('DRAFT')}
             >
-              Save as Draft
+              {t('transactions.receipts.create.saveDraft')}
             </Button>
             <Button
               variant="primary"
@@ -211,7 +213,7 @@ export default function ReceiptCreatePage() {
               loading={isSubmitting}
               onClick={() => setShowConfirmPost(true)}
             >
-              Review & Post Inward
+              {t('transactions.receipts.create.reviewPost')}
             </Button>
           </div>
         }
@@ -221,26 +223,26 @@ export default function ReceiptCreatePage() {
       <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-6">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-emerald-500/15 pb-2 flex items-center gap-2">
           <Building size={16} className="text-emerald-600 dark:text-emerald-400" />
-          1. Procurement & Supplier Information
+          {t('transactions.receipts.create.section1')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Supplier / Vendor Name <span className="text-red-500">*</span>
+              {t('transactions.receipts.create.supplierName')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={supplierName}
               onChange={(e) => setSupplierName(e.target.value)}
-              placeholder="e.g. Gujarat Infotech Solutions"
+              placeholder={t('transactions.receipts.create.supplierPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Supplier Contact / Phone
+              {t('transactions.receipts.create.supplierContact')}
             </label>
             <input
               type="text"
@@ -253,7 +255,7 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Receipt Date <span className="text-red-500">*</span>
+              {t('transactions.receipts.create.receiptDate')} <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -265,7 +267,7 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              PO / GeM Contract Number
+              {t('transactions.receipts.create.poNumber')}
             </label>
             <input
               type="text"
@@ -278,7 +280,7 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Supplier Invoice / Challan No.
+              {t('transactions.receipts.create.invoiceNumber')}
             </label>
             <input
               type="text"
@@ -291,7 +293,7 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Invoice Date
+              {t('transactions.receipts.create.invoiceDate')}
             </label>
             <input
               type="date"
@@ -303,7 +305,7 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Receiving Office Scope
+              {t('transactions.receipts.create.receivingOffice')}
             </label>
             <input
               type="text"
@@ -316,26 +318,26 @@ export default function ReceiptCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Store Room / Receiving Bay
+              {t('transactions.receipts.create.receivingLocation')}
             </label>
             <input
               type="text"
               value={receivingLocation}
               onChange={(e) => setReceivingLocation(e.target.value)}
-              placeholder="e.g. Room 102"
+              placeholder={t('transactions.receipts.create.receivingLocationPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Challan Document Name / Note
+              {t('transactions.receipts.create.challanDoc')}
             </label>
             <input
               type="text"
               value={attachmentName}
               onChange={(e) => setAttachmentName(e.target.value)}
-              placeholder="e.g. Delivery_Challan_Scanned.pdf"
+              placeholder={t('transactions.receipts.create.challanPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
@@ -347,7 +349,7 @@ export default function ReceiptCreatePage() {
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-3">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <Package size={16} className="text-emerald-600 dark:text-emerald-400" />
-            2. Inward Line Items ({items.length})
+            {t('transactions.receipts.create.section2', { count: items.length })}
           </h2>
           <Button
             variant="secondary"
@@ -355,7 +357,7 @@ export default function ReceiptCreatePage() {
             leftIcon={<Plus size={14} />}
             onClick={handleAddItem}
           >
-            Add Line Item
+            {t('transactions.receipts.create.addLineItem')}
           </Button>
         </div>
 
@@ -367,7 +369,7 @@ export default function ReceiptCreatePage() {
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                  Item #{idx + 1}
+                  {t('transactions.receipts.create.itemNum', { num: idx + 1 })}
                 </span>
                 {items.length > 1 && (
                   <button
@@ -375,7 +377,7 @@ export default function ReceiptCreatePage() {
                     onClick={() => handleRemoveItem(idx)}
                     className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors text-xs flex items-center gap-1"
                   >
-                    <Trash2 size={13} /> Remove
+                    <Trash2 size={13} /> {t('transactions.receipts.create.remove')}
                   </button>
                 )}
               </div>
@@ -383,51 +385,51 @@ export default function ReceiptCreatePage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                 <div className="md:col-span-2">
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Item Name & Specification <span className="text-red-500">*</span>
+                    {t('transactions.receipts.create.itemNameSpec')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={line.item_name}
                     onChange={(e) => handleItemChange(idx, 'item_name', e.target.value)}
-                    placeholder="e.g. HP LaserJet 4104dw Printer / A4 Copier Paper"
+                    placeholder={t('transactions.receipts.create.itemNamePlaceholder')}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Tracking Type
+                    {t('transactions.receipts.create.trackingType')}
                   </label>
                   <select
                     value={line.item_type}
                     onChange={(e) => handleItemChange(idx, 'item_type', e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="DURABLE_ASSET">Durable Asset (Serial Tracked)</option>
-                    <option value="CONSUMABLE_STOCK">Consumable Stock (Bulk Qty)</option>
+                    <option value="DURABLE_ASSET">{t('transactions.receipts.create.durableOption')}</option>
+                    <option value="CONSUMABLE_STOCK">{t('transactions.receipts.create.consumableOption')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Unit of Measure (UOM)
+                    {t('transactions.receipts.create.uomLabel')}
                   </label>
                   <select
                     value={line.uom}
                     onChange={(e) => handleItemChange(idx, 'uom', e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="NOS">Numbers (Units)</option>
-                    <option value="BOX">Box</option>
-                    <option value="REAM">Ream (Paper)</option>
-                    <option value="PACKET">Packet</option>
-                    <option value="SET">Set</option>
+                    <option value="NOS">{t('transactions.receipts.create.uomNos')}</option>
+                    <option value="BOX">{t('transactions.receipts.create.uomBox')}</option>
+                    <option value="REAM">{t('transactions.receipts.create.uomReam')}</option>
+                    <option value="PACKET">{t('transactions.receipts.create.uomPacket')}</option>
+                    <option value="SET">{t('transactions.receipts.create.uomSet')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Qty Ordered
+                    {t('transactions.receipts.create.qtyOrdered')}
                   </label>
                   <input
                     type="number"
@@ -440,7 +442,7 @@ export default function ReceiptCreatePage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Qty Received <span className="text-red-500">*</span>
+                    {t('transactions.receipts.create.qtyReceived')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -453,7 +455,7 @@ export default function ReceiptCreatePage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Qty Accepted <span className="text-emerald-600 dark:text-emerald-400 font-bold">*</span>
+                    {t('transactions.receipts.create.qtyAccepted')} <span className="text-emerald-600 dark:text-emerald-400 font-bold">*</span>
                   </label>
                   <input
                     type="number"
@@ -467,7 +469,7 @@ export default function ReceiptCreatePage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Qty Rejected / Damaged
+                    {t('transactions.receipts.create.qtyRejected')}
                   </label>
                   <input
                     type="number"
@@ -481,13 +483,13 @@ export default function ReceiptCreatePage() {
                   <div className="md:col-span-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
                     <label className="block font-bold mb-1 flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
                       <AlertTriangle size={13} />
-                      Rejection Reason (Mandatory for {line.quantity_rejected} rejected units)
+                      {t('transactions.receipts.create.rejectionReason', { count: line.quantity_rejected })}
                     </label>
                     <input
                       type="text"
                       value={line.rejection_reason}
                       onChange={(e) => handleItemChange(idx, 'rejection_reason', e.target.value)}
-                      placeholder="e.g. Broken packaging, shattered glass, water damage..."
+                      placeholder={t('transactions.receipts.create.rejectionPlaceholder')}
                       className="w-full px-3 py-1.5 border border-amber-300 dark:border-amber-500/30 rounded-lg bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                     />
                   </div>
@@ -495,7 +497,7 @@ export default function ReceiptCreatePage() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Unit Purchase Cost (₹)
+                    {t('transactions.receipts.create.unitCost')}
                   </label>
                   <input
                     type="number"
@@ -508,7 +510,7 @@ export default function ReceiptCreatePage() {
 
                 <div className="md:col-span-2">
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Line Total Accepted Value
+                    {t('transactions.receipts.create.lineTotalValue')}
                   </label>
                   <div className="px-3 py-2 border border-slate-200 dark:border-emerald-500/20 bg-slate-100 dark:bg-[#081210] rounded-xl font-mono font-bold text-slate-900 dark:text-white text-sm">
                     {formatCurrency((Number(line.quantity_accepted) || 0) * (Number(line.unit_cost) || 0))}
@@ -518,13 +520,13 @@ export default function ReceiptCreatePage() {
                 {line.item_type === 'DURABLE_ASSET' && Number(line.quantity_accepted) > 0 && (
                   <div className="md:col-span-4">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Serial Numbers (Comma separated for {line.quantity_accepted} units)
+                      {t('transactions.receipts.create.serialNumbers', { count: line.quantity_accepted })}
                     </label>
                     <input
                       type="text"
                       value={line.serial_numbers}
                       onChange={(e) => handleItemChange(idx, 'serial_numbers', e.target.value)}
-                      placeholder="e.g. SN-001, SN-002"
+                      placeholder={t('transactions.receipts.create.serialPlaceholder')}
                       className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono text-xs"
                     />
                   </div>
@@ -537,7 +539,7 @@ export default function ReceiptCreatePage() {
         {/* Total Summary Footer */}
         <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between">
           <div className="text-xs text-emerald-900 dark:text-emerald-200 font-medium">
-            Total Accepted Inward Valuation ({items.length} line items):
+            {t('transactions.receipts.create.totalValuation', { count: items.length })}
           </div>
           <div className="text-lg font-bold font-mono text-emerald-900 dark:text-emerald-300">
             {formatCurrency(totalAcceptedValue)}
@@ -553,9 +555,9 @@ export default function ReceiptCreatePage() {
           setShowConfirmPost(false)
           handleSave('POSTED')
         }}
-        title="Confirm Goods Inward & Stock Update"
-        message="Posting this receipt will atomically increment store balances and generate permanent asset records. This action cannot be duplicated. Are you sure?"
-        confirmText="Confirm & Post Inward"
+        title={t('transactions.receipts.create.confirmTitle')}
+        message={t('transactions.receipts.create.confirmMessage')}
+        confirmText={t('transactions.receipts.create.confirmBtn')}
         variant="primary"
       />
     </div>

@@ -21,10 +21,13 @@ import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import ExcelImportModal from '../../components/inventory/ExcelImportModal'
 import { motion } from 'framer-motion'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 
 export default function AssetRegisterPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   // View state: 'table' or 'card'
   const [viewMode, setViewMode] = useState(() => {
@@ -100,11 +103,11 @@ export default function AssetRegisterPage() {
     setIsDeleting(true)
     try {
       await deleteItem(confirmDelete.id)
-      toast.success(`"${confirmDelete.name}" has been archived (marked as Disposed).`)
+      toast.success(t('inventory.messages.assetDeleted'))
       setConfirmDelete(null)
       refetch()
     } catch (err) {
-      const msg = err?.response?.data?.error?.message || 'Failed to delete item. Please try again.'
+      const msg = err?.response?.data?.error?.message || t('toast.error')
       toast.error(msg)
     } finally {
       setIsDeleting(false)
@@ -116,7 +119,7 @@ export default function AssetRegisterPage() {
     () => [
       {
         key: 'item_code',
-        header: 'Asset / Item Code',
+        header: t('inventory.table.assetCode'),
         sortable: true,
         width: '180px',
         render: (code, row) => (
@@ -134,7 +137,7 @@ export default function AssetRegisterPage() {
       },
       {
         key: 'item_name',
-        header: 'Item Description',
+        header: t('inventory.table.name'),
         sortable: true,
         render: (name, row) => (
           <div>
@@ -147,7 +150,7 @@ export default function AssetRegisterPage() {
       },
       {
         key: 'category',
-        header: 'Category',
+        header: t('inventory.table.category'),
         render: (_, row) => (
           <span className="text-xs text-forest-700 dark:text-forest-300 font-medium">
             {row.category?.name || '—'}
@@ -156,7 +159,7 @@ export default function AssetRegisterPage() {
       },
       {
         key: 'item_type',
-        header: 'Type',
+        header: t('labels.type'),
         width: '130px',
         render: (type) => (
           <span className="text-xs text-forest-600 dark:text-forest-400">

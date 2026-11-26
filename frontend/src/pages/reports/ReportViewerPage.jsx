@@ -1,11 +1,13 @@
 import ModulePlaceholder from '../../components/common/ModulePlaceholder'
+import { useLanguage } from '../../i18n'
 
 export default function ReportViewerPage() {
+  const { t } = useLanguage()
   return (
     <ModulePlaceholder
-      title="Report Drilldown & Export Interface"
-      subtitle="Interactive data table preview with column sorting, aggregations, and export generation"
-      moduleName="Report Viewer"
+      title={t('reports.viewer.title')}
+      subtitle={t('reports.generate')}
+      moduleName={t('reports.viewer.title')}
       phaseNumber="7"
       endpoint="GET /api/v1/reports/{reportType}"
       expectedFeatures={[

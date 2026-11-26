@@ -12,11 +12,13 @@ import { createReturn, getIssues } from '../../api/transactions.api'
 import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 export default function ReturnCreatePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -58,7 +60,7 @@ export default function ReturnCreatePage() {
             selected: true,
             quantity: unreturned,
             condition: 'GOOD',
-            inspection_notes: 'Physical check completed. Normal working condition.',
+            inspection_notes: t('transactions.returns.create.defaultInspectionNote'),
           }
         }
       })
@@ -90,17 +92,17 @@ export default function ReturnCreatePage() {
 
   const validate = () => {
     if (!selectedIssue) {
-      toast.error('Please select original issue voucher.')
+      toast.error(t('transactions.returns.create.errVoucher'))
       return false
     }
     if (!returnReason.trim()) {
-      toast.error('Please specify the reason for return.')
+      toast.error(t('transactions.returns.create.errReason'))
       return false
     }
 
     const selectedLines = Object.entries(returnItems).filter(([_, val]) => val.selected)
     if (selectedLines.length === 0) {
-      toast.error('Please select at least one item to return.')
+      toast.error(t('transactions.returns.create.errMinOneItem'))
       return false
     }
 
@@ -110,12 +112,17 @@ export default function ReturnCreatePage() {
       const qty = Number(state.quantity) || 0
 
       if (qty <= 0) {
-        toast.error(`Return quantity for ${origLine.item_name} must be greater than 0.`)
+        toast.error(t('transactions.returns.create.errQtyPositive', { item: origLine.item_name }))
         return false
       }
       if (qty > maxReturnable) {
         toast.error(
-          `Cannot return ${qty} ${origLine.uom} of ${origLine.item_name}. Maximum returnable is ${maxReturnable}.`
+          t('transactions.returns.create.errQtyMax', {
+            qty,
+            uom: origLine.uom,
+            item: origLine.item_name,
+            max: maxReturnable,
+          })
         )
         return false
       }
@@ -161,10 +168,10 @@ export default function ReturnCreatePage() {
       }
 
       const res = await createReturn(payload)
-      toast.success('Stock return processed! Condition recorded and balances updated.')
+      toast.success(t('transactions.returns.create.successMsg'))
       navigate(ROUTES.RETURN_DETAIL(res?.data?.id || ''))
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || err.message || 'Failed to record return.')
+      toast.error(err.response?.data?.error?.message || err.message || t('transactions.returns.create.failMsg'))
     } finally {
       setIsSubmitting(false)
     }
@@ -173,13 +180,13 @@ export default function ReturnCreatePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Record Stock Return"
-        subtitle="Return issued inventory, inspect condition, and re-admit items to store balance"
+        title={t('transactions.returns.create.title')}
+        subtitle={t('transactions.returns.create.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.RETURNS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Cancel
+                {t('transactions.returns.create.cancel')}
               </Button>
             </Link>
             <Button
@@ -191,7 +198,7 @@ export default function ReturnCreatePage() {
                 if (validate()) setShowConfirm(true)
               }}
             >
-              Confirm & Re-admit Stock
+              {t('transactions.returns.create.confirmReadmit')}
             </Button>
           </div>
         }
@@ -201,23 +208,28 @@ export default function ReturnCreatePage() {
       <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm space-y-6">
         <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-emerald-500/15 pb-2 flex items-center gap-2">
           <RotateCcw size={16} className="text-emerald-600 dark:text-emerald-400" />
-          1. Select Original Issue Voucher & Return Information
+          {t('transactions.returns.create.section1')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-sm">
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Select Original Issue Voucher <span className="text-red-500">*</span>
+              {t('transactions.returns.create.selectVoucher')} <span className="text-red-500">*</span>
             </label>
             <select
               value={selectedIssueId}
               onChange={(e) => handleSelectIssue(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono text-sm text-slate-900 dark:text-white bg-white dark:bg-[#0A1513] focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             >
-              <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">-- Select Posted Issue Voucher with Outstanding Items --</option>
+              <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('transactions.returns.create.selectVoucherPlaceholder')}</option>
               {returnableIssues.map((iss) => (
                 <option key={iss.id} value={iss.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                  {iss.voucher_number} · {iss.department} ({iss.receiving_employee}) · Issued {formatDate(iss.issue_date)}
+                  {t('transactions.returns.create.voucherOption', {
+                    voucher: iss.voucher_number,
+                    dept: iss.department,
+                    emp: iss.receiving_employee,
+                    date: formatDate(iss.issue_date),
+                  })}
                 </option>
               ))}
             </select>
@@ -225,7 +237,7 @@ export default function ReturnCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Return Date <span className="text-red-500">*</span>
+              {t('transactions.returns.create.returnDate')} <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -237,7 +249,7 @@ export default function ReturnCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Returning Department
+              {t('transactions.returns.create.returningDept')}
             </label>
             <input
               type="text"
@@ -249,7 +261,7 @@ export default function ReturnCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Returning Officer / Custodian
+              {t('transactions.returns.create.returningOfficer')}
             </label>
             <input
               type="text"
@@ -261,7 +273,7 @@ export default function ReturnCreatePage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Receiving Store Officer <span className="text-red-500">*</span>
+              {t('transactions.returns.create.receivingStoreOfficer')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -273,13 +285,13 @@ export default function ReturnCreatePage() {
 
           <div className="md:col-span-3">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Reason for Return <span className="text-red-500">*</span>
+              {t('transactions.returns.create.returnReason')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
-              placeholder="e.g. Project cycle completed, surplus stock, equipment malfunctioning..."
+              placeholder={t('transactions.returns.create.returnReasonPlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm"
             />
           </div>
@@ -292,7 +304,7 @@ export default function ReturnCreatePage() {
           <div className="flex items-center justify-between border-b border-slate-200 dark:border-emerald-500/15 pb-3">
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Package size={16} className="text-emerald-600 dark:text-emerald-400" />
-              2. Inspect & Select Items to Return from Voucher #{selectedIssue.voucher_number}
+              {t('transactions.returns.create.section2', { voucher: selectedIssue.voucher_number })}
             </h2>
           </div>
 
@@ -331,15 +343,15 @@ export default function ReturnCreatePage() {
                       <div>
                         <span className="font-semibold text-slate-900 dark:text-white text-sm block">{line.item_name}</span>
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                          {line.item_code} · {line.item_type === 'DURABLE_ASSET' ? `SN: ${line.serial_number || 'N/A'}` : 'Consumable'}
+                          {line.item_code} · {line.item_type === 'DURABLE_ASSET' ? `SN: ${line.serial_number || 'N/A'}` : t('transactions.issues.detail.typeConsumable')}
                         </span>
                       </div>
                     </label>
 
                     <div className="text-right text-xs">
-                      <span className="text-slate-500 dark:text-slate-400">Issued: {line.quantity_issued} {line.uom}</span>
+                      <span className="text-slate-500 dark:text-slate-400">{t('transactions.returns.create.issuedLabel', { qty: line.quantity_issued, uom: line.uom })}</span>
                       <span className="block font-bold text-amber-700 dark:text-amber-400 font-mono">
-                        Available to return: {maxReturnable} {line.uom}
+                        {t('transactions.returns.create.availableReturnLabel', { qty: maxReturnable, uom: line.uom })}
                       </span>
                     </div>
                   </div>
@@ -348,7 +360,7 @@ export default function ReturnCreatePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-200/70 dark:border-emerald-500/15 text-xs">
                       <div>
                         <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Return Quantity ({line.uom})
+                          {t('transactions.returns.create.returnQty', { uom: line.uom })}
                         </label>
                         <input
                           type="number"
@@ -362,7 +374,7 @@ export default function ReturnCreatePage() {
 
                       <div>
                         <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Physical Condition Assessment
+                          {t('transactions.returns.create.conditionLabel')}
                         </label>
                         <select
                           value={state.condition}
@@ -373,22 +385,22 @@ export default function ReturnCreatePage() {
                               : 'border-slate-300 dark:border-emerald-500/25 bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white'
                           }`}
                         >
-                          <option value="GOOD">Good (Directly Re-usable)</option>
-                          <option value="FAIR">Fair (Minor Wear, Operable)</option>
-                          <option value="DAMAGED">Damaged (Requires Repair / Inspection)</option>
-                          <option value="SCRAP">Unserviceable / Scrap</option>
+                          <option value="GOOD">{t('transactions.returns.create.condGood')}</option>
+                          <option value="FAIR">{t('transactions.returns.create.condFair')}</option>
+                          <option value="DAMAGED">{t('transactions.returns.create.condDamaged')}</option>
+                          <option value="SCRAP">{t('transactions.returns.create.condScrap')}</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                          Inspection Notes
+                          {t('transactions.returns.create.inspectionNotes')}
                         </label>
                         <input
                           type="text"
                           value={state.inspection_notes}
                           onChange={(e) => handleItemProperty(line.id, 'inspection_notes', e.target.value)}
-                          placeholder="e.g. Scratches on lid, tested working..."
+                          placeholder={t('transactions.returns.create.inspectionPlaceholder')}
                           className="w-full px-3 py-1.5 border border-slate-300 dark:border-emerald-500/25 rounded-lg bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         />
                       </div>
@@ -397,12 +409,8 @@ export default function ReturnCreatePage() {
                         <div className="md:col-span-3 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2">
                           <Wrench size={15} className="text-amber-700 dark:text-amber-400 shrink-0" />
                           <span>
-                            <strong>Flagged for Technical Inspection:</strong> Because this asset is marked as{' '}
-                            <strong>{state.condition}</strong>, its operational status will become{' '}
-                            <code className="font-mono bg-white dark:bg-[#0A1513] px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-500/30">
-                              UNDER_MAINTENANCE
-                            </code>{' '}
-                            and it will not be available for departmental re-issue until repaired or inspected.
+                            <strong>{t('transactions.returns.create.flaggedTitle')}</strong>{' '}
+                            {t('transactions.returns.create.flaggedDesc', { condition: state.condition })}
                           </span>
                         </div>
                       )}
@@ -423,9 +431,9 @@ export default function ReturnCreatePage() {
           setShowConfirm(false)
           handlePostReturn()
         }}
-        title="Confirm Stock Return & Condition Inspection"
-        message="Posting this return will update physical store balances and re-classify returned assets based on your inspection. Proceed?"
-        confirmText="Confirm & Re-admit"
+        title={t('transactions.returns.create.confirmTitle')}
+        message={t('transactions.returns.create.confirmMessage')}
+        confirmText={t('transactions.returns.create.confirmBtn')}
         variant="primary"
       />
     </div>
