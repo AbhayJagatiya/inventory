@@ -22,11 +22,13 @@ import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 export default function TransferDetailPage() {
   const { id } = useParams()
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   // Modals state
   const [showRejectModal, setShowRejectModal] = useState(false)
@@ -65,17 +67,17 @@ export default function TransferDetailPage() {
   }
 
   if (isError || !transfer.id) {
-    return <ErrorState message="Could not locate transfer record." onRetry={refetch} />
+    return <ErrorState message={t('transactions.transfers.detail.notFound')} onRetry={refetch} />
   }
 
   const handleApprove = async () => {
     setIsProcessing(true)
     try {
       await approveTransfer(id, { action: 'APPROVE' }, user?.full_name || 'Store Officer')
-      toast.success('Transfer approved! Items ready for dispatch.')
+      toast.success(t('transactions.transfers.detail.toastApproved'))
       refetch()
     } catch (err) {
-      toast.error(err.message || 'Failed to approve transfer.')
+      toast.error(err.message || t('transactions.transfers.detail.toastApproveFail'))
     } finally {
       setIsProcessing(false)
     }
@@ -83,17 +85,17 @@ export default function TransferDetailPage() {
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      toast.error('Please specify a rejection reason.')
+      toast.error(t('transactions.transfers.detail.toastRejectReason'))
       return
     }
     setIsProcessing(true)
     try {
       await approveTransfer(id, { action: 'REJECT', reason: rejectReason }, user?.full_name || 'Store Officer')
-      toast.success('Transfer rejected.')
+      toast.success(t('transactions.transfers.detail.toastRejected'))
       setShowRejectModal(false)
       refetch()
     } catch (err) {
-      toast.error(err.message || 'Failed to reject transfer.')
+      toast.error(err.message || t('transactions.transfers.detail.toastRejectFail'))
     } finally {
       setIsProcessing(false)
     }
@@ -101,7 +103,7 @@ export default function TransferDetailPage() {
 
   const handleDispatch = async () => {
     if (!waybillNumber.trim()) {
-      toast.error('Please enter waybill / dispatch challan number.')
+      toast.error(t('transactions.transfers.detail.toastWaybillReq'))
       return
     }
     setIsProcessing(true)
@@ -116,11 +118,11 @@ export default function TransferDetailPage() {
         },
         user?.full_name || 'Store Officer'
       )
-      toast.success('Transfer marked IN_TRANSIT! Dispatch details recorded.')
+      toast.success(t('transactions.transfers.detail.toastDispatched'))
       setShowDispatchModal(false)
       refetch()
     } catch (err) {
-      toast.error(err.message || 'Failed to dispatch transfer.')
+      toast.error(err.message || t('transactions.transfers.detail.toastDispatchFail'))
     } finally {
       setIsProcessing(false)
     }
@@ -138,31 +140,31 @@ export default function TransferDetailPage() {
         },
         user?.full_name || 'Store Staff'
       )
-      toast.success('Transfer acknowledged! Asset location updated to destination office.')
+      toast.success(t('transactions.transfers.detail.toastCompleted'))
       setShowCompleteModal(false)
       refetch()
     } catch (err) {
-      toast.error(err.message || 'Failed to complete transfer.')
+      toast.error(err.message || t('transactions.transfers.detail.toastCompleteFail'))
     } finally {
       setIsProcessing(false)
     }
   }
 
   const steps = [
-    { key: 'SUBMITTED', label: '1. Submitted', done: true },
+    { key: 'SUBMITTED', label: t('transactions.transfers.detail.step1'), done: true },
     {
       key: 'APPROVED',
-      label: '2. Sanctioned',
+      label: t('transactions.transfers.detail.step2'),
       done: ['APPROVED', 'IN_TRANSIT', 'COMPLETED'].includes(transfer.status),
     },
     {
       key: 'IN_TRANSIT',
-      label: '3. In Transit',
+      label: t('transactions.transfers.detail.step3'),
       done: ['IN_TRANSIT', 'COMPLETED'].includes(transfer.status),
     },
     {
       key: 'COMPLETED',
-      label: '4. Completed',
+      label: t('transactions.transfers.detail.step4'),
       done: transfer.status === 'COMPLETED',
     },
   ]
@@ -170,17 +172,20 @@ export default function TransferDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Transfer: ${transfer.transfer_number}`}
-        subtitle={`Type: ${transfer.transfer_type === 'PERMANENT' ? 'Permanent Transfer' : 'Temporary Loan'} · Status: ${transfer.status}`}
+        title={t('transactions.transfers.detail.titlePrefix', { number: transfer.transfer_number })}
+        subtitle={t('transactions.transfers.detail.subtitle', {
+          type: transfer.transfer_type === 'PERMANENT' ? t('transactions.transfers.detail.permanentTransfer') : t('transactions.transfers.detail.temporaryLoan'),
+          status: transfer.status,
+        })}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.TRANSFERS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Back to Register
+                {t('transactions.transfers.detail.backToRegister')}
               </Button>
             </Link>
             <Button variant="secondary" size="sm" leftIcon={<Printer size={14} />} onClick={() => window.print()}>
-              Print Waybill Challan
+              {t('transactions.transfers.detail.printWaybill')}
             </Button>
 
             {/* Stage Actions */}
@@ -192,7 +197,7 @@ export default function TransferDetailPage() {
                   leftIcon={<XCircle size={14} />}
                   onClick={() => setShowRejectModal(true)}
                 >
-                  Reject
+                  {t('transactions.transfers.detail.reject')}
                 </Button>
                 <Button
                   variant="primary"
@@ -201,7 +206,7 @@ export default function TransferDetailPage() {
                   loading={isProcessing}
                   onClick={handleApprove}
                 >
-                  Approve Transfer
+                  {t('transactions.transfers.detail.approveTransfer')}
                 </Button>
               </>
             )}
@@ -213,7 +218,7 @@ export default function TransferDetailPage() {
                 leftIcon={<Truck size={14} />}
                 onClick={() => setShowDispatchModal(true)}
               >
-                Dispatch Items
+                {t('transactions.transfers.detail.dispatchItems')}
               </Button>
             )}
 
@@ -224,7 +229,7 @@ export default function TransferDetailPage() {
                 leftIcon={<ShieldCheck size={14} />}
                 onClick={() => setShowCompleteModal(true)}
               >
-                Acknowledge Receipt & Complete
+                {t('transactions.transfers.detail.acknowledgeComplete')}
               </Button>
             )}
           </div>
@@ -258,11 +263,15 @@ export default function TransferDetailPage() {
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} className="text-emerald-700 dark:text-emerald-400" />
             <span>
-              <strong>TRANSFER COMPLETED:</strong> Destination store ({transfer.destination_office}) acknowledged receipt on{' '}
-              {formatDate(transfer.completed_at)} by {transfer.received_by}. Asset custody and location are officially updated.
+              <strong>{t('transactions.transfers.detail.completedBanner')}</strong>{' '}
+              {t('transactions.transfers.detail.completedDesc', {
+                office: transfer.destination_office,
+                date: formatDate(transfer.completed_at),
+                by: transfer.received_by,
+              })}
             </span>
           </div>
-          <span className="font-mono text-emerald-800 dark:text-emerald-300 font-bold">LOCKED</span>
+          <span className="font-mono text-emerald-800 dark:text-emerald-300 font-bold">{t('transactions.transfers.detail.locked')}</span>
         </div>
       )}
 
@@ -271,8 +280,12 @@ export default function TransferDetailPage() {
           <div className="flex items-center gap-2">
             <Truck size={18} className="text-blue-700 dark:text-blue-400" />
             <span>
-              <strong>DISPATCHED & IN TRANSIT:</strong> Carrier: {transfer.carrier_name} (Waybill: {transfer.waybill_number}, Vehicle: {transfer.vehicle_number || 'Official'}).
-              Asset location will officially transfer once destination confirms arrival.
+              <strong>{t('transactions.transfers.detail.inTransitBanner')}</strong>{' '}
+              {t('transactions.transfers.detail.inTransitDesc', {
+                carrier: transfer.carrier_name,
+                waybill: transfer.waybill_number,
+                vehicle: transfer.vehicle_number || t('transactions.transfers.detail.officialVehicle'),
+              })}
             </span>
           </div>
           <StatusBadge status="IN_TRANSIT" size="sm" />
@@ -284,27 +297,27 @@ export default function TransferDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Building size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Origin & Destination Offices
+            {t('transactions.transfers.detail.sectionOffices')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Source Store:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.sourceStore')}</span>
               <span className="font-semibold text-slate-900 dark:text-white">{transfer.source_office}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Destination Office:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.destOffice')}</span>
               <span className="font-semibold text-emerald-700 dark:text-emerald-300">{transfer.destination_office}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Destination Room:</span>
-              <span className="text-slate-800 dark:text-slate-200">{transfer.destination_location || 'Central Bay'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.destRoom')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{transfer.destination_location || t('transactions.transfers.detail.centralBay')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Administrative Order:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.adminOrder')}</span>
               <span className="font-mono font-bold text-slate-900 dark:text-white">{transfer.order_reference}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Transfer Reason:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.transferReason')}</span>
               <span className="text-slate-900 dark:text-white font-medium">{transfer.reason}</span>
             </div>
           </div>
@@ -313,24 +326,24 @@ export default function TransferDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Clock size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Lifecycle Audit Timeline
+            {t('transactions.transfers.detail.sectionTimeline')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Requested By:</span>
-              <span className="text-slate-800 dark:text-slate-200">{transfer.requested_by} on {formatDate(transfer.request_date)}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.requestedBy')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{transfer.requested_by} {t('transactions.transfers.detail.onDate')} {formatDate(transfer.request_date)}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Sanctioned / Approved By:</span>
-              <span className="text-slate-800 dark:text-slate-200">{transfer.approved_by || 'Pending Review'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.sanctionedBy')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{transfer.approved_by || t('transactions.transfers.detail.pendingReview')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Dispatch Details:</span>
-              <span className="text-slate-800 dark:text-slate-200">{transfer.dispatched_at ? `${transfer.carrier_name} (${formatDate(transfer.dispatched_at)})` : 'Not yet dispatched'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.dispatchDetails')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{transfer.dispatched_at ? `${transfer.carrier_name} (${formatDate(transfer.dispatched_at)})` : t('transactions.transfers.detail.notDispatched')}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Destination Acknowledgment:</span>
-              <span className="text-slate-800 dark:text-slate-200">{transfer.completed_at ? `${transfer.received_by} (${formatDate(transfer.completed_at)})` : 'Pending arrival'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.destAck')}</span>
+              <span className="text-slate-800 dark:text-slate-200">{transfer.completed_at ? `${transfer.received_by} (${formatDate(transfer.completed_at)})` : t('transactions.transfers.detail.pendingArrival')}</span>
             </div>
           </div>
         </div>
@@ -341,7 +354,7 @@ export default function TransferDetailPage() {
         <div className="px-5 py-4 border-b border-slate-200 dark:border-emerald-500/15 flex items-center justify-between bg-slate-50/70 dark:bg-[#0A1513]">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
-            Transferred Assets & Items Schedule ({transfer.items?.length || 0})
+            {t('transactions.transfers.detail.scheduleTitle', { count: transfer.items?.length || 0 })}
           </h2>
         </div>
 
@@ -350,11 +363,11 @@ export default function TransferDetailPage() {
             <thead className="bg-slate-100/70 dark:bg-[#0A1513] border-b border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">#</th>
-                <th className="py-2.5 px-4">Item Name & Code</th>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-4">Serial Number</th>
-                <th className="py-2.5 px-3 text-center">Transfer Qty</th>
-                <th className="py-2.5 px-4">Current Master Status</th>
+                <th className="py-2.5 px-4">{t('transactions.issues.detail.colItemNameCode')}</th>
+                <th className="py-2.5 px-3">{t('transactions.issues.detail.colType')}</th>
+                <th className="py-2.5 px-4">{t('transactions.issues.detail.colSerialNumber')}</th>
+                <th className="py-2.5 px-3 text-center">{t('transactions.transfers.detail.colTransferQty')}</th>
+                <th className="py-2.5 px-4">{t('transactions.transfers.detail.colMasterStatus')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10 text-slate-800 dark:text-slate-200">
@@ -367,7 +380,7 @@ export default function TransferDetailPage() {
                   </td>
                   <td className="py-3 px-3">
                     <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-[#081210] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-emerald-500/20">
-                      {line.item_type === 'DURABLE_ASSET' ? 'Durable' : 'Consumable'}
+                      {line.item_type === 'DURABLE_ASSET' ? t('transactions.issues.detail.typeDurable') : t('transactions.issues.detail.typeConsumable')}
                     </span>
                   </td>
                   <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{line.serial_number || 'N/A'}</td>
@@ -376,9 +389,9 @@ export default function TransferDetailPage() {
                   </td>
                   <td className="py-3 px-4">
                     {transfer.status === 'COMPLETED' ? (
-                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Active at Destination</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{t('transactions.transfers.detail.activeAtDest')}</span>
                     ) : (
-                      <span className="text-slate-500 dark:text-slate-400">In Relocation Custody</span>
+                      <span className="text-slate-500 dark:text-slate-400">{t('transactions.transfers.detail.inRelocation')}</span>
                     )}
                   </td>
                 </tr>
@@ -392,25 +405,25 @@ export default function TransferDetailPage() {
       <Modal
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
-        title="Reject Transfer Request"
+        title={t('transactions.transfers.detail.rejectModalTitle')}
       >
         <div className="space-y-4 text-xs">
           <p className="text-slate-600 dark:text-slate-300">
-            Please enter a formal justification for rejecting transfer request #{transfer.transfer_number}.
+            {t('transactions.transfers.detail.rejectModalPrompt', { number: transfer.transfer_number })}
           </p>
           <textarea
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             rows={3}
-            placeholder="e.g. Asset required for upcoming state election cell in Veraval..."
+            placeholder={t('transactions.transfers.detail.rejectPlaceholder')}
             className="w-full p-2.5 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-rose-500 focus:outline-none"
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setShowRejectModal(false)}>
-              Cancel
+              {t('transactions.transfers.create.cancel')}
             </Button>
             <Button variant="danger" size="sm" loading={isProcessing} onClick={handleReject}>
-              Confirm Rejection
+              {t('transactions.transfers.detail.confirmRejection')}
             </Button>
           </div>
         </div>
@@ -420,12 +433,12 @@ export default function TransferDetailPage() {
       <Modal
         isOpen={showDispatchModal}
         onClose={() => setShowDispatchModal(false)}
-        title="Dispatch Items & Generate Waybill"
+        title={t('transactions.transfers.detail.dispatchModalTitle')}
       >
         <div className="space-y-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Logistics / Transport Carrier <span className="text-red-500">*</span>
+              {t('transactions.transfers.detail.carrierLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -436,19 +449,19 @@ export default function TransferDetailPage() {
           </div>
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Waybill / Lorry Receipt (LR) Number <span className="text-red-500">*</span>
+              {t('transactions.transfers.detail.waybillLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={waybillNumber}
               onChange={(e) => setWaybillNumber(e.target.value)}
-              placeholder="e.g. GSRTC-VRV-9021"
+              placeholder={t('transactions.transfers.detail.waybillPlaceholder')}
               className="w-full px-3 py-1.5 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Vehicle Registration Number
+              {t('transactions.transfers.detail.vehicleLabel')}
             </label>
             <input
               type="text"
@@ -459,7 +472,7 @@ export default function TransferDetailPage() {
           </div>
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Expected Delivery Date
+              {t('transactions.transfers.detail.expectedDeliveryLabel')}
             </label>
             <input
               type="date"
@@ -470,10 +483,10 @@ export default function TransferDetailPage() {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setShowDispatchModal(false)}>
-              Cancel
+              {t('transactions.transfers.create.cancel')}
             </Button>
             <Button variant="primary" size="sm" loading={isProcessing} onClick={handleDispatch}>
-              Confirm Dispatch
+              {t('transactions.transfers.detail.confirmDispatch')}
             </Button>
           </div>
         </div>
@@ -483,16 +496,15 @@ export default function TransferDetailPage() {
       <Modal
         isOpen={showCompleteModal}
         onClose={() => setShowCompleteModal(false)}
-        title="Acknowledge Receipt & Complete Relocation"
+        title={t('transactions.transfers.detail.completeModalTitle')}
       >
         <div className="space-y-4 text-xs">
           <p className="text-slate-600 dark:text-slate-300">
-            Confirm that the physical items have arrived at <strong>{transfer.destination_office}</strong> and are verified.
-            This action will update the system location for all transferred assets.
+            {t('transactions.transfers.detail.completeModalDesc', { office: transfer.destination_office })}
           </p>
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Receiving Destination Officer <span className="text-red-500">*</span>
+              {t('transactions.transfers.detail.receivingOfficerLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -503,7 +515,7 @@ export default function TransferDetailPage() {
           </div>
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Acknowledgment / Inspection Notes
+              {t('transactions.transfers.detail.ackNotesLabel')}
             </label>
             <input
               type="text"
@@ -520,15 +532,15 @@ export default function TransferDetailPage() {
               className="rounded text-red-600 border-slate-300 dark:border-emerald-500/30"
             />
             <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-              Report transit discrepancy (e.g. damaged seal or transit scuff)
+              {t('transactions.transfers.detail.reportDiscrepancy')}
             </span>
           </label>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" size="sm" onClick={() => setShowCompleteModal(false)}>
-              Cancel
+              {t('transactions.transfers.create.cancel')}
             </Button>
             <Button variant="primary" size="sm" loading={isProcessing} onClick={handleComplete}>
-              Acknowledge & Transfer Location
+              {t('transactions.transfers.detail.ackTransferBtn')}
             </Button>
           </div>
         </div>

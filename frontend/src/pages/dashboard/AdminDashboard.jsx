@@ -13,6 +13,8 @@ import GlassCard from '../../components/common/GlassCard'
 import { formatCurrency, formatNumber, formatDateTime } from '../../utils/formatters'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import toast from 'react-hot-toast'
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -91,6 +93,7 @@ function KPICard({ title, value, subtitle, icon: Icon, color = 'teal', loading }
 function AdminDashboard() {
   const { user } = useAuth()
   const { isDark } = useTheme()
+  const { t } = useLanguage()
 
   const {
     data: dashData,
@@ -113,10 +116,10 @@ function AdminDashboard() {
   const handleRunClassification = async () => {
     try {
       await runClassificationEngine({ office_id: user?.office?.id })
-      toast.success('Classification engine executed successfully')
+      toast.success(t('deadStock.classification.messages.runSuccess'))
       refetch()
     } catch {
-      toast.error('Failed to trigger classification engine')
+      toast.error(t('dashboard.admin.classificationFailed'))
     }
   }
 
@@ -134,8 +137,8 @@ function AdminDashboard() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="District Executive Dashboard"
-        subtitle={`System Administration & Inventory Governance · Gir Somnath · ${formatDateTime(new Date().toISOString())}`}
+        title={t('dashboard.admin.title')}
+        subtitle={t('dashboard.admin.subtitle', { date: formatDateTime(new Date().toISOString()) })}
         actions={
           <Button
             variant="secondary"
@@ -143,7 +146,7 @@ function AdminDashboard() {
             leftIcon={<RefreshCw size={14} />}
             onClick={() => refetch()}
           >
-            Refresh Data
+            {t('actions.refresh')}
           </Button>
         }
       />
@@ -153,7 +156,7 @@ function AdminDashboard() {
         <div className="flex items-center gap-2">
           <ShieldCheck size={16} className="text-forest-600 dark:text-forest-400 shrink-0" />
           <span>
-            <strong>System Status:</strong> PS000214 Dead Stock Management Core is active. All metrics sync with PostgreSQL schema.
+            <strong>{t('dashboard.admin.systemStatusLabel')}</strong> {t('dashboard.admin.systemStatusMessage')}
           </span>
         </div>
         <span className="hidden sm:inline font-mono text-[11px] bg-white/40 dark:bg-forest-800/60 px-2 py-0.5 rounded-lg border border-forest-500/10">
@@ -163,7 +166,7 @@ function AdminDashboard() {
 
       {isError && (
         <ErrorState
-          message={error?.response?.data?.error?.message || 'Failed to load executive dashboard data.'}
+          message={error?.response?.data?.error?.message || t('dashboard.admin.loadError')}
           onRetry={refetch}
         />
       )}
@@ -171,33 +174,37 @@ function AdminDashboard() {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Total Registered Assets"
+          title={t('dashboard.admin.kpis.totalRegisteredAssets')}
           value={formatNumber(dashData?.total_items ?? '—')}
-          subtitle="All durable & consumable records"
+          subtitle={t('dashboard.admin.kpis.totalRegisteredAssetsSub')}
           icon={Package}
           color="teal"
           loading={isLoading}
         />
         <KPICard
-          title="Active Inventory Valuation"
+          title={t('dashboard.admin.kpis.activeInventoryValuation')}
           value={dashData?.active_inventory_value != null ? formatCurrency(dashData.active_inventory_value) : '—'}
-          subtitle="Based on acquisition costs"
+          subtitle={t('dashboard.admin.kpis.activeInventoryValuationSub')}
           icon={CheckCircle2}
           color="green"
           loading={isLoading}
         />
         <KPICard
-          title="Dead Stock Volume"
+          title={t('dashboard.admin.kpis.deadStockVolume')}
           value={formatNumber(dashData?.dead_stock_count ?? '—')}
-          subtitle={dashData?.dead_stock_value != null ? `Value: ${formatCurrency(dashData.dead_stock_value)}` : 'Non-moving & Obsolete pool'}
+          subtitle={
+            dashData?.dead_stock_value != null
+              ? t('dashboard.admin.kpis.deadStockValueSub', { value: formatCurrency(dashData.dead_stock_value) })
+              : t('dashboard.admin.kpis.deadStockVolumeSub')
+          }
           icon={TrendingDown}
           color="amber"
           loading={isLoading}
         />
         <KPICard
-          title="Pending Approvals"
+          title={t('dashboard.sections.pendingApprovals')}
           value={formatNumber(dashData?.pending_approvals ?? '—')}
-          subtitle="Awaiting administrative sign-off"
+          subtitle={t('dashboard.admin.kpis.pendingApprovalsSub')}
           icon={ClipboardCheck}
           color="red"
           loading={isLoading}
@@ -212,14 +219,14 @@ function AdminDashboard() {
             <div>
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
                 <Activity size={16} className="text-forest-600 dark:text-forest-400" />
-                Asset Lifecycle Classification
+                {t('dashboard.admin.sections.classificationTitle')}
               </h2>
               <p className="text-xs text-forest-600 dark:text-forest-400 mt-0.5">
-                Distribution across Active, Slow-Moving, Non-Moving, and Obsolete stock
+                {t('dashboard.admin.sections.classificationSubtitle')}
               </p>
             </div>
             <Button variant="secondary" size="xs" onClick={handleRunClassification}>
-              Run Engine
+              {t('dashboard.admin.runEngine')}
             </Button>
           </div>
 
@@ -268,12 +275,12 @@ function AdminDashboard() {
                         className="w-3 h-3 rounded-full shrink-0"
                         style={{ backgroundColor: pieColors[idx % pieColors.length] }}
                       />
-                      <span className="font-medium text-forest-900 dark:text-forest-100 capitalize">
-                        {item.name.toLowerCase().replace('_', ' ')}
+                      <span className="font-medium text-forest-900 dark:text-forest-100">
+                        {translateEnum(t, item.name)}
                       </span>
                     </div>
                     <span className="font-bold text-forest-950 dark:text-forest-50 font-mono">
-                      {formatNumber(item.value)} items
+                      {t('dashboard.admin.itemsCount', { count: formatNumber(item.value) })}
                     </span>
                   </div>
                 ))}
@@ -281,7 +288,7 @@ function AdminDashboard() {
             </div>
           ) : (
             <div className="h-52 flex items-center justify-center text-sm text-forest-400">
-              No classification data currently indexed
+              {t('dashboard.admin.noClassificationData')}
             </div>
           )}
         </GlassCard>
@@ -291,10 +298,10 @@ function AdminDashboard() {
           <div>
             <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-1 flex items-center gap-2">
               <AlertTriangle size={16} className="text-amber-500" />
-              Exception & Alert Registry
+              {t('dashboard.admin.sections.alertRegistryTitle')}
             </h2>
             <p className="text-xs text-forest-600 dark:text-forest-400 mb-4">
-              Real-time discrepancy triggers
+              {t('dashboard.admin.sections.alertRegistrySubtitle')}
             </p>
 
             {alertsData ? (
@@ -304,8 +311,8 @@ function AdminDashboard() {
                     key={type}
                     className="flex items-center justify-between p-2.5 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10"
                   >
-                    <span className="text-xs text-forest-700 dark:text-forest-200 capitalize font-medium">
-                      {type.toLowerCase().replace(/_/g, ' ')}
+                    <span className="text-xs text-forest-700 dark:text-forest-200 font-medium">
+                      {translateEnum(t, type)}
                     </span>
                     <span className="text-xs font-extrabold text-forest-900 dark:text-forest-100 font-mono px-2 py-0.5 rounded-lg bg-white/60 dark:bg-forest-800/60 border border-forest-500/10">
                       {count}
@@ -314,7 +321,7 @@ function AdminDashboard() {
                 ))}
                 {(!alertsData?.by_type || Object.keys(alertsData.by_type).length === 0) && (
                   <p className="text-xs text-forest-500 py-6 text-center">
-                    All store audits and threshold monitors are healthy.
+                    {t('dashboard.admin.alertsHealthy')}
                   </p>
                 )}
               </div>
@@ -335,9 +342,9 @@ function AdminDashboard() {
           <div className="px-6 py-4 border-b border-forest-500/10 dark:border-forest-300/10 flex items-center justify-between">
             <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
               <Clock size={16} className="text-forest-600 dark:text-forest-400" />
-              Recent Audit Log Operations
+              {t('dashboard.admin.sections.recentAuditTitle')}
             </h2>
-            <span className="text-xs text-forest-500">Immutable trail</span>
+            <span className="text-xs text-forest-500">{t('dashboard.admin.immutableTrail')}</span>
           </div>
           <div className="divide-y divide-forest-500/5 dark:divide-forest-300/5">
             {dashData.recent_audit_events.map((event, i) => (
@@ -348,7 +355,7 @@ function AdminDashboard() {
                     {event.description || event.action}
                   </p>
                   <p className="text-[11px] text-forest-500 dark:text-forest-400 mt-0.5">
-                    {formatDateTime(event.created_at)} · Operator: <span className="font-medium text-forest-700 dark:text-forest-300">{event.actor_name}</span>
+                    {formatDateTime(event.created_at)} · {t('dashboard.admin.operatorLabel')}: <span className="font-medium text-forest-700 dark:text-forest-300">{event.actor_name}</span>
                   </p>
                 </div>
               </div>

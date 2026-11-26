@@ -1,11 +1,13 @@
 import ModulePlaceholder from '../../components/common/ModulePlaceholder'
+import { useLanguage } from '../../i18n'
 
 export default function AuditTrailPage() {
+  const { t } = useLanguage()
   return (
     <ModulePlaceholder
-      title="System Audit Trail & Security Logs"
-      subtitle="Append-only immutable record of every user action, status transition, and data mutation"
-      moduleName="Audit Trail"
+      title={t('audit.title')}
+      subtitle={t('audit.emptyState.description')}
+      moduleName={t('nav.auditTrail')}
       phaseNumber="7"
       endpoint="GET /api/v1/audit/logs"
       expectedFeatures={[

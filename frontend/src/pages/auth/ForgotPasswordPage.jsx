@@ -3,8 +3,10 @@ import { ArrowLeft, Info, ShieldCheck } from 'lucide-react'
 import AuthLayout from '../../components/layout/AuthLayout'
 import Button from '../../components/common/Button'
 import { ROUTES } from '../../constants/routes'
+import { useLanguage } from '../../i18n'
 
 function ForgotPasswordPage() {
+  const { t } = useLanguage()
   return (
     <AuthLayout>
       <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 shadow-2xl overflow-hidden p-8 transition-colors">
@@ -12,9 +14,9 @@ function ForgotPasswordPage() {
           <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto mb-3 shadow-xs">
             <ShieldCheck size={24} />
           </div>
-          <h1 className="text-lg font-bold text-slate-800 dark:text-white">Password Recovery Policy</h1>
+          <h1 className="text-lg font-bold text-slate-800 dark:text-white">{t('auth.forgotPassword')}</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            District Development Office – Gir Somnath
+            {t('app.organization')}
           </p>
         </div>
 
@@ -35,7 +37,7 @@ function ForgotPasswordPage() {
 
         <Link to={ROUTES.LOGIN} className="w-full block">
           <Button variant="secondary" className="w-full" leftIcon={<ArrowLeft size={16} />}>
-            Return to Login
+            {t('auth.backToLogin')}
           </Button>
         </Link>
       </div>

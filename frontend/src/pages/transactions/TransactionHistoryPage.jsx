@@ -15,10 +15,13 @@ import StatusBadge from '../../components/common/StatusBadge'
 import { getTransactions } from '../../api/transactions.api'
 import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import { motion } from 'framer-motion'
 
 export default function TransactionHistoryPage() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -50,7 +53,16 @@ export default function TransactionHistoryPage() {
 
   const handleExportCSV = () => {
     if (ledger.length === 0) return
-    const headers = ['Voucher Number', 'Transaction Type', 'Date', 'Items Summary', 'Source', 'Destination', 'Initiated By', 'Status']
+    const headers = [
+      t('transactions.ledger.csvVoucherNumber'),
+      t('transactions.ledger.csvTransactionType'),
+      t('labels.date'),
+      t('transactions.ledger.csvItemsSummary'),
+      t('transactions.ledger.csvSource'),
+      t('transactions.ledger.csvDestination'),
+      t('transactions.ledger.csvInitiatedBy'),
+      t('labels.status'),
+    ]
     const rows = ledger.map((t) => [
       t.voucher_number,
       t.transaction_type,
@@ -75,7 +87,7 @@ export default function TransactionHistoryPage() {
   const columns = [
     {
       key: 'voucher_number',
-      header: 'Voucher Ref No.',
+      header: t('transactions.ledger.voucherRef'),
       render: (val, row) => (
         <div>
           <span
@@ -90,7 +102,7 @@ export default function TransactionHistoryPage() {
     },
     {
       key: 'transaction_type',
-      header: 'Movement Type',
+      header: t('transactions.ledger.movementType'),
       render: (val) => {
         let badgeColor = 'bg-forest-500/10 text-forest-800 dark:text-forest-200 border-forest-500/20'
         let icon = <FileText size={12} />
@@ -112,28 +124,28 @@ export default function TransactionHistoryPage() {
         return (
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeColor}`}>
             {icon}
-            {val}
+            {translateEnum(t, val)}
           </span>
         )
       },
     },
     {
       key: 'item_summary',
-      header: 'Inventory Items',
+      header: t('transactions.ledger.inventoryItems'),
       render: (val, row) => (
         <div className="max-w-xs">
           <span className="text-xs text-forest-950 dark:text-forest-50 font-semibold block truncate" title={val}>
             {val}
           </span>
           <span className="text-[11px] text-forest-500 font-mono">
-            {row.item_count} {row.item_count === 1 ? 'line item' : 'line items'}
+            {row.item_count} {row.item_count === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}
           </span>
         </div>
       ),
     },
     {
       key: 'route',
-      header: 'Source ➔ Destination',
+      header: t('transactions.ledger.sourceDestination'),
       render: (_, row) => (
         <div className="flex items-center gap-1.5 text-xs text-forest-700 dark:text-forest-300 max-w-sm">
           <span className="truncate max-w-[120px]" title={row.source}>
@@ -148,22 +160,22 @@ export default function TransactionHistoryPage() {
     },
     {
       key: 'initiated_by',
-      header: 'Handled By',
-      render: (val) => <span className="text-xs text-forest-600 dark:text-forest-300">{val || 'Store Staff'}</span>,
+      header: t('transactions.ledger.handledBy'),
+      render: (val) => <span className="text-xs text-forest-600 dark:text-forest-300">{val || t('roles.storeStaff')}</span>,
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('labels.status'),
       render: (val) => <StatusBadge status={val} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Action',
+      header: t('labels.actions'),
       align: 'right',
       render: (_, row) => (
         <Link to={row.detail_url}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
-            Voucher
+            {t('transactions.ledger.voucher')}
           </Button>
         </Link>
       ),
@@ -196,15 +208,15 @@ export default function TransactionHistoryPage() {
 
         <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-600 dark:text-forest-300">
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Movement:</span>
-            <span className="font-bold">{tx.transaction_type}</span>
+            <span className="text-forest-500">{t('transactions.ledger.movementLabel')}</span>
+            <span className="font-bold">{translateEnum(t, tx.transaction_type)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Date:</span>
+            <span className="text-forest-500">{t('labels.date')}:</span>
             <span>{formatDate(tx.date)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Handled by:</span>
+            <span className="text-forest-500">{t('transactions.ledger.handledBy')}:</span>
             <span>{tx.initiated_by}</span>
           </div>
         </div>
@@ -216,7 +228,7 @@ export default function TransactionHistoryPage() {
         </span>
         <Link to={tx.detail_url} onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
-            Voucher
+            {t('transactions.ledger.voucher')}
           </Button>
         </Link>
       </div>
@@ -231,8 +243,8 @@ export default function TransactionHistoryPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Unified Stock Movement Ledger"
-        subtitle="Chronological audit trail of all store receipts, departmental issues, returns, and inter-office transfers"
+        title={t('transactions.ledger.pageTitle')}
+        subtitle={t('transactions.ledger.pageSubtitle')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             <ViewToggle view={viewMode} onViewChange={handleViewChange} />
@@ -242,7 +254,7 @@ export default function TransactionHistoryPage() {
               leftIcon={<Download size={14} />}
               onClick={handleExportCSV}
             >
-              Export CSV
+              {t('transactions.ledger.exportCsv')}
             </Button>
           </div>
         }
@@ -254,7 +266,7 @@ export default function TransactionHistoryPage() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search voucher, items, officer..."
+            placeholder={t('transactions.ledger.searchPlaceholderFull')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -266,7 +278,7 @@ export default function TransactionHistoryPage() {
 
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-1.5 text-xs font-bold text-forest-700 dark:text-forest-300">
-            <Filter size={13} /> Movement:
+            <Filter size={13} /> {t('transactions.ledger.movementLabel')}
           </div>
           <select
             value={typeFilter}
@@ -276,11 +288,11 @@ export default function TransactionHistoryPage() {
             }}
             className="px-3 py-1.5 bg-forest-50/70 dark:bg-forest-950/70 border border-forest-500/15 dark:border-forest-400/20 rounded-xl text-xs text-forest-900 dark:text-forest-100 font-medium focus:outline-none focus:ring-1 focus:ring-forest-500"
           >
-            <option value="ALL">All Types</option>
-            <option value="RECEIPT">Receipts (Goods Inward)</option>
-            <option value="ISSUE">Issues (Departmental)</option>
-            <option value="RETURN">Returns (Inward Redeposit)</option>
-            <option value="TRANSFER">Transfers (Inter-Office)</option>
+            <option value="ALL">{t('inventory.filters.allTypes')}</option>
+            <option value="RECEIPT">{t('transactions.ledger.filterReceipt')}</option>
+            <option value="ISSUE">{t('transactions.ledger.filterIssue')}</option>
+            <option value="RETURN">{t('transactions.ledger.filterReturn')}</option>
+            <option value="TRANSFER">{t('transactions.ledger.filterTransfer')}</option>
           </select>
         </div>
       </GlassCard>
@@ -296,8 +308,8 @@ export default function TransactionHistoryPage() {
           total={ledger.length}
           totalPages={totalPages}
           onPageChange={setPage}
-          emptyTitle="No stock transactions found"
-          emptyDescription="There are no transaction records matching your search or movement filter."
+          emptyTitle={t('transactions.ledger.emptyState.title')}
+          emptyDescription={t('transactions.ledger.emptyState.description')}
         />
       ) : (
         <CardView

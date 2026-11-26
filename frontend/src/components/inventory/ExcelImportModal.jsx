@@ -7,6 +7,8 @@ import Modal from '../common/Modal'
 import Button from '../common/Button'
 import { bulkImportItems } from '../../api/inventory.api'
 import { extractApiError } from '../../api/client'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import toast from 'react-hot-toast'
 
 // Standard CSV template columns
@@ -34,6 +36,7 @@ const SAMPLE_CSV_ROWS = [
 ]
 
 export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
+  const { t } = useLanguage()
   const [activeStep, setActiveStep] = useState(1) // 1: Upload, 2: Preview & Validation
   const [file, setFile] = useState(null)
   const [parsedRows, setParsedRows] = useState([])

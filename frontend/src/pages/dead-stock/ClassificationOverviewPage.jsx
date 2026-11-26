@@ -16,9 +16,11 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
 
 export default function ClassificationOverviewPage() {
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
   const queryClient = useQueryClient()
   const officeId = user?.office?.id || user?.office_id
 
@@ -42,12 +44,10 @@ export default function ClassificationOverviewPage() {
       queryClient.invalidateQueries({ queryKey: ['dead-stock-register'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       const result = res?.data || res
-      toast.success(
-        `Classification run completed! Evaluated: ${result?.evaluated_count ?? 0}, Updated: ${result?.updated_count ?? 0}`
-      )
+      toast.success(t('deadStock.classification.messages.runSuccess'))
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Classification engine run failed.'
+      const msg = err.response?.data?.error?.message || err.response?.data?.detail || t('toast.error')
       toast.error(msg)
     },
   })
@@ -55,8 +55,8 @@ export default function ClassificationOverviewPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Dead Stock Classification Engine"
-        subtitle="Algorithmic categorization into Active, Slow-Moving, Non-Moving, and Obsolete stock"
+        title={t('deadStock.classification.title')}
+        subtitle={t('deadStock.classification.overview')}
         actions={
           <div className="flex items-center gap-3">
             <Button
@@ -66,7 +66,7 @@ export default function ClassificationOverviewPage() {
               onClick={() => refetch()}
               loading={isLoading}
             >
-              Refresh
+              {t('actions.refresh')}
             </Button>
             {hasPermission(PERMISSIONS.CLASSIFY_RUN) && (
               <Button
@@ -76,12 +76,12 @@ export default function ClassificationOverviewPage() {
                 loading={runMutation.isPending}
                 onClick={() => runMutation.mutate()}
               >
-                Run Classification
+                {t('deadStock.classification.runClassification')}
               </Button>
             )}
             <Link to={ROUTES.DEAD_STOCK_REGISTER}>
               <Button variant="secondary" size="sm" rightIcon={<ArrowRight size={14} />}>
-                Dead Stock Register
+                {t('deadStock.register.title')}
               </Button>
             </Link>
           </div>
@@ -91,11 +91,11 @@ export default function ClassificationOverviewPage() {
       {/* Error State */}
       {isError && (
         <ErrorState
-          title="Failed to Load Classification Engine"
+          title={t('deadStock.classification.loadErrorTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to connect to the backend classification service. Ensure the FastAPI backend is running.'
+            t('deadStock.classification.loadErrorMsg')
           }
           onRetry={refetch}
         />
@@ -119,7 +119,7 @@ export default function ClassificationOverviewPage() {
             <GlassCard level={1} className="p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-forest-600/90 dark:text-forest-300/80">
-                  Total Evaluated Assets
+                  {t('deadStock.classification.totalEvaluated')}
                 </p>
                 <div className="w-10 h-10 rounded-xl border flex items-center justify-center bg-forest-500/10 text-forest-600 dark:text-forest-300 border-forest-500/20">
                   <Layers size={19} />
@@ -129,7 +129,9 @@ export default function ClassificationOverviewPage() {
                 {formatNumber(summary.total_evaluated ?? 0)}
               </div>
               <p className="text-xs text-forest-600 dark:text-forest-400 font-medium mt-2">
-                Last calculated: {summary.calculated_at ? formatDateTime(summary.calculated_at) : 'Not calculated yet'}
+                {t('deadStock.classification.lastCalculated', {
+                  date: summary.calculated_at ? formatDateTime(summary.calculated_at) : t('deadStock.classification.notCalculatedYet'),
+                })}
               </p>
             </GlassCard>
 
@@ -137,7 +139,7 @@ export default function ClassificationOverviewPage() {
             <GlassCard level={1} className="p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600/90 dark:text-emerald-300/80">
-                  Active Store Stock
+                  {t('deadStock.classification.activeStoreStock')}
                 </p>
                 <div className="w-10 h-10 rounded-xl border flex items-center justify-center bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border-emerald-500/20">
                   <CheckCircle size={19} />
@@ -147,7 +149,7 @@ export default function ClassificationOverviewPage() {
                 {formatNumber(summary.active_count ?? 0)}
               </div>
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-2">
-                Regular circulation & healthy movement
+                {t('deadStock.classification.activeStoreStockSub')}
               </p>
             </GlassCard>
 
@@ -155,7 +157,7 @@ export default function ClassificationOverviewPage() {
             <GlassCard level={1} className="p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-amber-600/90 dark:text-amber-300/80">
-                  Non-Moving Stock
+                  {t('deadStock.classification.nonMovingStock')}
                 </p>
                 <div className="w-10 h-10 rounded-xl border flex items-center justify-center bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20">
                   <Clock size={19} />
@@ -165,7 +167,7 @@ export default function ClassificationOverviewPage() {
                 {formatNumber(summary.non_moving_count ?? 0)}
               </div>
               <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-2">
-                Inactive beyond category threshold
+                {t('deadStock.classification.nonMovingStockSub')}
               </p>
             </GlassCard>
 
@@ -173,7 +175,7 @@ export default function ClassificationOverviewPage() {
             <GlassCard level={1} className="p-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-rose-600/90 dark:text-rose-300/80">
-                  Obsolete / Dead Stock
+                  {t('deadStock.classification.obsoleteDeadStock')}
                 </p>
                 <div className="w-10 h-10 rounded-xl border flex items-center justify-center bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/20">
                   <ShieldAlert size={19} />
@@ -183,7 +185,7 @@ export default function ClassificationOverviewPage() {
                 {formatNumber(summary.obsolete_count ?? 0)}
               </div>
               <p className="text-xs text-rose-600 dark:text-rose-400 font-medium mt-2">
-                Exceeded useful life or damaged/scrap
+                {t('deadStock.classification.obsoleteDeadStockSub')}
               </p>
             </GlassCard>
           </div>
@@ -197,10 +199,10 @@ export default function ClassificationOverviewPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    Slow-Moving Sluggish Stock
+                    {t('deadStock.classification.slowMovingTitle')}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Approaching non-moving inactivity threshold
+                    {t('deadStock.classification.slowMovingSub')}
                   </p>
                 </div>
               </div>
@@ -216,10 +218,10 @@ export default function ClassificationOverviewPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    Authorized Officer Overrides
+                    {t('deadStock.classification.overridesTitle')}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Items manually reclassified with audit justifications
+                    {t('deadStock.classification.overridesSub')}
                   </p>
                 </div>
               </div>
@@ -236,64 +238,62 @@ export default function ClassificationOverviewPage() {
         <div className="flex items-center gap-2 border-b border-forest-500/10 dark:border-forest-300/10 pb-3">
           <Archive size={18} className="text-forest-600 dark:text-forest-400" />
           <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50">
-            Statutory Rule Precedence Architecture (Gujarat GFR Rules)
+            {t('deadStock.classification.precedenceTitle')}
           </h2>
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-          The classification engine evaluates every inventory item against category-configured lifespan parameters
-          in strict order of precedence. Automated classifications serve as statutory indicators for Survey Committee
-          review and do not automatically dispose of assets.
+          {t('deadStock.classification.precedenceDesc')}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
           <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20 space-y-1.5">
             <span className="text-[10px] font-bold tracking-wider text-rose-700 dark:text-rose-400 uppercase">
-              Precedence 1
+              {t('deadStock.classification.precedence1Label')}
             </span>
-            <h4 className="text-xs font-bold text-rose-950 dark:text-rose-100">Physical Condition</h4>
+            <h4 className="text-xs font-bold text-rose-950 dark:text-rose-100">{t('deadStock.classification.precedence1Title')}</h4>
             <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80 leading-normal">
-              Items recorded with condition <strong>DAMAGED</strong> or <strong>SCRAP</strong> are immediately classified as <strong>OBSOLETE</strong>.
+              {t('deadStock.classification.precedence1Desc')}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-rose-500/20 bg-rose-50/50 dark:bg-rose-950/20 space-y-1.5">
             <span className="text-[10px] font-bold tracking-wider text-rose-700 dark:text-rose-400 uppercase">
-              Precedence 2
+              {t('deadStock.classification.precedence2Label')}
             </span>
-            <h4 className="text-xs font-bold text-rose-950 dark:text-rose-100">Lifespan Obsolescence</h4>
+            <h4 className="text-xs font-bold text-rose-950 dark:text-rose-100">{t('deadStock.classification.precedence2Title')}</h4>
             <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80 leading-normal">
-              Item age exceeds category <strong>obsolescence_years</strong> AND inactive &gt; slow-moving threshold ➔ <strong>OBSOLETE</strong>.
+              {t('deadStock.classification.precedence2Desc')}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-50/50 dark:bg-amber-950/20 space-y-1.5">
             <span className="text-[10px] font-bold tracking-wider text-amber-700 dark:text-amber-400 uppercase">
-              Precedence 3
+              {t('deadStock.classification.precedence3Label')}
             </span>
-            <h4 className="text-xs font-bold text-amber-950 dark:text-amber-100">Inactivity Threshold</h4>
+            <h4 className="text-xs font-bold text-amber-950 dark:text-amber-100">{t('deadStock.classification.precedence3Title')}</h4>
             <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-normal">
-              Days without movement &gt;= category <strong>inactivity_threshold_days</strong> (e.g. 180 days) ➔ <strong>NON_MOVING</strong>.
+              {t('deadStock.classification.precedence3Desc')}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20 space-y-1.5">
             <span className="text-[10px] font-bold tracking-wider text-blue-700 dark:text-blue-400 uppercase">
-              Precedence 4
+              {t('deadStock.classification.precedence4Label')}
             </span>
-            <h4 className="text-xs font-bold text-blue-950 dark:text-blue-100">Sluggish Movement</h4>
+            <h4 className="text-xs font-bold text-blue-950 dark:text-blue-100">{t('deadStock.classification.precedence4Title')}</h4>
             <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80 leading-normal">
-              Days without movement &gt;= category <strong>slow_moving_threshold_days</strong> (e.g. 90 days) ➔ <strong>SLOW_MOVING</strong>.
+              {t('deadStock.classification.precedence4Desc')}
             </p>
           </div>
 
           <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-1.5">
             <span className="text-[10px] font-bold tracking-wider text-emerald-700 dark:text-emerald-400 uppercase">
-              Precedence 5
+              {t('deadStock.classification.precedence5Label')}
             </span>
-            <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-100">Active Circulation</h4>
+            <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-100">{t('deadStock.classification.precedence5Title')}</h4>
             <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 leading-normal">
-              Items regularly moved, healthy stock within standard shelf-life ➔ <strong>ACTIVE</strong>.
+              {t('deadStock.classification.precedence5Desc')}
             </p>
           </div>
         </div>
@@ -302,9 +302,7 @@ export default function ClassificationOverviewPage() {
         <div className="p-3.5 rounded-xl bg-forest-500/10 dark:bg-forest-950/50 border border-forest-500/20 flex items-start gap-2.5 text-xs text-forest-800 dark:text-forest-200">
           <Info size={16} className="text-forest-600 dark:text-forest-400 shrink-0 mt-0.5" />
           <div>
-            <strong>Legal Governance Note:</strong> Identification by the classification engine flags items for official Survey
-            Committee inspection under Gujarat Panchayat Service Rules. It does not write off or authorize disposal of an asset.
-            Disposal requires formal survey, DDO sanction order, and public condemnation proceedings.
+            <strong>{t('deadStock.classification.legalNoteTitle')}</strong> {t('deadStock.classification.legalNoteDesc')}
           </div>
         </div>
       </GlassCard>

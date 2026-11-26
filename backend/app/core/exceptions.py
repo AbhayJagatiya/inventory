@@ -10,6 +10,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core.i18n import get_localized_error_message, parse_accept_language
+
 
 class AppException(Exception):
     """Base application exception with error code, message, and field details."""
@@ -85,11 +87,13 @@ def format_error_response(code: str, message: str, details: List[Dict[str, Any]]
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "req-unknown")
+    lang = getattr(request.state, "language", None) or parse_accept_language(request.headers.get("Accept-Language"))
+    localized_msg = get_localized_error_message(exc.code, exc.message, lang)
     return JSONResponse(
         status_code=exc.status_code,
         content=format_error_response(
             code=exc.code,
-            message=exc.message,
+            message=localized_msg,
             details=exc.details,
             request_id=request_id,
         ),
@@ -98,6 +102,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "req-unknown")
+    lang = getattr(request.state, "language", None) or parse_accept_language(request.headers.get("Accept-Language"))
     details = []
     for err in exc.errors():
         loc = err.get("loc", [])
@@ -111,7 +116,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=format_error_response(
             code="VALIDATION_ERROR",
-            message="Request body or query parameter validation failed",
+            message=get_localized_error_message("VALIDATION_ERROR", "Request body or query parameter validation failed", lang),
             details=details,
             request_id=request_id,
         ),
@@ -120,6 +125,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "req-unknown")
+    lang = getattr(request.state, "language", None) or parse_accept_language(request.headers.get("Accept-Language"))
     code_map = {
         401: "UNAUTHORIZED",
         403: "FORBIDDEN",
@@ -129,11 +135,12 @@ async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPE
         500: "INTERNAL_SERVER_ERROR",
     }
     code = code_map.get(exc.status_code, "HTTP_ERROR")
+    localized_msg = get_localized_error_message(code, str(exc.detail), lang)
     return JSONResponse(
         status_code=exc.status_code,
         content=format_error_response(
             code=code,
-            message=str(exc.detail),
+            message=localized_msg,
             details=[],
             request_id=request_id,
         ),

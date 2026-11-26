@@ -1,7 +1,22 @@
+const LOCALE_MAP = {
+  en: 'en-IN',
+  hi: 'hi-IN',
+  gu: 'gu-IN',
+}
+
+export const getActiveLocale = () => {
+  try {
+    const lang = localStorage.getItem('dsims_language') || 'en'
+    return LOCALE_MAP[lang] || 'en-IN'
+  } catch {
+    return 'en-IN'
+  }
+}
+
 // ─── Currency (INR) ──────────────────────────────────────────────────────────
 export const formatCurrency = (amount, opts = {}) => {
   if (amount == null || amount === '') return '—'
-  return new Intl.NumberFormat('en-IN', {
+  return new Intl.NumberFormat(getActiveLocale(), {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2,
@@ -15,7 +30,7 @@ export const formatDate = (dateStr, opts = {}) => {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   if (isNaN(date)) return '—'
-  return date.toLocaleDateString('en-IN', {
+  return date.toLocaleDateString(getActiveLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -27,7 +42,7 @@ export const formatDateTime = (dateStr) => {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   if (isNaN(date)) return '—'
-  return date.toLocaleString('en-IN', {
+  return date.toLocaleString(getActiveLocale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -71,7 +86,7 @@ export const formatFileSize = (bytes) => {
 // ─── Numbers ─────────────────────────────────────────────────────────────────
 export const formatNumber = (n) => {
   if (n == null || n === '' || n === '—' || isNaN(Number(n))) return '—'
-  return new Intl.NumberFormat('en-IN').format(Number(n))
+  return new Intl.NumberFormat(getActiveLocale()).format(Number(n))
 }
 
 // ─── Text ─────────────────────────────────────────────────────────────────────

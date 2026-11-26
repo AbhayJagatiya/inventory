@@ -1,11 +1,13 @@
 import ModulePlaceholder from '../../components/common/ModulePlaceholder'
+import { useLanguage } from '../../i18n'
 
 export default function ReportsCenterPage() {
+  const { t } = useLanguage()
   return (
     <ModulePlaceholder
-      title="Statutory Reports & Analytics Center"
-      subtitle="Comprehensive catalogue of 12 official government inventory, asset valuation, and movement registers"
-      moduleName="Reports Center"
+      title={t('reports.title')}
+      subtitle={t('reports.parameters.title')}
+      moduleName={t('nav.reports')}
       phaseNumber="7"
       endpoint="GET /api/v1/reports/*"
       expectedFeatures={[

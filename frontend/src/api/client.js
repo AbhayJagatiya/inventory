@@ -36,6 +36,8 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    const lang = localStorage.getItem('dsims_language') || 'en'
+    config.headers['Accept-Language'] = ['en', 'hi', 'gu'].includes(lang) ? lang : 'en'
     return config
   },
   (error) => Promise.reject(error),

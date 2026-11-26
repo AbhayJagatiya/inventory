@@ -16,12 +16,15 @@ import { formatCurrency, formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import toast from 'react-hot-toast'
 
 export default function ReceiptDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   const [isPosting, setIsPosting] = useState(false)
   const [showConfirmPost, setShowConfirmPost] = useState(false)
@@ -39,10 +42,10 @@ export default function ReceiptDetailPage() {
     setIsPosting(true)
     try {
       await postReceipt(id, user?.full_name || 'Store Officer')
-      toast.success('Goods Inward Voucher successfully posted! Stock balances updated.')
+      toast.success(t('transactions.receipts.messages.posted'))
       refetch()
     } catch (err) {
-      toast.error(err.message || 'Failed to post receipt voucher.')
+      toast.error(err.message || t('toast.error'))
     } finally {
       setIsPosting(false)
     }
@@ -58,7 +61,7 @@ export default function ReceiptDetailPage() {
   }
 
   if (isError || !receipt.id) {
-    return <ErrorState message="Could not locate receipt voucher." onRetry={refetch} />
+    return <ErrorState message={t('feedback.error.message')} onRetry={refetch} />
   }
 
   const isPosted = receipt.status === 'POSTED'
@@ -66,13 +69,13 @@ export default function ReceiptDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Inward Receipt: ${receipt.voucher_number}`}
-        subtitle={`Receipt Date: ${formatDate(receipt.receipt_date)} · Status: ${receipt.status}`}
+        title={`${t('transactions.receipts.detail')}: ${receipt.voucher_number}`}
+        subtitle={`${t('labels.date')}: ${formatDate(receipt.receipt_date)} · ${t('labels.status')}: ${translateEnum(t, receipt.status)}`}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.RECEIPTS}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                Back to Register
+                {t('actions.back')}
               </Button>
             </Link>
             <Button
@@ -81,7 +84,7 @@ export default function ReceiptDetailPage() {
               leftIcon={<Printer size={14} />}
               onClick={() => window.print()}
             >
-              Print GRN Note
+              {t('actions.print')}
             </Button>
             {canPost && (
               <Button
@@ -91,7 +94,7 @@ export default function ReceiptDetailPage() {
                 loading={isPosting}
                 onClick={() => setShowConfirmPost(true)}
               >
-                Confirm & Post Inward
+                {t('actions.confirm')}
               </Button>
             )}
           </div>

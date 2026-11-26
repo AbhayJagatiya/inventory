@@ -8,10 +8,12 @@ import Button from '../../components/common/Button'
 import { getCategories, createCategory, updateCategory } from '../../api/inventory.api'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
 import toast from 'react-hot-toast'
 
 export default function CategoryListPage() {
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState(null)
   const [formData, setFormData] = useState({
@@ -64,57 +66,57 @@ export default function CategoryListPage() {
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, formData)
-        toast.success('Category parameters updated')
+        toast.success(t('inventory.categories.messages.updated'))
       } else {
         await createCategory(formData)
-        toast.success('New category registered')
+        toast.success(t('inventory.categories.messages.created'))
       }
       setIsModalOpen(false)
       refetch()
     } catch (err) {
-      toast.error(err?.response?.data?.error?.message || 'Failed to save category')
+      toast.error(err?.response?.data?.error?.message || t('inventory.categories.messages.saveError'))
     }
   }
 
   const columns = [
     {
       key: 'code',
-      header: 'Category Code',
+      header: t('inventory.categories.categoryCode'),
       width: '160px',
       render: (code) => <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400">{code}</span>,
     },
     {
       key: 'name',
-      header: 'Category Name',
+      header: t('inventory.categories.categoryName'),
       render: (name) => <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{name}</span>,
     },
     {
       key: 'slow_moving_threshold_days',
-      header: 'Slow Moving Threshold',
+      header: t('deadStock.classification.thresholds.slowMoving'),
       align: 'right',
-      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} days</span>,
+      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} {t('labels.days')}</span>,
     },
     {
       key: 'inactivity_threshold_days',
-      header: 'Inactivity Threshold',
+      header: t('inventory.categories.inactivityThreshold'),
       align: 'right',
-      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} days</span>,
+      render: (days) => <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{days} {t('labels.days')}</span>,
     },
     {
       key: 'obsolescence_years',
-      header: 'Useful Lifespan',
+      header: t('inventory.categories.usefulLifespan'),
       align: 'right',
-      render: (years) => <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{years} years</span>,
+      render: (years) => <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{years} {t('labels.years')}</span>,
     },
     {
       key: 'depreciation_rate_pct',
-      header: 'Annual Depreciation',
+      header: t('inventory.categories.annualDepreciation'),
       align: 'right',
-      render: (pct) => <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{pct}% p.a.</span>,
+      render: (pct) => <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{pct}% {t('inventory.categories.perAnnum')}</span>,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('labels.actions'),
       align: 'right',
       width: '100px',
       render: (_, row) => (
@@ -123,7 +125,7 @@ export default function CategoryListPage() {
             <button
               onClick={() => handleOpenEdit(row)}
               className="p-1.5 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-emerald-950/40 rounded"
-              title="Edit Thresholds"
+              title={t('inventory.categories.editCategory')}
             >
               <Edit3 size={15} />
             </button>
@@ -136,12 +138,12 @@ export default function CategoryListPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Inventory Categories & Lifespan Rules"
-        subtitle="Configure dead stock inactivity rules and annual depreciation rates per asset classification"
+        title={t('inventory.categories.title')}
+        subtitle={t('inventory.categories.subtitle')}
         actions={
           hasPermission(PERMISSIONS.MASTER_CATEGORIES_MANAGE) && (
             <Button variant="primary" size="sm" leftIcon={<PlusCircle size={15} />} onClick={handleOpenAdd}>
-              New Category
+              {t('inventory.categories.addCategory')}
             </Button>
           )
         }
@@ -153,39 +155,39 @@ export default function CategoryListPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingCategory ? 'Edit Category Parameters' : 'Register New Category'}
+        title={editingCategory ? t('inventory.categories.editCategory') : t('inventory.categories.addCategory')}
         size="md"
         footer={
           <>
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('actions.cancel')}
             </Button>
             <Button variant="primary" onClick={handleSave}>
-              Save Category
+              {t('actions.save')}
             </Button>
           </>
         }
       >
         <form onSubmit={handleSave} className="space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category Code</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.categoryCode')}</label>
             <input
               type="text"
               value={formData.code}
               onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              placeholder="e.g. IT-COMP or FURN"
+              placeholder={t('inventory.categories.codePlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category Description</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.categoryName')}</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Computers & Peripherals"
+              placeholder={t('inventory.categories.namePlaceholder')}
               className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl text-sm bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               required
             />
@@ -193,7 +195,7 @@ export default function CategoryListPage() {
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Slow Moving Days</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.slowMovingDays')}</label>
               <input
                 type="number"
                 value={formData.slow_moving_threshold_days}
@@ -202,7 +204,7 @@ export default function CategoryListPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Inactivity (Non-Moving) Days</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.inactivityDays')}</label>
               <input
                 type="number"
                 value={formData.inactivity_threshold_days}
@@ -214,7 +216,7 @@ export default function CategoryListPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Obsolescence Lifespan (Years)</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.obsolescenceYears')}</label>
               <input
                 type="number"
                 value={formData.obsolescence_years}
@@ -223,7 +225,7 @@ export default function CategoryListPage() {
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Depreciation Rate (% p.a.)</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('inventory.categories.depreciationRate')}</label>
               <input
                 type="number"
                 step="0.1"

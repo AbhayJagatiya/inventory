@@ -1,4 +1,6 @@
 import { cn } from '../../utils/cn'
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 import {
   CLASSIFICATIONS,
   OPERATIONAL_STATUSES,
@@ -159,8 +161,9 @@ function formatLabel(status) {
 }
 
 function StatusBadge({ status, label, className, size = 'sm' }) {
+  const { t } = useLanguage()
   const style = STATUS_STYLES[status] || 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
-  const text = label || formatLabel(status)
+  const text = label || (status ? translateEnum(t, status) : '') || formatLabel(status)
   const sizeClass = size === 'xs' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-0.5'
 
   return (

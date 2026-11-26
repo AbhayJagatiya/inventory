@@ -1,11 +1,13 @@
 import ModulePlaceholder from '../../components/common/ModulePlaceholder'
+import { useLanguage } from '../../i18n'
 
 export default function AlertCenterPage() {
+  const { t } = useLanguage()
   return (
     <ModulePlaceholder
-      title="Proactive System Alerts Center"
-      subtitle="Automated alerts for non-moving stock, expiring warranties, maintenance due, and stock shortages"
-      moduleName="Alerts Center"
+      title={t('alerts.title')}
+      subtitle={t('alerts.emptyState.description')}
+      moduleName={t('nav.alerts')}
       phaseNumber="6"
       endpoint="GET /api/v1/alerts"
       expectedFeatures={[

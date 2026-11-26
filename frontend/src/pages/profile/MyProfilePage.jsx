@@ -14,20 +14,24 @@ import Button from '../../components/common/Button'
 import StatusBadge from '../../components/common/StatusBadge'
 import toast from 'react-hot-toast'
 import { ROLE_LABELS } from '../../constants/enums'
-
-const passwordSchema = z.object({
-  current_password: z.string().min(1, 'Current password is required'),
-  new_password: z.string().min(8, 'Password must be at least 8 characters long'),
-  confirm_password: z.string().min(1, 'Confirm your new password'),
-}).refine((data) => data.new_password === data.confirm_password, {
-  message: 'New passwords do not match',
-  path: ['confirm_password'],
-})
+import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
+import { useMemo } from 'react'
 
 function MyProfilePage() {
   const { user, userRole, officeName } = useAuth()
+  const { t } = useLanguage()
   const [showPassword, setShowPassword] = useState(false)
   const [apiError, setApiError] = useState('')
+
+  const passwordSchema = useMemo(() => z.object({
+    current_password: z.string().min(1, t('validation.required')),
+    new_password: z.string().min(8, t('validation.passwordMin', { min: 8 })),
+    confirm_password: z.string().min(1, t('validation.required')),
+  }).refine((data) => data.new_password === data.confirm_password, {
+    message: t('validation.passwordMatch'),
+    path: ['confirm_password'],
+  }), [t])
 
   const {
     register,
@@ -42,7 +46,7 @@ function MyProfilePage() {
     setApiError('')
     try {
       await changePassword(data)
-      toast.success('Password updated successfully')
+      toast.success(t('profile.messages.passwordChanged'))
       reset()
     } catch (err) {
       setApiError(extractApiError(err))
@@ -52,8 +56,8 @@ function MyProfilePage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <PageHeader
-        title="My Profile & Security"
-        subtitle="Manage your store department credentials and view assigned access scopes"
+        title={t('profile.title')}
+        subtitle={t('profile.sections.security')}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -66,21 +70,21 @@ function MyProfilePage() {
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.designation || 'Staff Member'}</p>
           <div className="flex justify-center mb-4">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
-              {(typeof userRole === 'string' ? (ROLE_LABELS[userRole] || userRole) : (userRole?.name ? (ROLE_LABELS[userRole.name] || userRole.name) : 'System User'))}
+              {translateEnum(t, typeof userRole === 'string' ? userRole : (userRole?.name || 'STORE_STAFF'))}
             </span>
           </div>
 
           <div className="border-t border-slate-100 dark:border-emerald-500/10 pt-4 space-y-2.5 text-left text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Username:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('labels.username')}:</span>
               <span className="font-mono text-slate-800 dark:text-slate-200 font-medium">{user?.username || '—'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Assigned Office:</span>
-              <span className="text-slate-800 dark:text-slate-200 font-medium">{officeName || 'Veraval Office'}</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('profile.officeLabel')}:</span>
+              <span className="text-slate-800 dark:text-slate-200 font-medium">{officeName || '—'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 dark:text-slate-400">Account Status:</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('labels.status')}:</span>
               <StatusBadge status="ACTIVE" size="xs" />
             </div>
           </div>
@@ -104,12 +108,12 @@ function MyProfilePage() {
 
             <form onSubmit={handleSubmit(onSubmitPassword)} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Current Password</label>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('profile.form.currentPassword')}</label>
                 <input
                   type={showPassword ? 'text' : 'password'}
                   {...register('current_password')}
                   className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="Enter current password"
+                  placeholder={t('profile.form.currentPassword')}
                 />
                 {errors.current_password && (
                   <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{errors.current_password.message}</p>
@@ -118,12 +122,12 @@ function MyProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">New Password</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('profile.form.newPassword')}</label>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     {...register('new_password')}
                     className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Min. 8 characters"
+                    placeholder={t('validation.passwordMin', { min: 8 })}
                   />
                   {errors.new_password && (
                     <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{errors.new_password.message}</p>
@@ -131,12 +135,12 @@ function MyProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm New Password</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('profile.form.confirmNewPassword')}</label>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     {...register('confirm_password')}
                     className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Repeat new password"
+                    placeholder={t('profile.form.confirmNewPassword')}
                   />
                   {errors.confirm_password && (
                     <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{errors.confirm_password.message}</p>
@@ -151,10 +155,10 @@ function MyProfilePage() {
                   className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1.5 transition-colors"
                 >
                   {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                  <span>{showPassword ? 'Hide Passwords' : 'Show Passwords'}</span>
+                  <span>{showPassword ? '👁‍🗨' : '👁'}</span>
                 </button>
                 <Button type="submit" variant="primary" size="sm" isLoading={isSubmitting}>
-                  Update Password
+                  {t('actions.saveChanges')}
                 </Button>
               </div>
             </form>
@@ -164,7 +168,7 @@ function MyProfilePage() {
           <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-100 dark:border-emerald-500/10">
               <Shield size={18} className="text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Granted Role Permissions</h2>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{t('labels.permissions')}</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
               Permissions are authoritative and enforced on the backend per each API request.

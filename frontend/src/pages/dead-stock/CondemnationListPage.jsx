@@ -20,9 +20,11 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
 
 export default function CondemnationListPage() {
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()

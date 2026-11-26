@@ -10,16 +10,19 @@ import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import { cn } from '../../utils/cn'
 import { motion } from 'framer-motion'
-
-const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  password: z.string().min(1, 'Password is required'),
-})
+import { useLanguage } from '../../i18n'
+import { useMemo } from 'react'
 
 function LoginPage() {
   const { login } = useAuth()
+  const { t } = useLanguage()
   const [showPassword, setShowPassword] = useState(false)
   const [apiError, setApiError] = useState('')
+
+  const loginSchema = useMemo(() => z.object({
+    username: z.string().min(1, t('auth.errors.usernameRequired')),
+    password: z.string().min(1, t('auth.errors.passwordRequired')),
+  }), [t])
 
   const {
     register,
@@ -54,10 +57,10 @@ function LoginPage() {
               <span className="text-2xl font-extrabold text-white tracking-wider">GS</span>
             </div>
             <h1 className="text-white font-bold text-base sm:text-lg leading-tight">
-              Dead Stock Inventory Management
+              {t('app.fullName')}
             </h1>
             <p className="text-forest-100/90 text-xs mt-1">
-              District Development Office · Gir Somnath
+              {t('app.organization')}
             </p>
             <p className="text-forest-200/80 text-[11px] mt-1 font-mono tracking-wider">
               PS000214 · SFIC 2026–27
@@ -67,7 +70,7 @@ function LoginPage() {
           {/* Form */}
           <div className="px-8 py-7 bg-white/90 dark:bg-forest-900/90 backdrop-blur-xl">
             <h2 className="text-forest-950 dark:text-forest-50 font-bold text-base mb-5">
-              Sign in to your account
+              {t('auth.signIn')}
             </h2>
 
             {apiError && (
@@ -81,7 +84,7 @@ function LoginPage() {
               {/* Username */}
               <div>
                 <label className="block text-xs font-semibold text-forest-800 dark:text-forest-200 mb-1.5">
-                  Official Username / Role ID
+                  {t('auth.username')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -92,7 +95,7 @@ function LoginPage() {
                     type="text"
                     autoComplete="username"
                     autoFocus
-                    placeholder="e.g. admin, officer, or staff"
+                    placeholder={t('auth.usernamePlaceholder')}
                     className={cn(
                       'w-full pl-9 pr-3 py-2.5 bg-forest-50/50 dark:bg-forest-950/50 border rounded-xl text-sm text-forest-950 dark:text-forest-50 placeholder:text-forest-400/80',
                       'focus:outline-none focus:ring-2 focus:ring-forest-500/50 focus:border-forest-500',
@@ -111,7 +114,7 @@ function LoginPage() {
               {/* Password */}
               <div>
                 <label className="block text-xs font-semibold text-forest-800 dark:text-forest-200 mb-1.5">
-                  Password
+                  {t('auth.password')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -121,7 +124,7 @@ function LoginPage() {
                     {...register('password')}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
-                    placeholder="Enter your password"
+                    placeholder={t('auth.passwordPlaceholder')}
                     className={cn(
                       'w-full pl-9 pr-10 py-2.5 bg-forest-50/50 dark:bg-forest-950/50 border rounded-xl text-sm text-forest-950 dark:text-forest-50 placeholder:text-forest-400/80',
                       'focus:outline-none focus:ring-2 focus:ring-forest-500/50 focus:border-forest-500',
@@ -152,14 +155,14 @@ function LoginPage() {
                 isLoading={isSubmitting}
                 className="w-full mt-2"
               >
-                {isSubmitting ? 'Signing in…' : 'Sign In'}
+                {isSubmitting ? t('auth.signingIn') : t('auth.signInButton')}
               </Button>
             </form>
 
 
 
             <div className="mt-4 pt-3 border-t border-forest-500/10 dark:border-forest-300/10 text-center text-[11px] text-forest-500 dark:text-forest-400">
-              Authorized Panchayat Personnel Only · Veraval, Gujarat
+              {t('auth.authorizedOnly')}
             </div>
           </div>
         </GlassCard>

@@ -17,11 +17,13 @@ import { formatCurrency, formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
 import { motion } from 'framer-motion'
 
 export default function ReceiptListPage() {
   const navigate = useNavigate()
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
 
   const [viewMode, setViewMode] = useState(() => {
     try {
@@ -54,7 +56,7 @@ export default function ReceiptListPage() {
   const columns = [
     {
       key: 'voucher_number',
-      header: 'Voucher Number',
+      header: t('transactions.receipts.voucherNumber'),
       render: (val, row) => (
         <div>
           <span
@@ -63,40 +65,40 @@ export default function ReceiptListPage() {
           >
             {val}
           </span>
-          <span className="block text-[11px] text-forest-500 mt-0.5">PO: {row.po_number || 'Direct Proc.'}</span>
+          <span className="block text-[11px] text-forest-500 mt-0.5">{t('transactions.receipts.poPrefix')} {row.po_number || t('transactions.receipts.directProc')}</span>
         </div>
       ),
     },
     {
       key: 'receipt_date',
-      header: 'Receipt Date',
+      header: t('transactions.receipts.form.receiptDate'),
       render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
     },
     {
       key: 'supplier_name',
-      header: 'Supplier / Vendor',
+      header: t('maintenance.warranties.table.supplier'),
       render: (val, row) => (
         <div>
           <span className="text-xs font-bold text-forest-950 dark:text-forest-50">{val}</span>
           {row.invoice_number && (
-            <span className="block text-[11px] text-forest-500 font-mono">Inv: {row.invoice_number}</span>
+            <span className="block text-[11px] text-forest-500 font-mono">{t('transactions.receipts.invPrefix')} {row.invoice_number}</span>
           )}
         </div>
       ),
     },
     {
       key: 'items',
-      header: 'Received Items',
+      header: t('transactions.receipts.receivedItems'),
       render: (items) => (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
           <FileText size={12} className="text-forest-500" />
-          {items?.length || 0} line {items?.length === 1 ? 'item' : 'items'}
+          {items?.length || 0} {items?.length === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}
         </span>
       ),
     },
     {
       key: 'total_accepted_value',
-      header: 'Accepted Value',
+      header: t('transactions.receipts.acceptedValue'),
       render: (val) => (
         <span className="font-mono text-xs font-bold text-forest-900 dark:text-forest-100">
           {val ? formatCurrency(val) : '—'}
@@ -105,28 +107,28 @@ export default function ReceiptListPage() {
     },
     {
       key: 'receiving_office',
-      header: 'Receiving Office / Bay',
+      header: t('transactions.receipts.receivingOfficeBay'),
       render: (val, row) => (
         <div>
           <span className="text-xs text-forest-700 dark:text-forest-300 block max-w-xs truncate">{val}</span>
-          <span className="text-[11px] text-forest-500 font-medium">{row.receiving_location || 'Store Room'}</span>
+          <span className="text-[11px] text-forest-500 font-medium">{row.receiving_location || t('locationType.storeRoom')}</span>
         </div>
       ),
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('labels.status'),
       render: (val) => <StatusBadge status={val} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('labels.actions'),
       align: 'right',
       render: (_, row) => (
         <div className="flex items-center justify-end gap-2">
           <Link to={ROUTES.RECEIPT_DETAIL(row.id)}>
             <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
-              View
+              {t('actions.view')}
             </Button>
           </Link>
         </div>
@@ -158,20 +160,20 @@ export default function ReceiptListPage() {
           {row.supplier_name}
         </h3>
         <p className="text-[11px] text-forest-500 font-mono mb-2">
-          PO: {row.po_number || 'Direct'} {row.invoice_number && `· Inv: ${row.invoice_number}`}
+          {t('transactions.receipts.poPrefix')} {row.po_number || t('transactions.receipts.direct')} {row.invoice_number && `· ${t('transactions.receipts.invPrefix')} ${row.invoice_number}`}
         </p>
 
         <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Receipt Date:</span>
+            <span className="text-forest-500">{t('transactions.receipts.form.receiptDate')}:</span>
             <span>{formatDate(row.receipt_date)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Items Count:</span>
-            <span className="font-bold font-mono">{row.items?.length || 0} line items</span>
+            <span className="text-forest-500">{t('transactions.receipts.itemsCount')}</span>
+            <span className="font-bold font-mono">{row.items?.length || 0} {row.items?.length === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Accepted Value:</span>
+            <span className="text-forest-500">{t('transactions.receipts.acceptedValue')}:</span>
             <span className="font-bold font-mono text-forest-950 dark:text-forest-50">
               {row.total_accepted_value ? formatCurrency(row.total_accepted_value) : '—'}
             </span>
@@ -185,7 +187,7 @@ export default function ReceiptListPage() {
         </span>
         <Link to={ROUTES.RECEIPT_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
-            View
+            {t('actions.view')}
           </Button>
         </Link>
       </div>
@@ -200,15 +202,15 @@ export default function ReceiptListPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Stock Receipts / Goods Inward Register"
-        subtitle="Record procurement arrivals, supplier delivery challans, and goods receipt notes (GRN)"
+        title={t('transactions.receipts.pageTitle')}
+        subtitle={t('transactions.receipts.pageSubtitle')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             <ViewToggle view={viewMode} onViewChange={handleViewChange} />
             {canCreate && (
               <Link to={ROUTES.RECEIPTS_NEW}>
                 <Button variant="primary" size="sm" leftIcon={<PlusCircle size={15} />}>
-                  + New Inward Receipt
+                  {t('transactions.receipts.newButton')}
                 </Button>
               </Link>
             )}
@@ -222,7 +224,7 @@ export default function ReceiptListPage() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search voucher, supplier, PO..."
+            placeholder={t('transactions.receipts.searchPlaceholderFull')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -234,7 +236,7 @@ export default function ReceiptListPage() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-2 text-xs font-bold text-forest-700 dark:text-forest-300">
-            <Filter size={14} /> Status:
+            <Filter size={14} /> {t('labels.status')}:
           </div>
           <select
             value={statusFilter}
@@ -244,9 +246,9 @@ export default function ReceiptListPage() {
             }}
             className="px-3 py-1.5 bg-forest-50/70 dark:bg-forest-950/70 border border-forest-500/15 dark:border-forest-400/20 rounded-xl text-xs text-forest-900 dark:text-forest-100 font-medium focus:outline-none focus:ring-1 focus:ring-forest-500"
           >
-            <option value="ALL">All Statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="POSTED">Posted (Confirmed)</option>
+            <option value="ALL">{t('inventory.filters.allStatuses')}</option>
+            <option value="DRAFT">{t('status.draft')}</option>
+            <option value="POSTED">{t('transactions.receipts.postedConfirmed')}</option>
           </select>
         </div>
       </GlassCard>
@@ -262,8 +264,8 @@ export default function ReceiptListPage() {
           total={receipts.length}
           totalPages={totalPages}
           onPageChange={setPage}
-          emptyTitle="No stock receipts found"
-          emptyDescription="There are no inward receipts matching your active search query."
+          emptyTitle={t('transactions.receipts.emptyState.title')}
+          emptyDescription={t('transactions.receipts.emptyState.description')}
         />
       ) : (
         <CardView

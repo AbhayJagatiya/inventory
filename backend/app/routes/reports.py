@@ -13,6 +13,7 @@ from app.core.common_schemas import StandardSuccessResponse
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_permission
 from app.core.exceptions import OfficeAccessDeniedError, ValidationError
+from app.core.i18n import get_request_language
 from app.core.permissions import ROLE_SYSTEM_ADMIN, ROLE_STORE_OFFICER
 
 from app.features.reports.schemas import ExportRequest
@@ -259,15 +260,16 @@ def generate_export(
     headers = report["headers"]
     rows = report["rows"]
     export_format = payload.format.lower()
+    lang = get_request_language()
 
     if export_format == "csv":
-        content = ReportsService.export_to_csv(headers, rows).encode("utf-8-sig")
+        content = ReportsService.export_to_csv(headers, rows, lang=lang).encode("utf-8-sig")
         media_type = "text/csv"
         extension = "csv"
 
     elif export_format == "xlsx":
         content = ReportsService.export_to_xlsx(
-            payload.report_name, headers, rows
+            payload.report_name, headers, rows, lang=lang
         )
         media_type = (
             "application/vnd.openxmlformats-officedocument."
@@ -277,7 +279,7 @@ def generate_export(
 
     elif export_format == "pdf":
         content = ReportsService.export_to_pdf(
-            payload.report_name, headers, rows
+            payload.report_name, headers, rows, lang=lang
         )
         media_type = "application/pdf"
         extension = "pdf"

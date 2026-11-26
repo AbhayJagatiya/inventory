@@ -5,6 +5,7 @@ Aggregates operational registers, builds dashboards, and renders CSV, XLSX, and 
 
 import csv
 import io
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
@@ -12,11 +13,21 @@ import openpyxl
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.exceptions import ValidationError
+from app.core.i18n import (
+    ORG_NAMES,
+    REPORT_META_LABELS,
+    get_report_title,
+    translate_report_cell,
+    translate_report_header,
+    validate_language,
+)
 from app.features.alerts.models import Alert, Notification
 from app.features.audit.models import AuditLog
 from app.features.condemnation.models import CondemnationRequest
@@ -415,36 +426,83 @@ class ReportsService:
 
     # 3. Export Generators
     @staticmethod
-    def export_to_csv(headers: List[str], rows: List[List[Any]]) -> str:
+    def _register_unicode_fonts() -> Tuple[str, str]:
+        """Register Unicode TTF/TTC fonts (Nirmala UI) for Devanagari & Gujarati PDF rendering."""
+        regular_name = "NirmalaUI"
+        bold_name = "NirmalaUIBold"
+        registered = pdfmetrics.getRegisteredFontNames()
+        if regular_name in registered and bold_name in registered:
+            return regular_name, bold_name
+
+        font_candidates = [
+            r"C:\Windows\Fonts\Nirmala.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+        ]
+        for path in font_candidates:
+            if os.path.exists(path):
+                try:
+                    if path.lower().endswith(".ttc"):
+                        pdfmetrics.registerFont(TTFont(regular_name, path, subfontIndex=0))
+                        try:
+                            pdfmetrics.registerFont(TTFont(bold_name, path, subfontIndex=1))
+                        except Exception:
+                            bold_name = regular_name
+                    else:
+                        pdfmetrics.registerFont(TTFont(regular_name, path))
+                        bold_name = regular_name
+                    return regular_name, bold_name
+                except Exception:
+                    continue
+        return "Helvetica", "Helvetica-Bold"
+
+    @staticmethod
+    def export_to_csv(headers: List[str], rows: List[List[Any]], lang: str = "en") -> str:
+        active_lang = validate_language(lang)
+        loc_headers = [translate_report_header(h, active_lang) for h in headers]
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(headers)
+        writer.writerow(loc_headers)
         for r in rows:
-            writer.writerow(r)
+            writer.writerow([translate_report_cell(c, active_lang) for c in r])
         return output.getvalue()
 
     @staticmethod
-    def export_to_xlsx(title: str, headers: List[str], rows: List[List[Any]]) -> bytes:
+    def export_to_xlsx(title: str, headers: List[str], rows: List[List[Any]], lang: str = "en") -> bytes:
+        active_lang = validate_language(lang)
+        loc_title = get_report_title(title, active_lang)
+        loc_org = ORG_NAMES.get(active_lang, settings.ORGANIZATION_NAME)
+        loc_report_label = REPORT_META_LABELS["report"].get(active_lang, "Report")
+        loc_gen_label = REPORT_META_LABELS["generated"].get(active_lang, "Generated")
+        loc_headers = [translate_report_header(h, active_lang) for h in headers]
+
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = title[:30]
+        ws.title = loc_title[:30]
 
         # Header Title
-        ws.append([settings.ORGANIZATION_NAME])
-        ws.append([f"Report: {title.replace('-', ' ').title()}"])
-        ws.append([f"Generated: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S UTC')}"])
+        ws.append([loc_org])
+        ws.append([f"{loc_report_label}: {loc_title}"])
+        ws.append([f"{loc_gen_label}: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M:%S UTC')}"])
         ws.append([])  # Blank row
 
-        ws.append(headers)
+        ws.append(loc_headers)
         for row in rows:
-            ws.append(row)
+            ws.append([translate_report_cell(c, active_lang) for c in row])
 
         output = io.BytesIO()
         wb.save(output)
         return output.getvalue()
 
     @staticmethod
-    def export_to_pdf(title: str, headers: List[str], rows: List[List[Any]]) -> bytes:
+    def export_to_pdf(title: str, headers: List[str], rows: List[List[Any]], lang: str = "en") -> bytes:
+        active_lang = validate_language(lang)
+        font_regular, font_bold = ReportsService._register_unicode_fonts()
+        loc_title = get_report_title(title, active_lang)
+        loc_org = ORG_NAMES.get(active_lang, settings.ORGANIZATION_NAME)
+        loc_reg_label = REPORT_META_LABELS["official_register"].get(active_lang, "Official Government Register")
+        loc_gen_label = REPORT_META_LABELS["generated"].get(active_lang, "Generated")
+        loc_headers = [translate_report_header(h, active_lang) for h in headers]
+
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(
             buffer,
@@ -459,6 +517,7 @@ class ReportsService:
         title_style = ParagraphStyle(
             "TitleStyle",
             parent=styles["Heading1"],
+            fontName=font_bold,
             fontSize=14,
             leading=18,
             textColor=colors.HexColor("#1e3a8a"),
@@ -467,23 +526,24 @@ class ReportsService:
         sub_style = ParagraphStyle(
             "SubStyle",
             parent=styles["Normal"],
+            fontName=font_regular,
             fontSize=10,
-            leading=13,
+            leading=14,
             textColor=colors.HexColor("#475569"),
             alignment=1,
         )
 
         elements = []
-        elements.append(Paragraph(settings.ORGANIZATION_NAME, title_style))
+        elements.append(Paragraph(loc_org, title_style))
         elements.append(Spacer(1, 4))
-        elements.append(Paragraph(f"Official Government Register: {title.replace('-', ' ').title()}", sub_style))
-        elements.append(Paragraph(f"Generated at: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M UTC')}", sub_style))
+        elements.append(Paragraph(f"{loc_reg_label}: {loc_title}", sub_style))
+        elements.append(Paragraph(f"{loc_gen_label}: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M UTC')}", sub_style))
         elements.append(Spacer(1, 14))
 
         # Format Table
-        table_data = [headers]
+        table_data = [loc_headers]
         for r in rows[:150]:  # Limit rows per PDF page block
-            table_data.append([str(c) for c in r])
+            table_data.append([str(translate_report_cell(c, active_lang)) for c in r])
 
         t = Table(table_data)
         t.setStyle(
@@ -491,11 +551,12 @@ class ReportsService:
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
                 ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
                 ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTNAME", (0, 0), (-1, 0), font_bold),
                 ("FONTSIZE", (0, 0), (-1, 0), 9),
                 ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
                 ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+                ("FONTNAME", (0, 1), (-1, -1), font_regular),
                 ("FONTSIZE", (0, 1), (-1, -1), 8),
                 ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
             ])

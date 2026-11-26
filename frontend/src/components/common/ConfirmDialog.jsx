@@ -1,31 +1,33 @@
 import { AlertTriangle } from 'lucide-react'
 import Modal from './Modal'
 import Button from './Button'
+import { useLanguage } from '../../i18n'
 
 function ConfirmDialog({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Confirm Action',
+  title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   isLoading = false,
 }) {
+  const { t } = useLanguage()
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={title}
+      title={title || t('ui.confirmDialog.defaultTitle')}
       size="sm"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-            {cancelLabel}
+            {cancelLabel || t('ui.confirmDialog.cancel')}
           </Button>
           <Button variant={variant} onClick={onConfirm} isLoading={isLoading}>
-            {confirmLabel}
+            {confirmLabel || t('ui.confirmDialog.confirm')}
           </Button>
         </>
       }
@@ -36,7 +38,9 @@ function ConfirmDialog({
             <AlertTriangle size={20} className="text-rose-600 dark:text-rose-400" />
           </div>
         </div>
-        <p className="text-sm text-forest-800 dark:text-forest-200 leading-relaxed">{message}</p>
+        <p className="text-sm text-forest-800 dark:text-forest-200 leading-relaxed">
+          {message || t('ui.confirmDialog.defaultMessage')}
+        </p>
       </div>
     </Modal>
   )

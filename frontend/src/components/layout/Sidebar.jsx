@@ -12,104 +12,105 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { PERMISSIONS } from '../../constants/permissions'
+import { useLanguage } from '../../i18n'
 
 const APP_NAME = import.meta.env.VITE_APP_SHORT_NAME || 'DSIMS'
 
-// Navigation hierarchy
+// Navigation hierarchy (using translation keys)
 const NAV_ITEMS = [
   {
-    label: 'Dashboard',
+    labelKey: 'nav.dashboard',
     icon: LayoutDashboard,
     to: ROUTES.DASHBOARD,
     permission: null,
   },
   {
-    label: 'Inventory',
+    labelKey: 'nav.inventory',
     icon: Package,
     permission: PERMISSIONS.INVENTORY_VIEW,
     children: [
-      { label: 'Asset Register', to: ROUTES.INVENTORY },
-      { label: 'Categories', to: ROUTES.INVENTORY_CATEGORIES },
-      { label: 'Locations', to: ROUTES.INVENTORY_LOCATIONS },
+      { labelKey: 'nav.assetRegister', to: ROUTES.INVENTORY },
+      { labelKey: 'nav.categories', to: ROUTES.INVENTORY_CATEGORIES },
+      { labelKey: 'nav.locations', to: ROUTES.INVENTORY_LOCATIONS },
     ],
   },
   {
-    label: 'Transactions',
+    labelKey: 'nav.transactions',
     icon: ArrowLeftRight,
     permission: PERMISSIONS.STOCK_RECEIPT_VIEW,
     children: [
-      { label: 'Stock Receipts', to: ROUTES.RECEIPTS },
-      { label: 'Stock Issues', to: ROUTES.ISSUES },
-      { label: 'Stock Returns', to: ROUTES.RETURNS },
-      { label: 'Transfers', to: ROUTES.TRANSFERS },
-      { label: 'Transaction Ledger', to: ROUTES.TRANSACTIONS },
+      { labelKey: 'nav.stockReceipts', to: ROUTES.RECEIPTS },
+      { labelKey: 'nav.stockIssues', to: ROUTES.ISSUES },
+      { labelKey: 'nav.stockReturns', to: ROUTES.RETURNS },
+      { labelKey: 'nav.transfers', to: ROUTES.TRANSFERS },
+      { labelKey: 'nav.transactionLedger', to: ROUTES.TRANSACTIONS },
     ],
   },
   {
-    label: 'Dead Stock',
+    labelKey: 'nav.deadStock',
     icon: Archive,
     permission: PERMISSIONS.CLASSIFY_VIEW,
     children: [
-      { label: 'Classification', to: ROUTES.DEAD_STOCK },
-      { label: 'Dead Stock Register', to: ROUTES.DEAD_STOCK_REGISTER },
-      { label: 'Condemnations', to: ROUTES.CONDEMNATIONS },
-      { label: 'Disposal Register', to: ROUTES.DISPOSALS },
+      { labelKey: 'nav.classification', to: ROUTES.DEAD_STOCK },
+      { labelKey: 'nav.deadStockRegister', to: ROUTES.DEAD_STOCK_REGISTER },
+      { labelKey: 'nav.condemnations', to: ROUTES.CONDEMNATIONS },
+      { labelKey: 'nav.disposalRegister', to: ROUTES.DISPOSALS },
     ],
   },
   {
-    label: 'Verification',
+    labelKey: 'nav.verification',
     icon: QrCode,
     permission: PERMISSIONS.BARCODE_SCAN,
     children: [
-      { label: 'Barcode Lookup', to: ROUTES.BARCODE_LOOKUP },
-      { label: 'Audit Sessions', to: ROUTES.VERIFICATION_SESSIONS },
+      { labelKey: 'nav.barcodeLookup', to: ROUTES.BARCODE_LOOKUP },
+      { labelKey: 'nav.auditSessions', to: ROUTES.VERIFICATION_SESSIONS },
     ],
   },
   {
-    label: 'Suppliers',
+    labelKey: 'nav.suppliers',
     icon: Truck,
     permission: PERMISSIONS.SUPPLIER_VIEW,
     children: [
-      { label: 'Supplier Directory', to: ROUTES.SUPPLIERS },
-      { label: 'Procurement', to: ROUTES.PROCUREMENT },
-      { label: 'Vendor Returns', to: ROUTES.SUPPLIER_RETURNS },
+      { labelKey: 'nav.supplierDirectory', to: ROUTES.SUPPLIERS },
+      { labelKey: 'nav.procurement', to: ROUTES.PROCUREMENT },
+      { labelKey: 'nav.vendorReturns', to: ROUTES.SUPPLIER_RETURNS },
     ],
   },
   {
-    label: 'Maintenance',
+    labelKey: 'nav.maintenance',
     icon: Wrench,
     permission: PERMISSIONS.MAINTENANCE_VIEW,
     children: [
-      { label: 'Repair Tickets', to: ROUTES.MAINTENANCE },
-      { label: 'Warranties', to: ROUTES.WARRANTIES },
+      { labelKey: 'nav.repairTickets', to: ROUTES.MAINTENANCE },
+      { labelKey: 'nav.warranties', to: ROUTES.WARRANTIES },
     ],
   },
   {
-    label: 'Alerts',
+    labelKey: 'nav.alerts',
     icon: Bell,
     permission: PERMISSIONS.ALERTS_VIEW,
     to: ROUTES.ALERTS,
   },
   {
-    label: 'Reports',
+    labelKey: 'nav.reports',
     icon: FileText,
     permission: PERMISSIONS.REPORTS_VIEW,
     to: ROUTES.REPORTS,
   },
   {
-    label: 'Administration',
+    labelKey: 'nav.administration',
     icon: Settings,
     permission: PERMISSIONS.USERS_VIEW,
     children: [
-      { label: 'Users', to: ROUTES.USERS, permission: PERMISSIONS.USERS_VIEW },
-      { label: 'Roles & Permissions', to: ROUTES.ROLES, permission: PERMISSIONS.ROLES_VIEW },
-      { label: 'Offices', to: ROUTES.OFFICES, permission: PERMISSIONS.OFFICES_VIEW },
-      { label: 'Master Data', to: ROUTES.MASTER_DATA },
-      { label: 'System Settings', to: ROUTES.SETTINGS, permission: PERMISSIONS.SETTINGS_VIEW },
+      { labelKey: 'nav.users', to: ROUTES.USERS, permission: PERMISSIONS.USERS_VIEW },
+      { labelKey: 'nav.rolesPermissions', to: ROUTES.ROLES, permission: PERMISSIONS.ROLES_VIEW },
+      { labelKey: 'nav.offices', to: ROUTES.OFFICES, permission: PERMISSIONS.OFFICES_VIEW },
+      { labelKey: 'nav.masterData', to: ROUTES.MASTER_DATA },
+      { labelKey: 'nav.systemSettings', to: ROUTES.SETTINGS, permission: PERMISSIONS.SETTINGS_VIEW },
     ],
   },
   {
-    label: 'Audit Trail',
+    labelKey: 'nav.auditTrail',
     icon: ClipboardList,
     permission: PERMISSIONS.AUDIT_VIEW,
     to: ROUTES.AUDIT,
@@ -118,7 +119,9 @@ const NAV_ITEMS = [
 
 function NavItem({ item, collapsed, onMobileClose }) {
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
   const location = useLocation()
+  const itemLabel = t(item.labelKey)
 
   // Helper: check if a specific child item is active, avoiding false positive prefix collisions
   const isChildActive = (child) => {
@@ -187,13 +190,13 @@ function NavItem({ item, collapsed, onMobileClose }) {
                 : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
             )}
           />
-          {!collapsed && <span className="truncate">{item.label}</span>}
+          {!collapsed && <span className="truncate">{itemLabel}</span>}
         </NavLink>
 
         {/* Collapsed Tooltip */}
         {collapsed && (
           <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-black text-white text-xs font-semibold whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 top-1/2 -translate-y-1/2">
-            {item.label}
+            {itemLabel}
           </div>
         )}
       </div>
@@ -218,7 +221,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
               ? 'text-slate-900 dark:text-white font-semibold'
               : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
         )}
-        title={collapsed ? item.label : undefined}
+        title={collapsed ? itemLabel : undefined}
       >
         <Icon
           size={18}
@@ -231,7 +234,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
         />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left truncate">{item.label}</span>
+            <span className="flex-1 text-left truncate">{itemLabel}</span>
             <span className="transition-transform duration-200 text-slate-400">
               {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </span>
@@ -242,7 +245,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
       {/* Collapsed Tooltip */}
       {collapsed && (
         <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-slate-900 dark:bg-black text-white text-xs font-semibold whitespace-nowrap shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 top-1/2 -translate-y-1/2">
-          {item.label}
+          {itemLabel}
         </div>
       )}
 
@@ -273,7 +276,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
                   )}
                 >
-                  {child.label}
+                  {t(child.labelKey)}
                 </NavLink>
               )
             })}
@@ -287,6 +290,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
 function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const { user, officeName } = useAuth()
   const { theme, toggleTheme, isDark } = useTheme()
+  const { t } = useLanguage()
 
   // Close mobile drawer on Escape key
   useEffect(() => {
@@ -328,7 +332,7 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
                 </span>
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                District Panchayat Gir Somnath
+                {t('app.organization')}
               </div>
             </div>
           )}
@@ -339,7 +343,7 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
           <button
             onClick={onMobileClose}
             className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-            aria-label="Close menu"
+            aria-label={t('nav.closeMenu')}
           >
             <X size={18} />
           </button>
@@ -360,7 +364,7 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
       <nav className="flex-1 overflow-y-auto scrollbar-thin py-3 space-y-0.5">
         {NAV_ITEMS.map((item) => (
           <NavItem
-            key={item.label}
+            key={item.labelKey}
             item={item}
             collapsed={collapsed}
             onMobileClose={onMobileClose}
@@ -378,8 +382,8 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
             'bg-slate-100 hover:bg-slate-200/80 dark:bg-[#12221E] dark:hover:bg-[#172D28] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-emerald-500/15',
             collapsed && 'justify-center px-0'
           )}
-          title={`Switch to ${isDark ? 'Light' : 'Dark'} mode`}
-          aria-label="Toggle color theme"
+          title={isDark ? t('labels.lightTheme') : t('labels.darkTheme')}
+          aria-label={t('labels.theme')}
         >
           {isDark ? (
             <Sun size={16} className="text-amber-400 shrink-0" />
@@ -388,7 +392,7 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
           )}
           {!collapsed && (
             <span className="flex-1 text-left">
-              {isDark ? 'Light Theme' : 'Dark Theme'}
+              {isDark ? t('labels.lightTheme') : t('labels.darkTheme')}
             </span>
           )}
         </button>
@@ -421,7 +425,7 @@ function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
         <button
           onClick={onToggle}
           className="hidden md:flex w-full items-center justify-center py-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 text-xs transition-colors"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
         >
           <ChevronLeft
             size={16}

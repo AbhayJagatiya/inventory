@@ -1,11 +1,13 @@
 import ModulePlaceholder from '../../components/common/ModulePlaceholder'
+import { useLanguage } from '../../i18n'
 
 export default function NotificationCenterPage() {
+  const { t } = useLanguage()
   return (
     <ModulePlaceholder
-      title="User In-App Notifications"
-      subtitle="Chronological feed of approvals, assigned tasks, verification alerts, and system notices"
-      moduleName="Notifications Feed"
+      title={t('alerts.notifications.title')}
+      subtitle={t('alerts.notifications.noNotifications')}
+      moduleName={t('nav.notifications')}
       phaseNumber="6"
       endpoint="GET /api/v1/notifications"
       expectedFeatures={[

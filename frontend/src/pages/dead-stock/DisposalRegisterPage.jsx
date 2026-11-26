@@ -24,9 +24,11 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
 
 export default function DisposalRegisterPage() {
   const { user, hasPermission } = useAuth()
+  const { t } = useLanguage()
   const queryClient = useQueryClient()
   const officeId = user?.office?.id || user?.office_id
 
