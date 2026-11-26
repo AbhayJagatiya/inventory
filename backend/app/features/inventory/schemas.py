@@ -105,6 +105,10 @@ class UOMSummaryOut(BaseModel):
 class ItemOut(ItemBase):
     id: UUID
     office_id: UUID
+    office_name: Optional[str] = None
+    office_code: Optional[str] = None
+    supplier_name: Optional[str] = None
+    warranty_expiry_date: Optional[date] = None
     item_code: str
     uom_id: UUID
     barcode_number: Optional[str] = None
@@ -137,6 +141,13 @@ class ItemOut(ItemBase):
         instance = super().model_validate(obj, **kwargs)
         if not instance.classification:
             instance.classification = instance.current_classification
+        if not instance.office_name and getattr(obj, "office", None) is not None:
+            instance.office_name = obj.office.name
+            instance.office_code = obj.office.code
+        if not instance.supplier_name and getattr(obj, "supplier", None) is not None:
+            instance.supplier_name = obj.supplier.name
+        if not instance.warranty_expiry_date and getattr(obj, "warranty", None) is not None:
+            instance.warranty_expiry_date = obj.warranty.end_date
         # Compute total available quantity from stock_balances
         if hasattr(obj, "stock_balances") and obj.stock_balances:
             instance.quantity = float(sum(float(b.available_qty or 0) for b in obj.stock_balances))

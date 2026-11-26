@@ -15,7 +15,7 @@ import StatusBadge from '../../components/common/StatusBadge'
 import toast from 'react-hot-toast'
 import { ROLE_LABELS } from '../../constants/enums'
 import { useLanguage } from '../../i18n'
-import { translateEnum } from '../../i18n/enumLabels'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 import { useMemo } from 'react'
 
 function MyProfilePage() {
@@ -66,8 +66,8 @@ function MyProfilePage() {
           <div className="w-20 h-20 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-sm">
             {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
           </div>
-          <h2 className="text-base font-semibold text-slate-800 dark:text-white">{user?.full_name || 'Store User'}</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.designation || 'Staff Member'}</p>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-white">{user?.full_name || t('profile.defaultUser')}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{user?.designation || t('profile.defaultDesignation')}</p>
           <div className="flex justify-center mb-4">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
               {translateEnum(t, typeof userRole === 'string' ? userRole : (userRole?.name || 'STORE_STAFF'))}
@@ -81,7 +81,9 @@ function MyProfilePage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500 dark:text-slate-400">{t('profile.officeLabel')}:</span>
-              <span className="text-slate-800 dark:text-slate-200 font-medium">{officeName || '—'}</span>
+              <span className="text-slate-800 dark:text-slate-200 font-medium">
+                {user?.office?.code ? translateMasterName(t, 'office', user.office.code, officeName) : (officeName || '—')}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500 dark:text-slate-400">{t('labels.status')}:</span>
@@ -96,7 +98,7 @@ function MyProfilePage() {
           <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-emerald-500/10">
               <KeyRound size={18} className="text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Change Account Password</h2>
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{t('profile.changePasswordHeading')}</h2>
             </div>
 
             {apiError && (
@@ -171,7 +173,7 @@ function MyProfilePage() {
               <h2 className="text-sm font-semibold text-slate-800 dark:text-white">{t('labels.permissions')}</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              Permissions are authoritative and enforced on the backend per each API request.
+              {t('profile.permissionsNote')}
             </p>
             <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto scrollbar-thin">
               {user?.permissions?.length > 0 ? (
@@ -184,7 +186,7 @@ function MyProfilePage() {
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-slate-400">Standard operational permissions loaded per role.</span>
+                <span className="text-xs text-slate-400">{t('profile.permissionsFallback')}</span>
               )}
             </div>
           </div>

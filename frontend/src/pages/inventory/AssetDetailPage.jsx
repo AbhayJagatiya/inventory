@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { useLanguage } from '../../i18n'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 
 export default function AssetDetailPage() {
   const { id } = useParams()
@@ -90,9 +91,12 @@ export default function AssetDetailPage() {
       link.click()
       link.remove()
       URL.revokeObjectURL(blobUrl)
-      toast.success(`Downloaded ${format.toUpperCase()} QR & Barcode label.`)
+      toast.success(t('inventory.detail.toastDownloadSuccess', { format: format.toUpperCase() }))
     } catch (err) {
-      toast.error(err?.response?.data?.detail || `Failed to download ${format.toUpperCase()} label.`)
+      toast.error(
+        err?.response?.data?.detail ||
+          t('inventory.detail.toastDownloadError', { format: format.toUpperCase() })
+      )
     } finally {
       setDownloadingFormat('')
     }
@@ -105,14 +109,14 @@ export default function AssetDetailPage() {
     }
     const printWin = window.open('', '_blank', 'width=820,height=520')
     if (!printWin) {
-      toast.error('Please allow pop-ups to print the QR label.')
+      toast.error(t('inventory.detail.popupError'))
       return
     }
     printWin.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Asset QR Label - ${item.item_code || ''}</title>
+          <title>${t('inventory.detail.printDocTitle', { code: item.item_code || '' })}</title>
           <style>
             body { margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; }
             img { max-width: 100%; height: auto; border: 1px solid #cbd5e1; }
@@ -140,7 +144,7 @@ export default function AssetDetailPage() {
   }
 
   if (isError) {
-    return <ErrorState message={t('feedback.error.message')} onRetry={refetch} />
+    return <ErrorState title={t('inventory.detail.loadErrorTitle')} message={t('inventory.detail.loadErrorMessage')} onRetry={refetch} />
   }
 
   return (
@@ -157,7 +161,7 @@ export default function AssetDetailPage() {
           <div className="flex items-center gap-2.5">
             <Link to={ROUTES.INVENTORY}>
               <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={14} />}>
-                {t('actions.back')}
+                {t('inventory.detail.backToRegister')}
               </Button>
             </Link>
             <Button
@@ -188,9 +192,18 @@ export default function AssetDetailPage() {
               <StatusBadge status={item.condition} size="sm" />
             </div>
             <p className="text-xs text-forest-600 dark:text-forest-400">
-              Category: <span className="font-semibold text-forest-900 dark:text-forest-100">{item.category?.name || 'General'}</span> ·
-              UOM: <span className="font-semibold text-forest-900 dark:text-forest-100">{item.uom || 'NOS'}</span> ·
-              Quantity: <span className="font-semibold font-mono text-forest-900 dark:text-forest-100">{formatNumber(item.quantity)}</span>
+              {t('labels.category')}:{' '}
+              <span className="font-semibold text-forest-900 dark:text-forest-100">
+                {translateMasterName(t, 'category', item.category?.code, item.category?.name) || t('labels.na')}
+              </span>{' '}
+              · {t('labels.unit')}:{' '}
+              <span className="font-semibold text-forest-900 dark:text-forest-100">
+                {translateMasterName(t, 'uom', item.uom, item.uom) || 'NOS'}
+              </span>{' '}
+              · {t('labels.quantity')}:{' '}
+              <span className="font-semibold font-mono text-forest-900 dark:text-forest-100">
+                {formatNumber(item.quantity)}
+              </span>
             </p>
           </div>
         </div>
@@ -201,25 +214,25 @@ export default function AssetDetailPage() {
             {item.operational_status === 'AVAILABLE_IN_STORE' && (
               <Link to={ROUTES.ISSUES_NEW}>
                 <Button variant="primary" size="xs" leftIcon={<ArrowUpRight size={13} />}>
-                  Issue Item
+                  {t('transactions.issues.add')}
                 </Button>
               </Link>
             )}
             {item.operational_status === 'IN_USE' && (
               <Link to={ROUTES.RETURNS_NEW}>
                 <Button variant="secondary" size="xs" leftIcon={<RotateCcw size={13} />}>
-                  Return to Store
+                  {t('transactions.returns.add')}
                 </Button>
               </Link>
             )}
             <Link to={ROUTES.TRANSFERS_NEW}>
               <Button variant="secondary" size="xs" leftIcon={<ArrowLeftRight size={13} />}>
-                Transfer
+                {t('transactions.transfers.add')}
               </Button>
             </Link>
             <Link to={ROUTES.CONDEMNATIONS}>
               <Button variant="secondary" size="xs" leftIcon={<TrendingDown size={13} />}>
-                Propose Condemnation
+                {t('deadStock.condemnation.add')}
               </Button>
             </Link>
           </div>
@@ -236,7 +249,7 @@ export default function AssetDetailPage() {
               : 'text-forest-600 dark:text-forest-400 hover:text-forest-900 dark:hover:text-forest-100'
           }`}
         >
-          360° Asset Overview
+          {t('inventory.detail.tabOverview')}
         </button>
         <button
           onClick={() => setActiveTab('history')}
@@ -247,7 +260,7 @@ export default function AssetDetailPage() {
           }`}
         >
           <Clock size={15} />
-          Movement & Audit Timeline ({historyEvents.length})
+          {t('inventory.detail.tabHistory', { count: historyEvents.length })}
         </button>
       </div>
 
@@ -259,33 +272,36 @@ export default function AssetDetailPage() {
             <GlassCard level={1} className="p-5 space-y-4">
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
                 <QrCode size={16} className="text-forest-600 dark:text-forest-300" />
-                QR Code & Barcode Label
+                {t('inventory.detail.qrHeader')}
               </h2>
 
               <div className="p-3 bg-white rounded-xl border border-forest-500/20 flex flex-col items-center justify-center text-center space-y-2">
                 {isDisposed ? (
                   <p className="text-xs text-slate-500 py-4">
-                    Disposed assets do not generate operational QR labels.
+                    {t('inventory.detail.disposedNotice')}
+                  </p>
+                ) : !canPrintBarcode ? (
+                  <p className="text-xs text-slate-500 py-4">
+                    {t('inventory.detail.noPrintPerm')}
                   </p>
                 ) : isLabelLoading ? (
                   <div className="w-full h-28 bg-slate-100 rounded-lg animate-pulse" />
                 ) : labelPreviewUrl ? (
                   <img
                     src={labelPreviewUrl}
-                    alt={`QR and Barcode label for ${item.item_code}`}
+                    alt={`${t('inventory.detail.labelAlt')} - ${item.item_code || ''}`}
                     className="w-full max-w-[320px] h-auto rounded"
                   />
                 ) : (
                   <p className="text-xs text-slate-500 py-4">
-                    Label preview unavailable.
+                    {t('inventory.detail.labelFallback')}
                   </p>
                 )}
 
                 <span className="font-mono text-xs font-bold text-slate-900">
-                  {item.barcode_number || item.item_code || 'BC-AST-XXXXX'}
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  Code 128 Barcode + Scannable 2D QR Tag
+                  {t('inventory.detail.barcodeValueLabel', {
+                    code: item.barcode_number || item.item_code || '—',
+                  })}
                 </span>
               </div>
 
@@ -298,7 +314,7 @@ export default function AssetDetailPage() {
                     leftIcon={<Printer size={12} />}
                     onClick={handlePrintLabel}
                   >
-                    Print QR Label
+                    {t('inventory.detail.btnPrint')}
                   </Button>
                   <Button
                     type="button"
@@ -308,7 +324,7 @@ export default function AssetDetailPage() {
                     leftIcon={<Download size={12} />}
                     onClick={() => handleDownloadLabel('png')}
                   >
-                    PNG
+                    {t('inventory.detail.btnPng')}
                   </Button>
                   <Button
                     type="button"
@@ -318,7 +334,7 @@ export default function AssetDetailPage() {
                     leftIcon={<Download size={12} />}
                     onClick={() => handleDownloadLabel('pdf')}
                   >
-                    PDF
+                    {t('inventory.detail.btnPdf')}
                   </Button>
                   <Button
                     type="button"
@@ -335,19 +351,19 @@ export default function AssetDetailPage() {
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Brand / OEM:</span>
+                  <span className="text-forest-500">{t('inventory.detail.brandManufacturer')}:</span>
                   <span className="font-semibold text-forest-900 dark:text-forest-100">{item.brand || '—'}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Model Number:</span>
+                  <span className="text-forest-500">{t('inventory.detail.modelNumber')}:</span>
                   <span className="font-semibold text-forest-900 dark:text-forest-100">{item.model_number || '—'}</span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Serial Number:</span>
-                  <span className="font-mono font-semibold text-forest-900 dark:text-forest-100">{item.serial_number || 'N/A'}</span>
+                  <span className="text-forest-500">{t('labels.serialNumber')}:</span>
+                  <span className="font-mono font-semibold text-forest-900 dark:text-forest-100">{item.serial_number || t('labels.na')}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
-                  <span className="text-forest-500">Classification:</span>
+                  <span className="text-forest-500">{t('labels.classification')}:</span>
                   <StatusBadge status={item.classification} size="xs" />
                 </div>
               </div>
@@ -357,20 +373,39 @@ export default function AssetDetailPage() {
             <GlassCard level={1} className="p-5 space-y-3">
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
                 <MapPin size={16} className="text-forest-600 dark:text-forest-300" />
-                Physical Location & Custody
+                {t('inventory.detail.locationCustodyHeading')}
               </h2>
               <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Office / Store:</span>
-                  <span className="font-semibold text-forest-900 dark:text-forest-100">Veraval Store Office</span>
+                <div className="flex justify-between py-1.5 border-b border-forest-500/5 gap-2">
+                  <span className="text-forest-500 shrink-0">{t('inventory.detail.officeLocation')}:</span>
+                  <span className="font-semibold text-forest-900 dark:text-forest-100 text-right">
+                    {translateMasterName(t, 'office', item.office_code, item.office_name) ||
+                      t('inventory.detail.notAssigned')}
+                  </span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Room / Section:</span>
-                  <span className="font-semibold text-forest-900 dark:text-forest-100">{item.location?.room_number || 'Main Store'}</span>
+                <div className="flex justify-between py-1.5 border-b border-forest-500/5 gap-2">
+                  <span className="text-forest-500 shrink-0">{t('inventory.detail.roomBay')}:</span>
+                  <span className="font-semibold text-forest-900 dark:text-forest-100 text-right">
+                    {item.location
+                      ? item.location.building_name
+                        ? `${item.location.building_name} - ${item.location.room_number}`
+                        : item.location.room_number
+                      : t('inventory.detail.notAssigned')}
+                  </span>
                 </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-forest-500">Current Custodian:</span>
-                  <span className="font-semibold text-forest-900 dark:text-forest-100">{item.current_custodian || 'Store Section'}</span>
+                {item.current_department && (
+                  <div className="flex justify-between py-1.5 border-b border-forest-500/5 gap-2">
+                    <span className="text-forest-500 shrink-0">{t('inventory.detail.department')}:</span>
+                    <span className="font-semibold text-forest-900 dark:text-forest-100 text-right">
+                      {item.current_department}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between py-1.5 gap-2">
+                  <span className="text-forest-500 shrink-0">{t('inventory.detail.currentCustodian')}:</span>
+                  <span className="font-semibold text-forest-900 dark:text-forest-100 text-right">
+                    {item.current_custodian || t('inventory.detail.unassignedPool')}
+                  </span>
                 </div>
               </div>
             </GlassCard>
@@ -381,23 +416,25 @@ export default function AssetDetailPage() {
             <GlassCard level={1} className="p-6 space-y-4">
               <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 flex items-center gap-2">
                 <DollarSign size={16} className="text-emerald-600" />
-                Financial Valuation & Acquisition Details
+                {t('inventory.detail.financialsHeading')}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10">
-                  <span className="text-[11px] text-forest-500 block mb-1">Unit Purchase Cost</span>
+                  <span className="text-[11px] text-forest-500 block mb-1">{t('inventory.detail.unitCost')}</span>
                   <span className="text-base font-bold text-forest-950 dark:text-forest-50 font-mono">
-                    {formatCurrency(item.unit_cost || 0)}
+                    {formatCurrency(item.unit_purchase_cost ?? 0)}
                   </span>
                 </div>
                 <div className="p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10">
-                  <span className="text-[11px] text-forest-500 block mb-1">Total Book Value</span>
+                  <span className="text-[11px] text-forest-500 block mb-1">{t('inventory.detail.totalValue')}</span>
                   <span className="text-base font-bold text-forest-950 dark:text-forest-50 font-mono">
-                    {formatCurrency((item.unit_cost || 0) * (item.quantity || 1))}
+                    {formatCurrency(
+                      item.total_cost ?? (Number(item.unit_purchase_cost) || 0) * (Number(item.quantity) || 1)
+                    )}
                   </span>
                 </div>
                 <div className="p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10">
-                  <span className="text-[11px] text-forest-500 block mb-1">Purchase Date</span>
+                  <span className="text-[11px] text-forest-500 block mb-1">{t('inventory.detail.acquisitionDate')}</span>
                   <span className="text-base font-bold text-forest-950 dark:text-forest-50">
                     {item.purchase_date ? formatDate(item.purchase_date) : '—'}
                   </span>
@@ -406,17 +443,21 @@ export default function AssetDetailPage() {
 
               <div className="space-y-2 pt-2 text-xs">
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Supplier / Vendor:</span>
-                  <span className="font-semibold text-forest-900 dark:text-forest-100">{item.supplier_name || 'GeM Verified Vendor'}</span>
+                  <span className="text-forest-500">{t('inventory.detail.supplierVendor')}:</span>
+                  <span className="font-semibold text-forest-900 dark:text-forest-100">
+                    {item.supplier_name || t('inventory.detail.notRecorded')}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-forest-500/5">
-                  <span className="text-forest-500">Invoice Number:</span>
-                  <span className="font-mono font-semibold text-forest-900 dark:text-forest-100">{item.invoice_number || 'INV-2024-889'}</span>
+                  <span className="text-forest-500">{t('labels.invoiceNumber')}:</span>
+                  <span className="font-mono font-semibold text-forest-900 dark:text-forest-100">
+                    {item.invoice_number || t('inventory.detail.notRecorded')}
+                  </span>
                 </div>
                 <div className="flex justify-between py-1.5">
-                  <span className="text-forest-500">Warranty Expiry:</span>
+                  <span className="text-forest-500">{t('inventory.detail.warrantyExpiry')}:</span>
                   <span className="font-semibold text-forest-900 dark:text-forest-100">
-                    {item.warranty_expiry_date ? formatDate(item.warranty_expiry_date) : 'No Warranty Recorded'}
+                    {item.warranty_expiry_date ? formatDate(item.warranty_expiry_date) : t('inventory.detail.notRecorded')}
                   </span>
                 </div>
               </div>
@@ -426,7 +467,7 @@ export default function AssetDetailPage() {
             {item.description && (
               <GlassCard level={1} className="p-6">
                 <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-2">
-                  Technical Specifications & Notes
+                  {t('inventory.detail.techSpecsHeading')}
                 </h2>
                 <p className="text-xs text-forest-700 dark:text-forest-300 leading-relaxed whitespace-pre-line">
                   {item.description}
@@ -442,7 +483,7 @@ export default function AssetDetailPage() {
         <GlassCard level={1} className="p-6">
           <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-4 flex items-center gap-2">
             <Clock size={16} className="text-forest-600 dark:text-forest-400" />
-            Complete Custody, Movement & Physical Audit Trail
+            {t('inventory.detail.auditTrailHeading')}
           </h2>
 
           {isHistoryLoading ? (
@@ -452,22 +493,22 @@ export default function AssetDetailPage() {
             </div>
           ) : historyEvents.length === 0 ? (
             <p className="text-xs text-forest-500 dark:text-forest-400 py-6 text-center">
-              No stock movements, maintenance tickets, or physical audit events recorded for this asset yet.
+              {t('inventory.detail.noHistory')}
             </p>
           ) : (
             <div className="relative border-l-2 border-forest-500/20 dark:border-forest-400/20 ml-3 space-y-6 py-2">
               {historyEvents.map((event, i) => {
                 const eventLabels = {
-                  VERIFICATION_SCAN: 'Physical Verification Scan',
-                  VERIFICATION_AUDIT: 'Audit Session Review & Outcome',
-                  VERIFY_UPDATE: 'Live Audit Condition / Location Update',
-                  MAINTENANCE: 'Maintenance & Repair',
-                  RECEIPT: 'Goods Inward Receipt',
-                  ISSUE: 'Stock Issue',
-                  RETURN: 'Stock Return',
-                  TRANSFER: 'Stock Transfer',
+                  VERIFICATION_SCAN: t('auditEvents.verificationScan'),
+                  VERIFICATION_AUDIT: t('auditEvents.verificationAudit'),
+                  VERIFY_UPDATE: t('auditEvents.verifyUpdate'),
+                  MAINTENANCE: t('auditEvents.maintenance'),
+                  RECEIPT: t('auditEvents.receipt'),
+                  ISSUE: t('auditEvents.issue'),
+                  RETURN: t('auditEvents.return'),
+                  TRANSFER: t('auditEvents.transfer'),
                 }
-                const title = event.title || eventLabels[event.event_type] || event.event_type
+                const title = eventLabels[event.event_type] || event.title || event.event_type
                 const timestamp = event.event_date || event.created_at
                 const detailsText = event.details || event.remarks || '—'
                 return (
@@ -494,8 +535,12 @@ export default function AssetDetailPage() {
                         {detailsText}
                       </p>
                       <div className="mt-2 text-[11px] text-forest-500 flex items-center gap-2 font-mono flex-wrap">
-                        <span>Ref: {event.reference_number || 'N/A'}</span> ·
-                        <span>Logged by: {event.actor_name || 'System'}</span>
+                        <span>{t('inventory.detail.refLabel', { ref: event.reference_number || t('labels.na') })}</span> ·
+                        <span>
+                          {t('inventory.detail.loggedBy', {
+                            actor: event.actor_name || t('auditEvents.loggedByFallback'),
+                          })}
+                        </span>
                       </div>
                     </div>
                   </div>

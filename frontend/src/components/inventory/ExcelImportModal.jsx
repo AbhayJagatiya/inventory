@@ -65,7 +65,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    toast.success('Standard import template downloaded')
+    toast.success(t('inventory.importModal.templateDownloaded'))
   }
 
   // Validate CSV/XLSX against real backend dry-run
@@ -85,7 +85,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
       const preview = result?.preview || []
 
       if (preview.length === 0) {
-        toast.error('The file contains no data rows.')
+        toast.error(t('inventory.importModal.noDataRows'))
         setIsValidating(false)
         return
       }
@@ -106,7 +106,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
       setValidationErrors(errs)
       setActiveStep(2)
     } catch (err) {
-      toast.error(extractApiError(err) || 'Failed to parse file. Please upload a valid .csv or .xlsx file.')
+      toast.error(extractApiError(err) || t('inventory.importModal.parseError'))
     } finally {
       setIsValidating(false)
     }
@@ -139,7 +139,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
   const handleExecuteImport = async () => {
     const validRows = parsedRows.filter((r) => r.isValid)
     if (validRows.length === 0) {
-      toast.error('No valid rows available to import.')
+      toast.error(t('inventory.importModal.noValidRows'))
       return
     }
 
@@ -152,12 +152,12 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
       const res = await bulkImportItems(formData)
       const result = res?.data || res
       const importedCount = result?.rows_imported ?? result?.imported ?? validRows.length
-      toast.success(`Successfully imported ${importedCount} inventory record(s) into PostgreSQL!`)
+      toast.success(t('inventory.importModal.importSuccessCount', { count: importedCount }))
       if (onSuccess) onSuccess()
       handleReset()
       onClose()
     } catch (err) {
-      toast.error(extractApiError(err) || 'Failed to import records. Please check the file and try again.')
+      toast.error(extractApiError(err) || t('inventory.importModal.importFail'))
     } finally {
       setIsImporting(false)
     }
@@ -173,14 +173,14 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
         handleReset()
         onClose()
       }}
-      title="Import Existing Inventory Records (Excel / CSV)"
+      title={t('inventory.importModal.modalTitle')}
       size="xl"
       footer={
         <div className="flex items-center justify-between w-full">
           <div>
             {activeStep === 2 && (
               <Button variant="secondary" size="sm" onClick={handleReset} disabled={isImporting}>
-                Choose Another File
+                {t('inventory.importModal.chooseAnother')}
               </Button>
             )}
           </div>
@@ -194,7 +194,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
               }}
               disabled={isImporting}
             >
-              Cancel
+              {t('actions.cancel')}
             </Button>
             {activeStep === 2 && (
               <Button
@@ -203,7 +203,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
                 isLoading={isImporting}
                 disabled={validCount === 0}
               >
-                Import {validCount} Valid Records
+                {t('inventory.importModal.confirmImport', { count: validCount })}
               </Button>
             )}
           </div>
@@ -220,7 +220,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
                 : 'bg-slate-100 dark:bg-[#081210] text-slate-600 dark:text-slate-400'
             }`}
           >
-            1. Upload &amp; Template
+            1. {t('inventory.import.uploadFile')}
           </span>
           <ArrowRight size={12} className="text-slate-400" />
           <span
@@ -230,7 +230,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
                 : 'bg-slate-100 dark:bg-[#081210] text-slate-600 dark:text-slate-400'
             }`}
           >
-            2. Validation &amp; Preview
+            2. {t('inventory.import.preview')}
           </span>
         </div>
 
@@ -240,7 +240,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           leftIcon={<Download size={13} />}
           onClick={handleDownloadTemplate}
         >
-          Download Standard Template (.csv)
+          {t('inventory.importModal.downloadCsvTemplate')}
         </Button>
       </div>
 
@@ -255,10 +255,12 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
               <Upload size={24} />
             </div>
             <p className="text-sm font-semibold text-slate-800 dark:text-white">
-              {isValidating ? 'Validating spreadsheet against database...' : 'Click to select your spreadsheet'}
+              {isValidating
+                ? t('inventory.importModal.validatingFile')
+                : t('inventory.importModal.clickToSelect')}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Supports Microsoft Excel (.xlsx) and Comma-Separated Values (.csv)
+              {t('inventory.importModal.supportedExt')}
             </p>
             <input
               ref={fileInputRef}
@@ -273,17 +275,17 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           <div className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs text-slate-700 dark:text-slate-300 space-y-2">
             <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-200">
               <HelpCircle size={15} />
-              <span>Import Guidelines &amp; Requirements</span>
+              <span>{t('inventory.importModal.guidelinesTitle')}</span>
             </div>
             <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-300 leading-relaxed">
               <li>
-                <strong>Durable Assets vs Consumables:</strong> Set <code className="font-mono text-slate-800 dark:text-white bg-white/80 dark:bg-black/30 px-1 py-0.5 rounded">item_type</code> to <code className="font-mono">DURABLE_ASSET</code> or <code className="font-mono">CONSUMABLE_STOCK</code>.
+                <strong>{t('inventory.importModal.guideline1Label')}</strong> {t('inventory.importModal.guideline1Body')}
               </li>
               <li>
-                <strong>Category &amp; Room Codes:</strong> Must match established database codes (e.g. <code className="font-mono">IT_EQUIPMENT</code>, <code className="font-mono">OFFICE_FURNITURE</code>, <code className="font-mono">Room 102</code>).
+                <strong>{t('inventory.importModal.guideline2Label')}</strong> {t('inventory.importModal.guideline2Body')}
               </li>
               <li>
-                <strong>Validation Guarantee:</strong> Invalid rows are isolated and highlighted before committing to PostgreSQL.
+                <strong>{t('inventory.importModal.guideline3Label')}</strong> {t('inventory.importModal.guideline3Body')}
               </li>
             </ul>
           </div>
@@ -296,15 +298,21 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
           {/* Summary Badges */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-slate-50 dark:bg-[#081210] rounded-xl border border-slate-200 dark:border-emerald-500/20 text-center">
-              <span className="text-xs text-slate-500 dark:text-slate-400 block">Total Rows Analyzed</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                {t('inventory.importModal.totalAnalyzed')}
+              </span>
               <span className="text-lg font-bold text-slate-800 dark:text-white block">{parsedRows.length}</span>
             </div>
             <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-center">
-              <span className="text-xs text-emerald-700 dark:text-emerald-300 block">Valid Rows Ready</span>
+              <span className="text-xs text-emerald-700 dark:text-emerald-300 block">
+                {t('inventory.importModal.validReady')}
+              </span>
               <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300 block">{validCount}</span>
             </div>
             <div className="p-3 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-500/20 text-center">
-              <span className="text-xs text-rose-700 dark:text-rose-400 block">Rows with Issues</span>
+              <span className="text-xs text-rose-700 dark:text-rose-400 block">
+                {t('inventory.importModal.rowsWithIssues')}
+              </span>
               <span className="text-lg font-bold text-rose-700 dark:text-rose-400 block">{errorCount}</span>
             </div>
           </div>
@@ -315,7 +323,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
               <div className="flex items-center gap-2">
                 <AlertTriangle size={16} className="shrink-0 text-amber-600 dark:text-amber-400" />
                 <span>
-                  {errorCount} row(s) failed validation checks. You can download the error report or proceed with the {validCount} valid records.
+                  {t('inventory.importModal.validationSummary', { errors: errorCount, valid: validCount })}
                 </span>
               </div>
               <Button
@@ -324,7 +332,7 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
                 leftIcon={<Download size={13} />}
                 onClick={handleDownloadErrorReport}
               >
-                Download Error Report (.csv)
+                {t('inventory.importModal.downloadErrorReport')}
               </Button>
             </div>
           )}
@@ -334,12 +342,12 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
             <table className="w-full text-left text-xs data-table">
               <thead>
                 <tr>
-                  <th className="w-12">Row</th>
-                  <th>Status</th>
-                  <th>Item Description</th>
-                  <th>Type</th>
-                  <th>Serial Number</th>
-                  <th>Validation Result</th>
+                  <th className="w-12">{t('inventory.importModal.colRow')}</th>
+                  <th>{t('inventory.importModal.colStatus')}</th>
+                  <th>{t('inventory.importModal.colItemDesc')}</th>
+                  <th>{t('inventory.importModal.colType')}</th>
+                  <th>{t('inventory.importModal.colSerial')}</th>
+                  <th>{t('inventory.importModal.colResult')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -349,20 +357,24 @@ export function ExcelImportModal({ isOpen, onClose, onSuccess }) {
                     <td>
                       {r.isValid ? (
                         <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
-                          <CheckCircle2 size={13} /> Valid
+                          <CheckCircle2 size={13} /> {t('inventory.importModal.badgeValid')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
-                          <XCircle size={13} /> Error
+                          <XCircle size={13} /> {t('inventory.importModal.badgeError')}
                         </span>
                       )}
                     </td>
                     <td className="font-medium text-slate-800 dark:text-slate-200">{r.data.item_name || '—'}</td>
-                    <td className="text-slate-600 dark:text-slate-300">{r.data.item_type || '—'}</td>
+                    <td className="text-slate-600 dark:text-slate-300">
+                      {r.data.item_type ? translateEnum(t, r.data.item_type) : '—'}
+                    </td>
                     <td className="font-mono text-slate-600 dark:text-slate-400">{r.data.serial_number || '—'}</td>
                     <td>
                       {r.isValid ? (
-                        <span className="text-emerald-700 dark:text-emerald-400">Passed checks</span>
+                        <span className="text-emerald-700 dark:text-emerald-400">
+                          {t('inventory.importModal.passedChecks')}
+                        </span>
                       ) : (
                         <span className="text-rose-600 dark:text-rose-400 font-medium">
                           {r.errors.join('; ')}

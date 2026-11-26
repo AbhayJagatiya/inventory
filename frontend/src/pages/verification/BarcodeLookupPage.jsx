@@ -17,9 +17,12 @@ import { ROUTES } from '../../constants/routes'
 import { PERMISSIONS } from '../../constants/permissions'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
+import { useLanguage } from '../../i18n'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 
 export default function BarcodeLookupPage() {
   const { hasPermission } = useAuth()
+  const { t } = useLanguage()
   const [inputMode, setInputMode] = useState('MANUAL') // 'MANUAL' | 'CAMERA'
   const [barcodeInput, setBarcodeInput] = useState('')
   const [resolvedItem, setResolvedItem] = useState(null)
@@ -36,14 +39,14 @@ export default function BarcodeLookupPage() {
         const filtered = prev.filter((item) => item.item_id !== data.item_id)
         return [data, ...filtered].slice(0, 5)
       })
-      toast.success(`Asset identified: ${data.item_code}`)
+      toast.success(t('verification.lookup.toastFound', { name: data.item_code || data.item_name }))
     },
     onError: (err) => {
       setResolvedItem(null)
       const msg =
         err.response?.data?.error?.message ||
         err.response?.data?.detail ||
-        'No active asset found matching this code in your office scope.'
+        t('verification.lookup.toastNotFound')
       toast.error(msg)
     },
   })
@@ -51,7 +54,7 @@ export default function BarcodeLookupPage() {
   const runLookup = (code) => {
     const clean = (code || '').trim()
     if (!clean) {
-      toast.error('Please enter or scan a QR code, barcode, asset code, or serial number.')
+      toast.error(t('verification.lookup.errEmpty'))
       return
     }
     setBarcodeInput(clean)
@@ -77,13 +80,13 @@ export default function BarcodeLookupPage() {
       const printWin = window.open('', '_blank', 'width=820,height=520')
       if (!printWin) {
         URL.revokeObjectURL(blobUrl)
-        toast.error('Please allow pop-ups to print the QR label.')
+        toast.error(t('verification.lookup.popupErr'))
         return
       }
       printWin.document.write(`
         <!DOCTYPE html>
         <html>
-          <head><title>QR Label - ${itemCode}</title></head>
+          <head><title>${t('inventory.detail.printDocTitle', { code: itemCode || '' })}</title></head>
           <body style="margin:0;padding:24px;display:flex;justify-content:center;align-items:center;">
             <img src="${blobUrl}" alt="QR Label" style="max-width:100%;height:auto;" onload="window.print();" />
           </body>
@@ -91,7 +94,7 @@ export default function BarcodeLookupPage() {
       `)
       printWin.document.close()
     } catch {
-      toast.error('Unable to generate QR label for printing.')
+      toast.error(t('verification.lookup.printLabelErr'))
     } finally {
       setIsPrintingLabel(false)
     }
@@ -100,13 +103,13 @@ export default function BarcodeLookupPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <PageHeader
-        title="Asset QR & Barcode Lookup"
-        subtitle="Search any asset instantly by scanning its QR code or entering its barcode, asset code, or serial number"
+        title={t('verification.lookup.pageTitle')}
+        subtitle={t('verification.lookup.pageSubtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.VERIFICATION_SESSIONS}>
               <Button variant="secondary" size="sm" leftIcon={<QrCode size={14} />}>
-                Audit Sessions
+                {t('verification.sessions.title')}
               </Button>
             </Link>
           </div>
@@ -124,7 +127,7 @@ export default function BarcodeLookupPage() {
               leftIcon={<Keyboard size={14} />}
               onClick={() => setInputMode('MANUAL')}
             >
-              Manual Number / USB Scanner
+              {t('verification.lookup.manualModeBtn')}
             </Button>
             <Button
               type="button"
@@ -133,19 +136,19 @@ export default function BarcodeLookupPage() {
               leftIcon={<Camera size={14} />}
               onClick={() => setInputMode('CAMERA')}
             >
-              Camera QR Scan
+              {t('verification.lookup.cameraModeBtn')}
             </Button>
           </div>
 
           <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            Accepts QR Code, Barcode (`BC-AST-...`), Asset Code (`AST-GS-VRV-...`), or Serial No.
+            {t('verification.lookup.acceptedFormats')}
           </span>
         </div>
 
-        {/* Manual / Handheld Scanner Form (always available for quick edit or fallback) */}
+        {/* Manual / Handheld Scanner Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Enter or Scan Asset Identifier <span className="text-red-500">*</span>
+            {t('verification.lookup.searchLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none text-slate-400">
@@ -157,7 +160,7 @@ export default function BarcodeLookupPage() {
               autoFocus={inputMode === 'MANUAL'}
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}
-              placeholder="e.g. BC-AST-00001, AST-GS-VRV-2024-00001, or Serial No."
+              placeholder={t('verification.lookup.placeholder')}
               className="w-full pl-11 pr-32 py-3 text-sm sm:text-base font-mono bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <div className="absolute inset-y-1.5 right-1.5 flex items-center gap-1.5">
@@ -167,7 +170,7 @@ export default function BarcodeLookupPage() {
                   onClick={handleClear}
                   className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 >
-                  Clear
+                  {t('actions.clear')}
                 </button>
               )}
               <Button
@@ -177,7 +180,7 @@ export default function BarcodeLookupPage() {
                 loading={lookupMutation.isPending}
                 leftIcon={<Search size={14} />}
               >
-                Lookup
+                {t('actions.lookup')}
               </Button>
             </div>
           </div>
@@ -187,7 +190,7 @@ export default function BarcodeLookupPage() {
         {inputMode === 'CAMERA' && (
           <QrCameraScanner
             autoStart
-            label="Desktop Webcam / Phone Camera QR Scanner"
+            label={t('verification.lookup.cameraScannerLabel')}
             onScanSuccess={(decodedCode) => runLookup(decodedCode)}
             onError={(msg) => toast.error(msg)}
           />
@@ -199,11 +202,11 @@ export default function BarcodeLookupPage() {
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200 flex items-start gap-3 text-xs">
           <AlertCircle size={17} className="shrink-0 mt-0.5" />
           <div>
-            <p className="font-bold text-sm">Asset Not Found in Office Registry</p>
+            <p className="font-bold text-sm">{t('verification.lookup.notFoundRegistryTitle')}</p>
             <p className="mt-0.5 text-rose-700 dark:text-rose-300">
               {lookupMutation.error?.response?.data?.error?.message ||
                 lookupMutation.error?.response?.data?.detail ||
-                `The identifier "${barcodeInput}" could not be resolved against active records in your office.`}
+                t('verification.lookup.notFoundDesc', { code: barcodeInput })}
             </p>
           </div>
         </div>
@@ -228,7 +231,8 @@ export default function BarcodeLookupPage() {
                 {resolvedItem.item_name}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {resolvedItem.category_name} · {resolvedItem.item_type === 'DURABLE_ASSET' ? 'Durable Asset' : 'Consumable Stock'}
+                {translateMasterName(t, 'category', resolvedItem.category_code, resolvedItem.category_name)} ·{' '}
+                {translateEnum(t, resolvedItem.item_type)}
               </p>
             </div>
 
@@ -242,12 +246,12 @@ export default function BarcodeLookupPage() {
                   leftIcon={<Printer size={13} />}
                   onClick={() => handlePrintQrLabel(resolvedItem.item_id, resolvedItem.item_code)}
                 >
-                  Print QR Label
+                  {t('verification.lookup.printQrLabel')}
                 </Button>
               )}
               <Link to={ROUTES.INVENTORY_DETAIL(resolvedItem.item_id)}>
                 <Button variant="primary" size="sm" rightIcon={<ExternalLink size={13} />}>
-                  Full Asset Profile
+                  {t('verification.lookup.fullProfileBtn')}
                 </Button>
               </Link>
             </div>
@@ -256,18 +260,22 @@ export default function BarcodeLookupPage() {
           {/* Primary Location / Custody / Condition Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">Storage Location</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                {t('verification.lookup.currentLocation')}
+              </span>
               <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <MapPin size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{resolvedItem.location_name}</span>
+                <span>{resolvedItem.location_name || t('inventory.detail.notAssigned')}</span>
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">Custodian & Department</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                {t('verification.lookup.custodianDept')}
+              </span>
               <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <User size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{resolvedItem.current_custodian || 'Store Custody'}</span>
+                <span>{resolvedItem.current_custodian || t('verification.lookup.storeCustody')}</span>
               </p>
               {resolvedItem.current_department && (
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1">
@@ -277,24 +285,29 @@ export default function BarcodeLookupPage() {
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">Physical Condition</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                {t('verification.lookup.physCondition')}
+              </span>
               <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{resolvedItem.condition}</span>
+                <span>{translateEnum(t, resolvedItem.condition)}</span>
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Available Qty: <strong className="font-mono">{formatNumber(resolvedItem.available_qty ?? 1)}</strong>
+                {t('verification.lookup.availableQty')}{' '}
+                <strong className="font-mono">{formatNumber(resolvedItem.available_qty ?? 1)}</strong>
               </p>
             </div>
 
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0A1513] border border-slate-200 dark:border-emerald-500/15">
-              <span className="text-slate-500 dark:text-slate-400 block mb-1">Classification & Status</span>
+              <span className="text-slate-500 dark:text-slate-400 block mb-1">
+                {t('verification.lookup.classAndStatus')}
+              </span>
               <p className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                 <Tag size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>{resolvedItem.current_classification}</span>
+                <span>{translateEnum(t, resolvedItem.current_classification)}</span>
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                Status: {resolvedItem.operational_status}
+                {t('verification.lookup.statusPrefix')} {translateEnum(t, resolvedItem.operational_status)}
               </p>
             </div>
           </div>
@@ -302,27 +315,27 @@ export default function BarcodeLookupPage() {
           {/* Secondary Specs Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2 border-t border-slate-100 dark:border-emerald-500/15">
             <div>
-              <span className="text-slate-500 dark:text-slate-400 block">Brand / Model</span>
+              <span className="text-slate-500 dark:text-slate-400 block">{t('verification.lookup.brandModel')}</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
                 {[resolvedItem.brand, resolvedItem.model_number].filter(Boolean).join(' · ') || '—'}
               </span>
             </div>
             <div>
-              <span className="text-slate-500 dark:text-slate-400 block">Serial Number</span>
+              <span className="text-slate-500 dark:text-slate-400 block">{t('labels.serialNumber')}</span>
               <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">
                 {resolvedItem.serial_number || '—'}
               </span>
             </div>
             <div>
               <span className="text-slate-500 dark:text-slate-400 block flex items-center gap-1">
-                <Calendar size={11} /> Purchase Date
+                <Calendar size={11} /> {t('labels.purchaseDate')}
               </span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
                 {resolvedItem.purchase_date ? formatDate(resolvedItem.purchase_date) : '—'}
               </span>
             </div>
             <div>
-              <span className="text-slate-500 dark:text-slate-400 block">Unit Purchase Cost</span>
+              <span className="text-slate-500 dark:text-slate-400 block">{t('inventory.detail.unitCost')}</span>
               <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                 {formatCurrency(resolvedItem.unit_purchase_cost ?? 0)}
               </span>
@@ -332,13 +345,15 @@ export default function BarcodeLookupPage() {
           <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <Package size={13} />
-              Last Movement:{' '}
+              {t('verification.lookup.lastMovement')}{' '}
               <strong className="text-slate-700 dark:text-slate-300">
-                {resolvedItem.last_movement_date ? formatDate(resolvedItem.last_movement_date) : 'No movements logged'}
+                {resolvedItem.last_movement_date
+                  ? formatDate(resolvedItem.last_movement_date)
+                  : t('verification.lookup.noMovements')}
               </strong>
             </span>
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-              <ShieldCheck size={14} /> Verified in Store Registry
+              <ShieldCheck size={14} /> {t('verification.lookup.verifiedInRegistry')}
             </span>
           </div>
         </GlassCard>
@@ -349,7 +364,7 @@ export default function BarcodeLookupPage() {
         <GlassCard level={1} className="p-4 space-y-2.5">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
             <History size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Recently Checked Assets
+            {t('verification.lookup.recentHeading')}
           </div>
           <div className="flex flex-wrap gap-2">
             {recentLookups.map((item) => (

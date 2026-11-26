@@ -149,6 +149,29 @@ const LABEL_OVERRIDES = {
   IN_PROGRESS: 'In Progress',
 }
 
+const EXTRA_STATUS_STYLES = {
+  NEW: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/20',
+  POOR: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/20',
+  NON_FUNCTIONAL: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/20',
+  PLANNED: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20',
+  PENDING: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20',
+  IGNORED: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/20',
+  NONE: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  NOT_FOUND: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/20',
+  UNEXPECTED_ITEM: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20',
+  LOCATION_MISMATCH: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20',
+  CONDITION_MISMATCH: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/20',
+  DUPLICATE_SUSPECTED: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  MATCHED_VERIFIED: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
+  UNKNOWN_BARCODE: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/20',
+  DUPLICATE_SCAN_REPEATED: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  RECORD_ROOM: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',
+  OPEN_YARD: 'bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/20',
+  BUYBACK: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  DESTRUCTION_BURIAL: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
+  DONATION_TRANSFER: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20',
+}
+
 function formatLabel(status) {
   if (!status) return ''
   return (
@@ -162,7 +185,10 @@ function formatLabel(status) {
 
 function StatusBadge({ status, label, className, size = 'sm' }) {
   const { t } = useLanguage()
-  const style = STATUS_STYLES[status] || 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
+  const style =
+    STATUS_STYLES[status] ||
+    EXTRA_STATUS_STYLES[status] ||
+    'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/20'
   const text = label || (status ? translateEnum(t, status) : '') || formatLabel(status)
   const sizeClass = size === 'xs' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-0.5'
 

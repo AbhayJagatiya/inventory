@@ -38,8 +38,9 @@ function getNestedValue(obj, keyPath) {
  */
 function interpolate(template, params) {
   if (!params || typeof template !== 'string') return template
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-    return params[key] !== undefined ? String(params[key]) : `{{${key}}}`
+  return template.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (match, doubleKey, singleKey) => {
+    const key = doubleKey || singleKey
+    return params[key] !== undefined ? String(params[key]) : match
   })
 }
 

@@ -13,7 +13,7 @@ import FilterBar from '../../components/forms/FilterBar'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import StatusBadge from '../../components/common/StatusBadge'
-import { getItems, getCategories, deleteItem } from '../../api/inventory.api'
+import { getItems, getCategories, deleteItem, exportItems } from '../../api/inventory.api'
 import { formatNumber } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
@@ -22,7 +22,7 @@ import toast from 'react-hot-toast'
 import ExcelImportModal from '../../components/inventory/ExcelImportModal'
 import { motion } from 'framer-motion'
 import { useLanguage } from '../../i18n'
-import { translateEnum } from '../../i18n/enumLabels'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 
 export default function AssetRegisterPage() {
   const navigate = useNavigate()
@@ -153,7 +153,7 @@ export default function AssetRegisterPage() {
         header: t('inventory.table.category'),
         render: (_, row) => (
           <span className="text-xs text-forest-700 dark:text-forest-300 font-medium">
-            {row.category?.name || '—'}
+            {translateMasterName(t, 'category', row.category?.code, row.category?.name) || '—'}
           </span>
         ),
       },
@@ -163,54 +163,59 @@ export default function AssetRegisterPage() {
         width: '130px',
         render: (type) => (
           <span className="text-xs text-forest-600 dark:text-forest-400">
-            {type === 'DURABLE_ASSET' ? 'Durable Asset' : 'Consumable Stock'}
+            {translateEnum(t, type)}
           </span>
         ),
       },
       {
         key: 'quantity',
-        header: 'Qty / UOM',
+        header: `${t('inventory.table.quantity')} / ${t('labels.unit')}`,
         align: 'right',
         width: '110px',
         render: (qty, row) => (
           <span className="text-sm font-bold text-forest-900 dark:text-forest-100">
-            {formatNumber(qty)} <span className="text-xs font-normal text-forest-500">{row.uom}</span>
+            {formatNumber(qty)}{' '}
+            <span className="text-xs font-normal text-forest-500">
+              {translateMasterName(t, 'uom', row.uom, row.uom)}
+            </span>
           </span>
         ),
       },
       {
         key: 'location',
-        header: 'Location / Custodian',
+        header: `${t('inventory.table.location')} / ${t('inventory.detail.currentCustodian')}`,
         render: (_, row) => (
           <div>
-            <p className="text-xs text-forest-900 dark:text-forest-100 font-semibold">{row.location?.room_number || 'Main Store'}</p>
+            <p className="text-xs text-forest-900 dark:text-forest-100 font-semibold">
+              {row.location?.room_number || t('inventory.register.unassigned')}
+            </p>
             <p className="text-[11px] text-forest-500 dark:text-forest-400 truncate max-w-[150px]">
-              {row.current_custodian || row.location?.description || 'In Store'}
+              {row.current_custodian || row.location?.description || t('inventory.register.unassigned')}
             </p>
           </div>
         ),
       },
       {
         key: 'condition',
-        header: 'Condition',
+        header: t('inventory.table.condition'),
         width: '100px',
         render: (condition) => <StatusBadge status={condition} size="xs" />,
       },
       {
         key: 'operational_status',
-        header: 'Status',
+        header: t('inventory.table.status'),
         width: '130px',
         render: (status) => <StatusBadge status={status} size="xs" />,
       },
       {
         key: 'classification',
-        header: 'Classification',
+        header: t('inventory.table.classification'),
         width: '120px',
         render: (classification) => <StatusBadge status={classification} size="xs" />,
       },
       {
         key: 'actions',
-        header: 'Actions',
+        header: t('inventory.table.actions'),
         align: 'right',
         width: '100px',
         render: (_, row) => (
@@ -219,7 +224,7 @@ export default function AssetRegisterPage() {
               <Link
                 to={`/inventory/${row.id}/edit`}
                 className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
-                title="Edit Item"
+                title={t('inventory.register.editAssetTitle')}
               >
                 <Edit3 size={15} />
               </Link>
@@ -227,7 +232,7 @@ export default function AssetRegisterPage() {
             <Link
               to={ROUTES.BARCODE_LOOKUP}
               className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
-              title="Print Barcode / QR Label"
+              title={t('inventory.detail.printLabel')}
             >
               <QrCode size={15} />
             </Link>
@@ -235,7 +240,7 @@ export default function AssetRegisterPage() {
               <button
                 onClick={(e) => handleDeleteClick(e, row)}
                 className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
-                title="Delete / Dispose Item"
+                title={t('inventory.register.deleteAssetTitle')}
               >
                 <Trash2 size={15} />
               </button>
@@ -244,11 +249,31 @@ export default function AssetRegisterPage() {
         ),
       },
     ],
-    [hasPermission]
+    [hasPermission, t]
   )
 
-  const handleExportCSV = () => {
-    toast.success('Inventory register export generated successfully')
+  const handleExportCSV = async () => {
+    try {
+      const res = await exportItems({
+        search: searchQuery || undefined,
+        category_id: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+        item_type: selectedType !== 'ALL' ? selectedType : undefined,
+        operational_status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+        classification: selectedClassification !== 'ALL' ? selectedClassification : undefined,
+        condition: selectedCondition !== 'ALL' ? selectedCondition : undefined,
+      })
+      const url = URL.createObjectURL(res.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `dsims_inventory_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success(t('inventory.register.exportSuccess'))
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || t('inventory.register.exportError'))
+    }
   }
 
   const handleClearFilters = () => {
@@ -291,21 +316,23 @@ export default function AssetRegisterPage() {
         {/* Key Attributes */}
         <div className="space-y-1.5 py-2.5 border-y border-forest-500/10 dark:border-forest-300/10 text-xs text-forest-700 dark:text-forest-300">
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Stock / Quantity:</span>
+            <span className="text-forest-500">{t('labels.quantity')}:</span>
             <span className="font-bold font-mono text-forest-900 dark:text-forest-100">
-              {formatNumber(item.quantity)} {item.uom}
+              {formatNumber(item.quantity)} {translateMasterName(t, 'uom', item.uom, item.uom)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">Category:</span>
-            <span className="font-medium truncate max-w-[140px]">{item.category?.name || '—'}</span>
+            <span className="text-forest-500">{t('labels.category')}:</span>
+            <span className="font-medium truncate max-w-[140px]">
+              {translateMasterName(t, 'category', item.category?.code, item.category?.name) || '—'}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-forest-500 flex items-center gap-1">
-              <MapPin size={12} /> Location:
+              <MapPin size={12} /> {t('labels.location')}:
             </span>
             <span className="font-medium truncate max-w-[140px]">
-              {item.location?.room_number || 'Main Store'}
+              {item.location?.room_number || t('inventory.register.unassigned')}
             </span>
           </div>
         </div>
@@ -323,7 +350,7 @@ export default function AssetRegisterPage() {
             <Link
               to={`/inventory/${item.id}/edit`}
               className="p-1.5 text-forest-600 dark:text-forest-300 hover:bg-forest-500/10 rounded-lg transition-colors"
-              title="Edit Item"
+              title={t('inventory.register.editAssetTitle')}
             >
               <Edit3 size={15} />
             </Link>
@@ -332,7 +359,7 @@ export default function AssetRegisterPage() {
             <button
               onClick={(e) => handleDeleteClick(e, item)}
               className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
-              title="Delete / Dispose Item"
+              title={t('inventory.register.deleteAssetTitle')}
             >
               <Trash2 size={15} />
             </button>
@@ -350,8 +377,8 @@ export default function AssetRegisterPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Asset &amp; Item Register"
-        subtitle="Comprehensive government inventory register covering durable capital assets and consumable store items"
+        title={t('inventory.title')}
+        subtitle={t('app.fullName')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* View Mode Switcher */}
@@ -363,22 +390,22 @@ export default function AssetRegisterPage() {
               leftIcon={<Download size={14} />}
               onClick={handleExportCSV}
             >
-              Export
+              {t('actions.export')}
             </Button>
-            {hasPermission(PERMISSIONS.INVENTORY_IMPORT || PERMISSIONS.INVENTORY_CREATE) && (
+            {hasPermission(PERMISSIONS.INVENTORY_IMPORT) && (
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={<FileSpreadsheet size={14} />}
                 onClick={() => setIsImportModalOpen(true)}
               >
-                Import Excel
+                {t('inventory.register.importBulk')}
               </Button>
             )}
             {hasPermission(PERMISSIONS.INVENTORY_CREATE) && (
               <Link to={ROUTES.INVENTORY_NEW}>
                 <Button variant="primary" size="sm" leftIcon={<PlusCircle size={15} />}>
-                  Add New Item
+                  {t('inventory.addAsset')}
                 </Button>
               </Link>
             )}
@@ -393,7 +420,7 @@ export default function AssetRegisterPage() {
           setSearchQuery(q)
           setPage(1)
         }}
-        searchPlaceholder="Search by item name, asset code, serial or barcode…"
+        searchPlaceholder={t('inventory.searchPlaceholder')}
         onClearFilters={handleClearFilters}
         filters={[
           {
@@ -401,8 +428,11 @@ export default function AssetRegisterPage() {
             value: selectedCategory,
             onChange: (val) => { setSelectedCategory(val); setPage(1); },
             options: [
-              { value: 'ALL', label: 'All Categories' },
-              ...categories.map((c) => ({ value: c.id, label: c.name })),
+              { value: 'ALL', label: t('inventory.filters.allCategories') },
+              ...categories.map((c) => ({
+                value: c.id,
+                label: translateMasterName(t, 'category', c.code, c.name),
+              })),
             ],
           },
           {
@@ -410,9 +440,9 @@ export default function AssetRegisterPage() {
             value: selectedType,
             onChange: (val) => { setSelectedType(val); setPage(1); },
             options: [
-              { value: 'ALL', label: 'All Item Types' },
-              { value: 'DURABLE_ASSET', label: 'Durable Assets' },
-              { value: 'CONSUMABLE_STOCK', label: 'Consumables' },
+              { value: 'ALL', label: t('inventory.filters.allTypes') },
+              { value: 'DURABLE_ASSET', label: t('itemType.durableAsset') },
+              { value: 'CONSUMABLE_STOCK', label: t('itemType.consumableStock') },
             ],
           },
           {
@@ -420,13 +450,14 @@ export default function AssetRegisterPage() {
             value: selectedStatus,
             onChange: (val) => { setSelectedStatus(val); setPage(1); },
             options: [
-              { value: 'ALL', label: 'All Statuses' },
-              { value: 'AVAILABLE_IN_STORE', label: 'Available in Store' },
-              { value: 'IN_USE', label: 'In Use' },
-              { value: 'UNDER_MAINTENANCE', label: 'Under Maintenance' },
-              { value: 'PENDING_CONDEMNATION', label: 'Pending Condemnation' },
-              { value: 'PENDING_DISPOSAL', label: 'Pending Disposal' },
-              { value: 'DISPOSED', label: 'Disposed' },
+              { value: 'ALL', label: t('inventory.filters.allStatuses') },
+              { value: 'AVAILABLE_IN_STORE', label: t('operationalStatus.availableInStore') },
+              { value: 'IN_USE', label: t('operationalStatus.inUse') },
+              { value: 'UNDER_MAINTENANCE', label: t('operationalStatus.underMaintenance') },
+              { value: 'NON_FUNCTIONAL', label: t('operationalStatus.nonFunctional') },
+              { value: 'PENDING_CONDEMNATION', label: t('operationalStatus.pendingCondemnation') },
+              { value: 'PENDING_DISPOSAL', label: t('operationalStatus.pendingDisposal') },
+              { value: 'DISPOSED', label: t('operationalStatus.disposed') },
             ],
           },
           {
@@ -434,11 +465,11 @@ export default function AssetRegisterPage() {
             value: selectedClassification,
             onChange: (val) => { setSelectedClassification(val); setPage(1); },
             options: [
-              { value: 'ALL', label: 'All Classifications' },
-              { value: 'ACTIVE', label: 'Active' },
-              { value: 'SLOW_MOVING', label: 'Slow Moving' },
-              { value: 'NON_MOVING', label: 'Non-Moving' },
-              { value: 'OBSOLETE', label: 'Obsolete' },
+              { value: 'ALL', label: t('inventory.filters.allClassifications') },
+              { value: 'ACTIVE', label: t('classification.active') },
+              { value: 'SLOW_MOVING', label: t('classification.slowMoving') },
+              { value: 'NON_MOVING', label: t('classification.nonMoving') },
+              { value: 'OBSOLETE', label: t('classification.obsolete') },
             ],
           },
           {
@@ -446,11 +477,13 @@ export default function AssetRegisterPage() {
             value: selectedCondition,
             onChange: (val) => { setSelectedCondition(val); setPage(1); },
             options: [
-              { value: 'ALL', label: 'All Conditions' },
-              { value: 'GOOD', label: 'Good' },
-              { value: 'FAIR', label: 'Fair' },
-              { value: 'DAMAGED', label: 'Damaged' },
-              { value: 'SCRAP', label: 'Scrap' },
+              { value: 'ALL', label: t('inventory.filters.allConditions') },
+              { value: 'NEW', label: t('condition.new') },
+              { value: 'GOOD', label: t('condition.good') },
+              { value: 'FAIR', label: t('condition.fair') },
+              { value: 'POOR', label: t('condition.poor') },
+              { value: 'DAMAGED', label: t('condition.damaged') },
+              { value: 'SCRAP', label: t('condition.scrap') },
             ],
           },
         ]}
@@ -505,19 +538,14 @@ export default function AssetRegisterPage() {
                 <AlertTriangle size={20} />
               </div>
               <div>
-                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Dispose / Archive Item</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">This action marks the item as permanently disposed</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                  {t('inventory.register.confirmDeleteTitle')}
+                </h3>
+                <p className="text-xs font-mono text-emerald-700 dark:text-emerald-400">{confirmDelete.code}</p>
               </div>
             </div>
-            <p className="text-sm text-slate-700 dark:text-slate-300 mb-1">
-              Are you sure you want to <strong className="text-rose-600 dark:text-rose-400">dispose</strong>:
-            </p>
-            <div className="p-3 bg-slate-50 dark:bg-[#081210] rounded-xl border border-slate-200 dark:border-emerald-500/20 mb-5">
-              <p className="font-bold text-slate-900 dark:text-white text-sm">{confirmDelete.name}</p>
-              <p className="text-xs font-mono text-emerald-700 dark:text-emerald-400">{confirmDelete.code}</p>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
-              The item will be archived with status <strong>DISPOSED</strong>. All history is preserved. This action is recorded in the audit log.
+            <p className="text-sm text-slate-700 dark:text-slate-300 mb-5">
+              {t('inventory.register.confirmDeleteMessage', { name: confirmDelete.name })}
             </p>
             <div className="flex items-center justify-end gap-3">
               <Button
@@ -526,7 +554,7 @@ export default function AssetRegisterPage() {
                 onClick={() => setConfirmDelete(null)}
                 disabled={isDeleting}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 variant="danger"
@@ -535,7 +563,7 @@ export default function AssetRegisterPage() {
                 isLoading={isDeleting}
                 leftIcon={<Trash2 size={14} />}
               >
-                Confirm Dispose
+                {isDeleting ? t('inventory.register.deleting') : t('actions.delete')}
               </Button>
             </div>
           </div>

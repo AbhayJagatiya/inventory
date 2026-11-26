@@ -4,6 +4,7 @@ import {
 import { cn } from '../../utils/cn'
 import GlassCard from '../common/GlassCard'
 import EmptyState from '../feedback/EmptyState'
+import { useLanguage } from '../../i18n'
 
 export function CardView({
   data = [],
@@ -15,10 +16,12 @@ export function CardView({
   totalPages = 1,
   onPageChange,
   onLimitChange,
-  emptyTitle = 'No records found',
-  emptyDescription = 'There are no records matching your query or active filters.',
+  emptyTitle,
+  emptyDescription,
   className,
 }) {
+  const { t } = useLanguage()
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -42,7 +45,10 @@ export function CardView({
   if (data.length === 0) {
     return (
       <GlassCard level={1} className="p-8">
-        <EmptyState title={emptyTitle} description={emptyDescription} />
+        <EmptyState
+          title={emptyTitle || t('ui.cardView.noRecords')}
+          description={emptyDescription || t('ui.emptyState.tryAdjusting')}
+        />
       </GlassCard>
     )
   }
@@ -58,7 +64,7 @@ export function CardView({
       {total > 0 && onPageChange && (
         <div className="px-5 py-3.5 bg-white/80 dark:bg-forest-900/80 backdrop-blur-md rounded-2xl border border-forest-500/15 dark:border-forest-300/15 shadow-glass-sm flex flex-wrap items-center justify-between gap-3 text-xs text-forest-700 dark:text-forest-300">
           <div className="flex items-center gap-2">
-            <span>Cards per page:</span>
+            <span>{t('ui.table.rowsPerPage')}:</span>
             <select
               value={limit}
               onChange={(e) => onLimitChange && onLimitChange(Number(e.target.value))}
@@ -72,7 +78,11 @@ export function CardView({
             </select>
             <span className="text-forest-300 dark:text-forest-700">|</span>
             <span>
-              Showing {Math.min((page - 1) * limit + 1, total)}–{Math.min(page * limit, total)} of {total} records
+              {t('ui.cardView.showing', {
+                from: Math.min((page - 1) * limit + 1, total),
+                to: Math.min(page * limit, total),
+                total,
+              })}
             </span>
           </div>
 
@@ -81,7 +91,7 @@ export function CardView({
               onClick={() => onPageChange(1)}
               disabled={page <= 1}
               className="p-1.5 rounded-lg hover:bg-forest-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              title="First Page"
+              title={t('ui.table.firstPage')}
             >
               <ChevronsLeft size={16} />
             </button>
@@ -89,18 +99,18 @@ export function CardView({
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
               className="p-1.5 rounded-lg hover:bg-forest-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              title="Previous Page"
+              title={t('ui.table.prevPage')}
             >
               <ChevronLeft size={16} />
             </button>
             <span className="px-2.5 font-semibold text-forest-900 dark:text-forest-100">
-              Page {page} of {totalPages || 1}
+              {t('ui.pagination.page')} {page} {t('ui.pagination.of')} {totalPages || 1}
             </span>
             <button
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
               className="p-1.5 rounded-lg hover:bg-forest-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              title="Next Page"
+              title={t('ui.table.nextPage')}
             >
               <ChevronRight size={16} />
             </button>
@@ -108,7 +118,7 @@ export function CardView({
               onClick={() => onPageChange(totalPages)}
               disabled={page >= totalPages}
               className="p-1.5 rounded-lg hover:bg-forest-500/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-              title="Last Page"
+              title={t('ui.table.lastPage')}
             >
               <ChevronsRight size={16} />
             </button>

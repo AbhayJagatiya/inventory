@@ -37,13 +37,13 @@ function ModulePlaceholder({
           <div className="space-y-4 max-w-2xl">
             <div>
               <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-forest-500/15 text-forest-800 dark:text-forest-200 border border-forest-500/20">
-                Phase {phaseNumber} Module
+                {t('ui.placeholder.phaseBadge', { phase: phaseNumber })}
               </span>
               <h2 className="text-base font-bold text-forest-950 dark:text-forest-50 mt-2.5">
-                {moduleName} Architecture & Contract Initialized
+                {t('ui.placeholder.archHeading', { module: moduleName })}
               </h2>
               <p className="text-xs text-forest-600 dark:text-forest-400 mt-1">
-                API Service and schemas mapped to backend endpoint:{' '}
+                {t('ui.placeholder.endpointDesc')}{' '}
                 <code className="font-mono text-forest-700 dark:text-forest-300 bg-forest-500/10 px-1.5 py-0.5 rounded-md border border-forest-500/10">
                   {endpoint}
                 </code>
@@ -53,7 +53,7 @@ function ModulePlaceholder({
             {expectedFeatures.length > 0 && (
               <div className="pt-2">
                 <p className="text-xs font-bold text-forest-900 dark:text-forest-100 mb-2">
-                  Planned Functional Capabilities in this Screen:
+                  {t('ui.placeholder.plannedHeading')}
                 </p>
                 <ul className="text-xs text-forest-700 dark:text-forest-300 space-y-1.5 list-disc list-inside">
                   {expectedFeatures.map((feat, idx) => (
@@ -65,7 +65,7 @@ function ModulePlaceholder({
 
             <div className="pt-4 border-t border-forest-500/10 dark:border-forest-400/10 flex items-center gap-3">
               <span className="text-xs text-forest-500 dark:text-forest-400">
-                Data contracts and API handlers in <code className="font-mono text-forest-700 dark:text-forest-300">src/api/</code> are already prepared.
+                {t('ui.placeholder.preparedNote')}
               </span>
             </div>
           </div>

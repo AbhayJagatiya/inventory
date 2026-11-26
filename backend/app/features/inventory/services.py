@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 from sqlalchemy import desc, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.core.exceptions import ConflictError, NotFoundError, OfficeAccessDeniedError, ValidationError
 from app.core.permissions import ROLE_SYSTEM_ADMIN
 from app.features.audit.models import AuditLog
@@ -46,7 +46,19 @@ class InventoryService:
 
     @staticmethod
     def get_item(db: Session, item_id: UUID, current_user: Optional[User] = None) -> Item:
-        item = db.query(Item).filter(Item.id == item_id).first()
+        item = (
+            db.query(Item)
+            .options(
+                joinedload(Item.office),
+                joinedload(Item.supplier),
+                joinedload(Item.warranty),
+                joinedload(Item.category),
+                joinedload(Item.location),
+                joinedload(Item.uom),
+            )
+            .filter(Item.id == item_id)
+            .first()
+        )
         if not item:
             raise NotFoundError(f"Item with ID '{item_id}' was not found", code="ITEM_NOT_FOUND")
 
@@ -58,7 +70,14 @@ class InventoryService:
 
     @staticmethod
     def get_item_by_barcode(db: Session, barcode: str, office_id: Optional[UUID] = None) -> Optional[Item]:
-        query = db.query(Item).filter(Item.barcode_number == barcode.strip())
+        query = db.query(Item).options(
+            joinedload(Item.office),
+            joinedload(Item.supplier),
+            joinedload(Item.warranty),
+            joinedload(Item.category),
+            joinedload(Item.location),
+            joinedload(Item.uom),
+        ).filter(Item.barcode_number == barcode.strip())
         if office_id:
             query = query.filter(Item.office_id == office_id)
         return query.first()
@@ -81,7 +100,14 @@ class InventoryService:
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ) -> Tuple[List[Item], int]:
-        query = db.query(Item)
+        query = db.query(Item).options(
+            joinedload(Item.office),
+            joinedload(Item.supplier),
+            joinedload(Item.warranty),
+            joinedload(Item.category),
+            joinedload(Item.location),
+            joinedload(Item.uom),
+        )
 
         # Scoping rule
         if current_user and ROLE_SYSTEM_ADMIN not in current_user.role_names:

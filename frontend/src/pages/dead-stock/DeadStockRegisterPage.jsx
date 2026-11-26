@@ -16,15 +16,16 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import Modal from '../../components/common/Modal'
+import StatusBadge from '../../components/common/StatusBadge'
 import { DataTable } from '../../components/tables/DataTable'
 import ErrorState from '../../components/feedback/ErrorState'
-import EmptyState from '../../components/feedback/EmptyState'
-import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters'
+import { formatCurrency } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../i18n'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 
 export default function DeadStockRegisterPage() {
   const { user, hasPermission } = useAuth()
@@ -112,11 +113,14 @@ export default function DeadStockRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ['dead-stock-register'] })
       queryClient.invalidateQueries({ queryKey: ['classification-summary'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      toast.success('Classification override successfully applied to inventory record.')
+      toast.success(t('deadStock.register.toastOverrideApplied'))
       closeOverrideModal()
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to apply override.'
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        t('deadStock.register.toastOverrideFail')
       toast.error(msg)
     },
   })
@@ -128,11 +132,14 @@ export default function DeadStockRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ['dead-stock-register'] })
       queryClient.invalidateQueries({ queryKey: ['classification-summary'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-      toast.success('Override released! Calculated classification restored.')
+      toast.success(t('deadStock.register.toastOverrideReleased'))
       closeOverrideModal()
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to release override.'
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        t('deadStock.register.toastReleaseFail')
       toast.error(msg)
     },
   })
@@ -155,7 +162,7 @@ export default function DeadStockRegisterPage() {
   const handleApplyOverride = (e) => {
     e.preventDefault()
     if (!overrideReason.trim() || overrideReason.trim().length < 5) {
-      toast.error('A mandatory justification of at least 5 characters is required.')
+      toast.error(t('deadStock.register.errOverrideReasonMin'))
       return
     }
     const itmId = overrideModalItem?.item?.id || overrideModalItem?.classification?.item_id
@@ -171,7 +178,7 @@ export default function DeadStockRegisterPage() {
   const handleReleaseOverride = (e) => {
     e.preventDefault()
     if (!releaseReason.trim() || releaseReason.trim().length < 3) {
-      toast.error('Please provide a reason for releasing the manual override.')
+      toast.error(t('deadStock.register.errReleaseReasonMin'))
       return
     }
     const itmId = overrideModalItem?.item?.id || overrideModalItem?.classification?.item_id
@@ -186,7 +193,7 @@ export default function DeadStockRegisterPage() {
   const columns = [
     {
       key: 'item_code',
-      header: 'Asset Code & Barcode',
+      header: t('deadStock.register.colAssetCodeBarcode'),
       render: (_, row) => {
         const itm = row.item || {}
         return (
@@ -195,7 +202,7 @@ export default function DeadStockRegisterPage() {
               {itm.item_code || '—'}
             </div>
             <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
-              {itm.barcode_number || 'No barcode'}
+              {itm.barcode_number || t('deadStock.register.noBarcode')}
             </div>
           </div>
         )
@@ -203,7 +210,7 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'item_name',
-      header: 'Description & Brand',
+      header: t('deadStock.register.colDescBrand'),
       render: (_, row) => {
         const itm = row.item || {}
         return (
@@ -222,16 +229,17 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'category',
-      header: 'Category & Location',
+      header: t('deadStock.register.colCategoryLocation'),
       render: (_, row) => {
         const itm = row.item || {}
         return (
           <div>
             <div className="text-xs font-medium text-slate-800 dark:text-slate-200">
-              {itm.category?.name || 'Uncategorized'}
+              {translateMasterName(t, 'category', itm.category?.code, itm.category?.name) ||
+                t('deadStock.register.uncategorized')}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              {itm.location ? `${itm.location.room_number}` : 'Central Store'}
+              {itm.location ? `${itm.location.room_number}` : t('deadStock.register.centralStore')}
             </div>
           </div>
         )
@@ -239,29 +247,15 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'condition',
-      header: 'Condition',
+      header: t('deadStock.register.colCondition'),
       render: (_, row) => {
-        const cond = row.item?.condition || 'UNKNOWN'
-        const badgeColors = {
-          GOOD: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-          FAIR: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-          DAMAGED: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
-          SCRAP: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
-        }
-        return (
-          <span
-            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-              badgeColors[cond] || 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {cond}
-          </span>
-        )
+        const cond = row.item?.condition
+        return cond ? <StatusBadge status={cond} size="xs" /> : '—'
       },
     },
     {
       key: 'inactivity',
-      header: 'Age & Inactivity',
+      header: t('deadStock.register.colAgeInactivity'),
       render: (_, row) => {
         const ageDays = row.item_age_days ?? row.classification?.item_age_days ?? 0
         const inactDays = row.days_inactive ?? row.classification?.days_inactive ?? 0
@@ -269,10 +263,10 @@ export default function DeadStockRegisterPage() {
         return (
           <div className="text-xs">
             <div className="font-semibold text-slate-800 dark:text-slate-200">
-              {inactDays} days idle
+              {t('deadStock.register.daysIdle', { days: inactDays })}
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Age: {ageYears} yrs ({ageDays}d)
+              {t('deadStock.register.ageYrsDays', { years: ageYears, days: ageDays })}
             </div>
           </div>
         )
@@ -280,7 +274,7 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'recorded_cost',
-      header: 'Book Value',
+      header: t('deadStock.register.colBookValue'),
       align: 'right',
       render: (_, row) => (
         <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
@@ -290,28 +284,16 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'effective_classification',
-      header: 'Classification',
+      header: t('deadStock.register.colClassification'),
       render: (_, row) => {
         const eff = row.classification?.effective_classification || row.item?.current_classification || 'OBSOLETE'
         const isOverridden = row.classification?.is_overridden
-        const badgeColors = {
-          OBSOLETE: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
-          NON_MOVING: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-          SLOW_MOVING: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-          ACTIVE: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-        }
         return (
           <div className="space-y-1">
-            <span
-              className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-bold border ${
-                badgeColors[eff] || 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              {eff}
-            </span>
+            <StatusBadge status={eff} size="xs" />
             {isOverridden && (
               <span className="block text-[10px] font-semibold text-purple-600 dark:text-purple-400">
-                • Officer Override
+                {t('deadStock.register.officerOverrideTag')}
               </span>
             )}
           </div>
@@ -320,14 +302,14 @@ export default function DeadStockRegisterPage() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('deadStock.register.colActions'),
       align: 'right',
       render: (_, row) => (
         <div className="flex items-center justify-end gap-1.5">
           <Link
             to={ROUTES.INVENTORY_DETAIL(row.item?.id || row.classification?.item_id)}
             className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-forest-800/50 rounded-lg transition-colors"
-            title="View Asset Profile"
+            title={t('deadStock.register.viewAssetTitle')}
           >
             <Eye size={15} />
           </Link>
@@ -335,7 +317,7 @@ export default function DeadStockRegisterPage() {
             <button
               onClick={() => openOverrideModal(row)}
               className="p-1.5 text-forest-600 hover:text-forest-800 dark:text-forest-400 dark:hover:text-forest-200 hover:bg-forest-500/10 rounded-lg transition-colors"
-              title="Review / Override Classification"
+              title={t('deadStock.register.overrideTitle')}
             >
               <Edit3 size={15} />
             </button>
@@ -344,7 +326,7 @@ export default function DeadStockRegisterPage() {
             <Link
               to={`${ROUTES.CONDEMNATIONS}?propose_item=${row.item?.id || row.classification?.item_id}`}
               className="p-1.5 text-rose-600 hover:text-rose-800 dark:text-rose-400 dark:hover:text-rose-200 hover:bg-rose-500/10 rounded-lg transition-colors"
-              title="Initiate Condemnation Proposal"
+              title={t('deadStock.register.proposeCondemnTitle')}
             >
               <ShieldAlert size={15} />
             </Link>
@@ -357,18 +339,18 @@ export default function DeadStockRegisterPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Official Dead Stock Register"
-        subtitle="Statutory register of non-moving and obsolete government-owned assets"
+        title={t('deadStock.register.pageTitle')}
+        subtitle={t('deadStock.register.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.DEAD_STOCK}>
               <Button variant="secondary" size="sm" leftIcon={<Archive size={14} />}>
-                Engine Overview
+                {t('deadStock.register.btnEngineOverview')}
               </Button>
             </Link>
             <Link to={ROUTES.CONDEMNATIONS}>
               <Button variant="primary" size="sm" leftIcon={<ShieldAlert size={14} />}>
-                Condemnation Workflow
+                {t('deadStock.register.btnCondemnationWorkflow')}
               </Button>
             </Link>
           </div>
@@ -385,7 +367,7 @@ export default function DeadStockRegisterPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter loaded candidates by code, name, serial..."
+              placeholder={t('deadStock.register.searchPlaceholderFull')}
               className="w-full pl-10 pr-9 py-2 text-sm bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             {searchQuery && (
@@ -411,7 +393,7 @@ export default function DeadStockRegisterPage() {
                 setPage(1)
               }}
             >
-              Reset Filters
+              {t('deadStock.register.resetFilters')}
             </Button>
           </div>
         </div>
@@ -420,12 +402,12 @@ export default function DeadStockRegisterPage() {
         <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 dark:border-emerald-500/15 text-xs">
           <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
             <Filter size={13} />
-            <span>Filters:</span>
+            <span>{t('deadStock.register.filtersLabel')}</span>
           </div>
 
           {/* Classification Filter */}
           <div className="flex items-center gap-1">
-            <label className="text-slate-500 dark:text-slate-400">Class:</label>
+            <label className="text-slate-500 dark:text-slate-400">{t('deadStock.register.classFilterLabel')}</label>
             <select
               value={selectedClassification}
               onChange={(e) => {
@@ -434,15 +416,15 @@ export default function DeadStockRegisterPage() {
               }}
               className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="ALL">All Dead Stock (Non-Moving & Obsolete)</option>
-              <option value="OBSOLETE">Obsolete / Dead Stock Only</option>
-              <option value="NON_MOVING">Non-Moving Stock Only</option>
+              <option value="ALL">{t('deadStock.register.classAllDeadStock')}</option>
+              <option value="OBSOLETE">{t('deadStock.register.classObsoleteOnly')}</option>
+              <option value="NON_MOVING">{t('deadStock.register.classNonMovingOnly')}</option>
             </select>
           </div>
 
           {/* Condition Filter */}
           <div className="flex items-center gap-1">
-            <label className="text-slate-500 dark:text-slate-400">Condition:</label>
+            <label className="text-slate-500 dark:text-slate-400">{t('deadStock.register.conditionLabel')}</label>
             <select
               value={selectedCondition}
               onChange={(e) => {
@@ -451,17 +433,19 @@ export default function DeadStockRegisterPage() {
               }}
               className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="ALL">All Conditions</option>
-              <option value="GOOD">Good</option>
-              <option value="FAIR">Fair</option>
-              <option value="DAMAGED">Damaged</option>
-              <option value="SCRAP">Scrap</option>
+              <option value="ALL">{t('deadStock.register.allConditions')}</option>
+              <option value="NEW">{t('condition.new')}</option>
+              <option value="GOOD">{t('condition.good')}</option>
+              <option value="FAIR">{t('condition.fair')}</option>
+              <option value="POOR">{t('condition.poor')}</option>
+              <option value="DAMAGED">{t('condition.damaged')}</option>
+              <option value="SCRAP">{t('condition.scrap')}</option>
             </select>
           </div>
 
           {/* Category Filter */}
           <div className="flex items-center gap-1">
-            <label className="text-slate-500 dark:text-slate-400">Category:</label>
+            <label className="text-slate-500 dark:text-slate-400">{t('deadStock.register.categoryLabel')}</label>
             <select
               value={selectedCategory}
               onChange={(e) => {
@@ -470,10 +454,10 @@ export default function DeadStockRegisterPage() {
               }}
               className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
-              <option value="ALL">All Categories</option>
+              <option value="ALL">{t('deadStock.register.allCategories')}</option>
               {categoriesList.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {translateMasterName(t, 'category', cat.code, cat.name)}
                 </option>
               ))}
             </select>
@@ -484,11 +468,11 @@ export default function DeadStockRegisterPage() {
       {/* Main Data Section */}
       {isError ? (
         <ErrorState
-          title="Error Loading Dead Stock Register"
+          title={t('deadStock.register.loadErrorTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to fetch records from PostgreSQL. Verify the FastAPI backend is online.'
+            t('deadStock.register.loadErrorMsg')
           }
           onRetry={refetch}
         />
@@ -503,8 +487,8 @@ export default function DeadStockRegisterPage() {
           totalPages={totalPages}
           onPageChange={setPage}
           onLimitChange={setLimit}
-          emptyTitle="No Dead Stock Records Found"
-          emptyDescription="There are no non-moving or obsolete assets currently recorded in PostgreSQL for the selected criteria."
+          emptyTitle={t('deadStock.register.emptyTitle')}
+          emptyDescription={t('deadStock.register.emptyDesc')}
         />
       )}
 
@@ -515,8 +499,8 @@ export default function DeadStockRegisterPage() {
           onClose={closeOverrideModal}
           title={
             isReleaseMode
-              ? 'Release Classification Override'
-              : 'Authorized Store Officer Classification Override'
+              ? t('deadStock.register.modalReleaseTitle')
+              : t('deadStock.register.modalOverrideTitle')
           }
           size="md"
           footer={
@@ -527,14 +511,14 @@ export default function DeadStockRegisterPage() {
                   size="sm"
                   onClick={() => setIsReleaseMode(true)}
                 >
-                  Release Existing Override
+                  {t('deadStock.register.btnReleaseExisting')}
                 </Button>
               ) : (
                 <div />
               )}
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={closeOverrideModal}>
-                  Cancel
+                  {t('actions.cancel')}
                 </Button>
                 {isReleaseMode ? (
                   <Button
@@ -543,7 +527,7 @@ export default function DeadStockRegisterPage() {
                     loading={releaseMutation.isPending}
                     onClick={handleReleaseOverride}
                   >
-                    Confirm Release
+                    {t('deadStock.register.btnConfirmRelease')}
                   </Button>
                 ) : (
                   <Button
@@ -552,7 +536,7 @@ export default function DeadStockRegisterPage() {
                     loading={overrideMutation.isPending}
                     onClick={handleApplyOverride}
                   >
-                    Apply Override
+                    {t('deadStock.register.btnApplyOverride')}
                   </Button>
                 )}
               </div>
@@ -567,17 +551,26 @@ export default function DeadStockRegisterPage() {
                   {overrideModalItem.item?.item_code}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400">
-                  Valuation: {formatCurrency(overrideModalItem.recorded_cost ?? overrideModalItem.item?.total_cost ?? 0)}
+                  {t('deadStock.register.valuationLabel')}{' '}
+                  {formatCurrency(overrideModalItem.recorded_cost ?? overrideModalItem.item?.total_cost ?? 0)}
                 </span>
               </div>
               <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
                 {overrideModalItem.item?.item_name}
               </p>
               <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 pt-1">
-                <span>Calculated: <strong>{overrideModalItem.classification?.calculated_classification || '—'}</strong></span>
-                <span>Effective: <strong>{overrideModalItem.classification?.effective_classification || '—'}</strong></span>
+                <span>
+                  {t('deadStock.register.calculatedLabel')}{' '}
+                  <strong>{translateEnum(t, overrideModalItem.classification?.calculated_classification) || '—'}</strong>
+                </span>
+                <span>
+                  {t('deadStock.register.effectiveLabel')}{' '}
+                  <strong>{translateEnum(t, overrideModalItem.classification?.effective_classification) || '—'}</strong>
+                </span>
                 {overrideModalItem.classification?.is_overridden && (
-                  <span className="text-purple-600 dark:text-purple-400 font-semibold">• Currently Overridden</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                    {t('deadStock.register.currentlyOverridden')}
+                  </span>
                 )}
               </div>
             </div>
@@ -586,7 +579,7 @@ export default function DeadStockRegisterPage() {
             {overrideModalItem.classification?.contributing_factors && (
               <div className="p-3 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/15 space-y-1">
                 <span className="font-bold text-forest-950 dark:text-forest-100 flex items-center gap-1">
-                  <AlertCircle size={13} /> Contributing Engine Factors
+                  <AlertCircle size={13} /> {t('deadStock.register.contributingFactors')}
                 </span>
                 <p className="text-[11px] text-forest-800 dark:text-forest-200 leading-normal">
                   {JSON.stringify(overrideModalItem.classification.contributing_factors, null, 2)}
@@ -598,17 +591,18 @@ export default function DeadStockRegisterPage() {
               /* Release Mode Form */
               <div className="space-y-3">
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200 text-xs">
-                  Releasing the override will restore the algorithmic classification calculated by the engine (<strong>{overrideModalItem.classification?.calculated_classification}</strong>).
+                  {t('deadStock.register.releaseWarningPrefix')} (
+                  <strong>{translateEnum(t, overrideModalItem.classification?.calculated_classification)}</strong>).
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Release Reason / Audit Note <span className="text-red-500">*</span>
+                    {t('deadStock.register.releaseReasonLabel')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows={3}
                     value={releaseReason}
                     onChange={(e) => setReleaseReason(e.target.value)}
-                    placeholder="Provide justification for restoring automated classification..."
+                    placeholder={t('deadStock.register.releaseReasonPlaceholder')}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     required
                   />
@@ -619,36 +613,36 @@ export default function DeadStockRegisterPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Select New Classification <span className="text-red-500">*</span>
+                    {t('deadStock.register.selectNewClassLabel')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={overrideFormClassification}
                     onChange={(e) => setOverrideFormClassification(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   >
-                    <option value="ACTIVE">ACTIVE (Return to active circulation)</option>
-                    <option value="SLOW_MOVING">SLOW_MOVING (Sluggish stock under observation)</option>
-                    <option value="NON_MOVING">NON_MOVING (Statutory non-moving stock)</option>
-                    <option value="OBSOLETE">OBSOLETE (Dead stock recommended for condemnation)</option>
+                    <option value="ACTIVE">{t('deadStock.register.optActiveDesc')}</option>
+                    <option value="SLOW_MOVING">{t('deadStock.register.optSlowMovingDesc')}</option>
+                    <option value="NON_MOVING">{t('deadStock.register.optNonMovingDesc')}</option>
+                    <option value="OBSOLETE">{t('deadStock.register.optObsoleteDesc')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Mandatory Officer Justification <span className="text-red-500">*</span>
+                    {t('deadStock.register.justificationLabel')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows={3}
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
-                    placeholder="Explain why this item is being manually reclassified (e.g. required for upcoming election duty, repair scheduled)..."
+                    placeholder={t('deadStock.register.justificationPlaceholder')}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     required
                   />
                 </div>
 
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Note: All overrides are permanently recorded in the official audit trail with your user identity and timestamp.
+                  {t('deadStock.register.overrideAuditNote')}
                 </div>
               </div>
             )}

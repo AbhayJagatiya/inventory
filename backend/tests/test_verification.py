@@ -464,13 +464,34 @@ def test_verification_audit_option_b_rbac_and_isolation(test_env):
     item2_row = next(r for r in items_after.data if r.item_id == item2.id)
     assert item2_row.discrepancy_type == "NOT_FOUND"
 
-    # Download CSV reconciliation report
+    # Download CSV reconciliation report in EN, HI, GU while preserving user-entered asset names verbatim
+    from app.features.inventory.schemas import ItemOut
+    from app.features.inventory.services import InventoryService
     from app.features.verification.services import VerificationService
 
-    csv_text, filename = VerificationService.export_session_report_csv(db, session.id)
+    csv_text, filename = VerificationService.export_session_report_csv(db, session.id, lang="en")
     assert filename.endswith(".csv")
     assert item1.item_code in csv_text
     assert item2.item_code in csv_text
+    assert item1.item_name in csv_text
+
+    csv_hi, _ = VerificationService.export_session_report_csv(db, session.id, lang="hi")
+    assert "भौतिक सत्यापन एवं मिलान रिपोर्ट" in csv_hi
+    assert "आइटम नाम" in csv_hi
+    assert item1.item_name in csv_hi
+
+    csv_gu, _ = VerificationService.export_session_report_csv(db, session.id, lang="gu")
+    assert "ભૌતિક ચકાસણી અને સમાધાન અહેવાલ" in csv_gu
+    assert "વસ્તુનું નામ" in csv_gu
+    assert item1.item_name in csv_gu
+
+    # Enriched ItemOut includes office, financial, and category fields
+    fetched_item = InventoryService.get_item(db, item1.id, current_user=officer)
+    item_out = ItemOut.model_validate(fetched_item)
+    assert item_out.office_name == "Veraval Store Office"
+    assert item_out.office_code == "OFF-GS-VRV-001"
+    assert item_out.unit_purchase_cost == Decimal("65000.00")
+    assert item_out.total_cost == Decimal("65000.00")
 
     # Asset history timeline includes scan, live audit update, and audit session outcome
     hist_res = inventory_routes.get_item_history(

@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from app.core.exceptions import NotFoundError, OfficeAccessDeniedError, ValidationError
+from app.core.i18n import get_report_title, translate_report_cell, translate_report_header, validate_language
 from app.core.permissions import ROLE_SYSTEM_ADMIN
 from app.features.audit.services import AuditService
 from app.features.categories.models import Category
@@ -610,19 +611,27 @@ class VerificationService:
         return VerificationService.get_session(db, session.id)
 
     @staticmethod
-    def export_session_report_csv(db: Session, session_id: UUID) -> Tuple[str, str]:
+    def export_session_report_csv(db: Session, session_id: UUID, lang: str = "en") -> Tuple[str, str]:
+        active_lang = validate_language(lang)
         session = VerificationService.get_session(db, session_id)
         items = VerificationService.list_session_items(db, session_id)
 
+        def h(label: str) -> str:
+            return translate_report_header(label, active_lang)
+
+        def cell(val):
+            return translate_report_cell(val, active_lang)
+
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Physical Verification & Reconciliation Report"])
-        writer.writerow(["Session Number", session.session_number, "Status", session.status])
-        writer.writerow(["Scope Type", session.scope_type, "Scope Target", session.location_name or session.category_name or "Full Office"])
-        writer.writerow(["Lead Verifier", session.lead_verifier_name or str(session.lead_verifier_id), "Notes", session.notes or ""])
-        writer.writerow(["Expected Items", session.total_expected_items, "Scanned Items", session.total_scanned_items, "Pending Discrepancies", session.discrepancy_count])
+        writer.writerow([get_report_title("verification-reconciliation", active_lang)])
+        writer.writerow([h("Session Number"), session.session_number, h("Status"), cell(session.status)])
+        writer.writerow([h("Scope Type"), cell(session.scope_type), h("Scope Target"), cell(session.location_name or session.category_name or "Full Office")])
+        writer.writerow([h("Lead Verifier"), session.lead_verifier_name or str(session.lead_verifier_id), h("Notes"), session.notes or ""])
+        writer.writerow([h("Expected Items"), session.total_expected_items, h("Scanned Items"), session.total_scanned_items, h("Pending Discrepancies"), session.discrepancy_count])
         writer.writerow([])
-        writer.writerow([
+
+        raw_headers = [
             "Item Code",
             "Item Name",
             "Barcode Number",
@@ -637,7 +646,8 @@ class VerificationService:
             "Resolution Remarks",
             "Verified By",
             "Verified At",
-        ])
+        ]
+        writer.writerow([h(col) for col in raw_headers])
 
         for it in items:
             writer.writerow([
@@ -646,12 +656,12 @@ class VerificationService:
                 it.barcode_number or "",
                 it.expected_location_name or str(it.expected_location_id),
                 it.observed_location_name or "",
-                it.expected_condition,
-                it.observed_condition or "",
+                cell(it.expected_condition),
+                cell(it.observed_condition) if it.observed_condition else "",
                 it.expected_qty,
                 it.counted_qty,
-                it.discrepancy_type,
-                it.resolution_status,
+                cell(it.discrepancy_type),
+                cell(it.resolution_status),
                 it.resolution_remarks or "",
                 it.verified_by_name or "",
                 it.verified_at.isoformat() if it.verified_at else "",

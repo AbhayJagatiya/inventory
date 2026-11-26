@@ -14,6 +14,7 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import Modal from '../../components/common/Modal'
+import StatusBadge from '../../components/common/StatusBadge'
 import { DataTable } from '../../components/tables/DataTable'
 import ErrorState from '../../components/feedback/ErrorState'
 import { formatNumber, formatDate } from '../../utils/formatters'
@@ -22,13 +23,7 @@ import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../i18n'
-
-const AUDIT_CYCLES = [
-  { value: 'MONTHLY', label: 'Monthly Routine Audit' },
-  { value: 'QUARTERLY', label: 'Quarterly Physical Verification' },
-  { value: 'ANNUAL', label: 'Annual Statutory Stocktaking' },
-  { value: 'SPOT_CHECK', label: 'Surprise / Spot Check' },
-]
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 
 export default function VerificationSessionListPage() {
   const { user, hasPermission } = useAuth()
@@ -36,6 +31,13 @@ export default function VerificationSessionListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const officeId = user?.office?.id || user?.office_id
+
+  const auditCycles = [
+    { value: 'MONTHLY', label: t('verification.sessions.cycles.MONTHLY') },
+    { value: 'QUARTERLY', label: t('verification.sessions.cycles.QUARTERLY') },
+    { value: 'ANNUAL', label: t('verification.sessions.cycles.ANNUAL') },
+    { value: 'SPOT_CHECK', label: t('verification.sessions.cycles.SPOT_CHECK') },
+  ]
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,7 +113,7 @@ export default function VerificationSessionListPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['verification-sessions'] })
       const created = res?.data || res
-      toast.success(`Verification session ${created.session_number} initialized! Snapshot frozen.`)
+      toast.success(t('verification.sessions.toastCreated'))
       setIsNewModalOpen(false)
       resetNewForm()
       if (created.id) {
@@ -119,7 +121,10 @@ export default function VerificationSessionListPage() {
       }
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to initialize session.'
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        t('verification.sessions.toastCreateFail')
       toast.error(msg)
     },
   })
@@ -127,19 +132,19 @@ export default function VerificationSessionListPage() {
   const handleCreateSession = (e) => {
     e.preventDefault()
     if (!officeId) {
-      toast.error('Unable to determine user office identity. Please re-login.')
+      toast.error(t('verification.sessions.officeIdErr'))
       return
     }
     if (scopeType === 'LOCATION' && !selectedLocationId) {
-      toast.error('Please select the target room / location for this audit.')
+      toast.error(t('verification.sessions.errLocation'))
       return
     }
     if (scopeType === 'CATEGORY' && !selectedCategoryId) {
-      toast.error('Please select the item category to audit.')
+      toast.error(t('verification.sessions.errCategory'))
       return
     }
 
-    const cycleLabel = AUDIT_CYCLES.find((c) => c.value === auditCycle)?.label || auditCycle
+    const cycleLabel = auditCycles.find((c) => c.value === auditCycle)?.label || auditCycle
     const trimmedNotes = sessionNotes.trim()
     const combinedNotes = trimmedNotes ? `[${cycleLabel}] ${trimmedNotes}` : `[${cycleLabel}]`
 
@@ -160,16 +165,20 @@ export default function VerificationSessionListPage() {
   const columns = [
     {
       key: 'session_number',
-      header: 'Session Number & Scope',
+      header: `${t('verification.sessions.colSessionNumber')} & ${t('verification.sessions.colScope')}`,
       render: (_, row) => (
         <div>
           <div className="font-mono font-bold text-slate-900 dark:text-emerald-400">
             {row.session_number}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold text-slate-700 dark:text-slate-300">{row.scope_type}</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {translateEnum(t, row.scope_type)}
+            </span>
             {row.location_name ? ` · ${row.location_name}` : ''}
-            {row.category_name ? ` · ${row.category_name}` : ''}
+            {row.category_name
+              ? ` · ${translateMasterName(t, 'category', row.category_code, row.category_name)}`
+              : ''}
           </div>
           {row.notes && (
             <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[260px]" title={row.notes}>
@@ -181,29 +190,12 @@ export default function VerificationSessionListPage() {
     },
     {
       key: 'status',
-      header: 'Audit Status',
-      render: (_, row) => {
-        const badgeColors = {
-          PLANNED: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-          IN_PROGRESS: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-          UNDER_REVIEW: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
-          COMPLETED: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-          CANCELLED: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300',
-        }
-        return (
-          <span
-            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-              badgeColors[row.status] || 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {row.status}
-          </span>
-        )
-      },
+      header: t('verification.sessions.colStatus'),
+      render: (_, row) => <StatusBadge status={row.status} size="xs" />,
     },
     {
       key: 'progress',
-      header: 'Scanning Progress',
+      header: t('verification.sessions.colProgress'),
       render: (_, row) => {
         const expected = row.total_expected_items || 0
         const scanned = row.total_scanned_items || 0
@@ -212,7 +204,7 @@ export default function VerificationSessionListPage() {
           <div className="space-y-1 min-w-[130px]">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-800 dark:text-slate-200">
-                {scanned} / {expected} items
+                {t('verification.sessions.itemsCount', { scanned, expected })}
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                 {pct}%
@@ -230,27 +222,27 @@ export default function VerificationSessionListPage() {
     },
     {
       key: 'discrepancy_count',
-      header: 'Discrepancies',
+      header: t('verification.sessions.colDiscrepancies'),
       align: 'center',
       render: (_, row) => {
         const dCount = row.discrepancy_count || 0
         if (dCount > 0) {
           return (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20">
-              <AlertTriangle size={12} /> {dCount} Pending
+              <AlertTriangle size={12} /> {t('verification.sessions.pendingCount', { count: dCount })}
             </span>
           )
         }
         return (
           <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-center gap-1">
-            <CheckCircle size={13} /> None
+            <CheckCircle size={13} /> {t('labels.none')}
           </span>
         )
       },
     },
     {
       key: 'created_at',
-      header: 'Initiated On',
+      header: t('verification.sessions.colInitiated'),
       render: (_, row) => (
         <div>
           <span className="text-xs text-slate-600 dark:text-slate-400 block">
@@ -258,7 +250,7 @@ export default function VerificationSessionListPage() {
           </span>
           {row.lead_verifier_name && (
             <span className="text-[11px] text-slate-400 block">
-              By {row.lead_verifier_name}
+              {t('verification.sessions.byUser', { name: row.lead_verifier_name })}
             </span>
           )}
         </div>
@@ -266,12 +258,14 @@ export default function VerificationSessionListPage() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('verification.sessions.colActions'),
       align: 'right',
       render: (_, row) => (
         <Link to={ROUTES.VERIFICATION_SESSION_DETAIL(row.id)}>
           <Button variant="secondary" size="xs" rightIcon={<ArrowRight size={12} />}>
-            {row.status === 'IN_PROGRESS' ? 'Scan & Audit' : 'Workspace'}
+            {row.status === 'IN_PROGRESS'
+              ? t('verification.sessions.scanAuditBtn')
+              : t('verification.sessions.openWorkspace')}
           </Button>
         </Link>
       ),
@@ -281,13 +275,13 @@ export default function VerificationSessionListPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Physical Stock Verification & Audit Sessions"
-        subtitle="Monthly, quarterly, and annual QR/barcode stocktaking, condition updates, and discrepancy reconciliation"
+        title={t('verification.sessions.pageTitle')}
+        subtitle={t('verification.sessions.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.BARCODE_LOOKUP}>
               <Button variant="secondary" size="sm" leftIcon={<QrCode size={14} />}>
-                QR / Barcode Lookup
+                {t('verification.barcodeLookup.title')}
               </Button>
             </Link>
             {hasPermission(PERMISSIONS.VERIFY_CREATE) && (
@@ -297,7 +291,7 @@ export default function VerificationSessionListPage() {
                 leftIcon={<Plus size={14} />}
                 onClick={() => setIsNewModalOpen(true)}
               >
-                New Audit Session
+                {t('verification.sessions.add')}
               </Button>
             )}
           </div>
@@ -309,7 +303,7 @@ export default function VerificationSessionListPage() {
         <GlassCard level={1} className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
-              Total Sessions
+              {t('verification.sessions.kpiTotal')}
             </p>
             <p className="text-2xl font-extrabold text-slate-900 dark:text-slate-50 mt-1">
               {formatNumber(totalRecords)}
@@ -323,7 +317,7 @@ export default function VerificationSessionListPage() {
         <GlassCard level={1} className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase">
-              In Progress
+              {t('verification.sessions.kpiInProgress')}
             </p>
             <p className="text-2xl font-extrabold text-amber-800 dark:text-amber-200 mt-1">
               {formatNumber(inProgressCount)}
@@ -337,7 +331,7 @@ export default function VerificationSessionListPage() {
         <GlassCard level={1} className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase">
-              Planned
+              {t('verification.sessions.kpiPlanned')}
             </p>
             <p className="text-2xl font-extrabold text-blue-800 dark:text-blue-200 mt-1">
               {formatNumber(plannedCount)}
@@ -351,7 +345,7 @@ export default function VerificationSessionListPage() {
         <GlassCard level={1} className="p-4 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
-              Completed Audits
+              {t('verification.sessions.kpiCompleted')}
             </p>
             <p className="text-2xl font-extrabold text-emerald-800 dark:text-emerald-200 mt-1">
               {formatNumber(completedCount)}
@@ -371,13 +365,13 @@ export default function VerificationSessionListPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search audit sessions by number, cycle, room, or category..."
+            placeholder={t('verification.sessions.searchPlaceholder')}
             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <label className="font-semibold text-slate-600 dark:text-slate-400">Status:</label>
+          <label className="font-semibold text-slate-600 dark:text-slate-400">{t('labels.status')}:</label>
           <select
             value={selectedStatus}
             onChange={(e) => {
@@ -386,12 +380,12 @@ export default function VerificationSessionListPage() {
             }}
             className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
-            <option value="ALL">All Audit Statuses</option>
-            <option value="PLANNED">Planned</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="CANCELLED">Cancelled</option>
+            <option value="ALL">{t('verification.sessions.allStatuses')}</option>
+            <option value="PLANNED">{t('status.planned')}</option>
+            <option value="IN_PROGRESS">{t('status.inProgress')}</option>
+            <option value="UNDER_REVIEW">{t('status.underReview')}</option>
+            <option value="COMPLETED">{t('status.completed')}</option>
+            <option value="CANCELLED">{t('status.cancelled')}</option>
           </select>
 
           <Button
@@ -404,7 +398,7 @@ export default function VerificationSessionListPage() {
               setPage(1)
             }}
           >
-            Reset
+            {t('actions.reset')}
           </Button>
         </div>
       </GlassCard>
@@ -412,11 +406,11 @@ export default function VerificationSessionListPage() {
       {/* Main Table */}
       {isError ? (
         <ErrorState
-          title="Error Loading Verification Sessions"
+          title={t('verification.sessions.loadErrorTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to fetch verification sessions from backend. Verify FastAPI service is online.'
+            t('verification.sessions.loadErrorDesc')
           }
           onRetry={refetch}
         />
@@ -431,8 +425,8 @@ export default function VerificationSessionListPage() {
           totalPages={totalPages}
           onPageChange={setPage}
           onLimitChange={setLimit}
-          emptyTitle="No Verification Sessions Found"
-          emptyDescription="No physical verification audit sessions have been initiated for this office yet."
+          emptyTitle={t('verification.sessions.emptyState.title')}
+          emptyDescription={t('verification.sessions.emptyState.description')}
         />
       )}
 
@@ -441,7 +435,7 @@ export default function VerificationSessionListPage() {
         <Modal
           isOpen={isNewModalOpen}
           onClose={() => setIsNewModalOpen(false)}
-          title="Initialize Physical Stock Verification Session"
+          title={t('verification.sessions.modalTitle')}
           size="md"
           footer={
             <>
@@ -450,7 +444,7 @@ export default function VerificationSessionListPage() {
                 size="sm"
                 onClick={() => setIsNewModalOpen(false)}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -458,27 +452,27 @@ export default function VerificationSessionListPage() {
                 loading={createMutation.isPending}
                 onClick={handleCreateSession}
               >
-                Start Session & Freeze Snapshot
+                {t('verification.sessions.launchBtn')}
               </Button>
             </>
           }
         >
           <form onSubmit={handleCreateSession} className="space-y-4 text-xs">
             <div className="p-3 rounded-xl bg-forest-500/10 dark:bg-forest-950/50 border border-forest-500/20 text-forest-800 dark:text-forest-200">
-              <strong>Statutory Snapshot Notice:</strong> Starting this session freezes the expected inventory baseline
-              from PostgreSQL so auditors can scan QR codes or enter numbers to verify and update asset condition & location.
+              <strong>{t('verification.sessions.snapshotNoticeTitle')}</strong>{' '}
+              {t('verification.sessions.snapshotNoticeBody')}
             </div>
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Audit Cycle / Schedule <span className="text-red-500">*</span>
+                {t('verification.sessions.auditCycleLabel')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={auditCycle}
                 onChange={(e) => setAuditCycle(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                {AUDIT_CYCLES.map((cycle) => (
+                {auditCycles.map((cycle) => (
                   <option key={cycle.value} value={cycle.value}>
                     {cycle.label}
                   </option>
@@ -488,23 +482,23 @@ export default function VerificationSessionListPage() {
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Audit Scope Type <span className="text-red-500">*</span>
+                {t('verification.sessions.scopeTypeLabel')} <span className="text-red-500">*</span>
               </label>
               <select
                 value={scopeType}
                 onChange={(e) => setScopeType(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
-                <option value="FULL_OFFICE">Full Office Comprehensive Audit (All Store Rooms)</option>
-                <option value="LOCATION">Room-Specific Audit (Single Storage Room / Bay)</option>
-                <option value="CATEGORY">Category-Specific Audit (e.g. IT Equipment Only)</option>
+                <option value="FULL_OFFICE">{t('verification.sessions.scopeFullDetail')}</option>
+                <option value="LOCATION">{t('verification.sessions.scopeLocationDetail')}</option>
+                <option value="CATEGORY">{t('verification.sessions.scopeCategoryDetail')}</option>
               </select>
             </div>
 
             {scopeType === 'LOCATION' && (
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Target Storage Room / Location <span className="text-red-500">*</span>
+                  {t('verification.sessions.targetRoom')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedLocationId}
@@ -512,7 +506,7 @@ export default function VerificationSessionListPage() {
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 >
-                  <option value="">-- Select Room Location --</option>
+                  <option value="">{t('verification.sessions.selectRoom')}</option>
                   {locationsList.map((loc) => (
                     <option key={loc.id} value={loc.id}>
                       {loc.building_name} - {loc.room_number}
@@ -525,7 +519,7 @@ export default function VerificationSessionListPage() {
             {scopeType === 'CATEGORY' && (
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Target Asset Category <span className="text-red-500">*</span>
+                  {t('verification.sessions.targetCategory')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedCategoryId}
@@ -533,10 +527,10 @@ export default function VerificationSessionListPage() {
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 >
-                  <option value="">-- Select Category --</option>
+                  <option value="">{t('verification.sessions.selectCategory')}</option>
                   {categoriesList.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name} ({cat.code})
+                      {translateMasterName(t, 'category', cat.code, cat.name)} ({cat.code})
                     </option>
                   ))}
                 </select>
@@ -545,13 +539,13 @@ export default function VerificationSessionListPage() {
 
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Audit Mandate / Purpose Notes
+                {t('verification.sessions.form.notes')}
               </label>
               <textarea
                 rows={3}
                 value={sessionNotes}
                 onChange={(e) => setSessionNotes(e.target.value)}
-                placeholder="e.g. Q3 IT & Furniture audit per DDO Order No. 412..."
+                placeholder={t('verification.sessions.notesPlaceholder')}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
             </div>

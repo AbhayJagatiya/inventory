@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  PlusCircle, Search, Eye, RotateCcw, Building2,
-  FileText, ShieldCheck
+  Search, Eye, RotateCcw, Building2, FileText
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import DataTable from '../../components/tables/DataTable'
@@ -73,7 +72,9 @@ export default function ReturnListPage() {
     {
       key: 'return_date',
       header: t('transactions.returns.returnDate'),
-      render: (val) => <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>,
+      render: (val) => (
+        <span className="text-xs text-forest-800 dark:text-forest-200 font-semibold">{formatDate(val)}</span>
+      ),
     },
     {
       key: 'returning_department',
@@ -87,22 +88,25 @@ export default function ReturnListPage() {
     },
     {
       key: 'returned_by_person',
-      header: 'Returned By',
+      header: t('transactions.returns.returnedByCol'),
       render: (val) => <span className="text-xs text-forest-900 dark:text-forest-100 font-semibold">{val}</span>,
     },
     {
       key: 'items',
-      header: 'Returned Items',
-      render: (items) => (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
-          <FileText size={12} className="text-forest-500" />
-          {items?.length || 0} line items
-        </span>
-      ),
+      header: t('transactions.returns.returnedItemsCol'),
+      render: (items) => {
+        const count = items?.length || 0
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-500/10 text-forest-800 dark:text-forest-200 font-mono text-[11px] font-semibold">
+            <FileText size={12} className="text-forest-500" />
+            {count} {count === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}
+          </span>
+        )
+      },
     },
     {
       key: 'return_reason',
-      header: 'Return Reason',
+      header: t('transactions.returns.returnReasonCol'),
       render: (val) => (
         <span className="text-xs text-forest-600 dark:text-forest-300 max-w-xs truncate block" title={val}>
           {val}
@@ -111,17 +115,17 @@ export default function ReturnListPage() {
     },
     {
       key: 'status',
-      header: 'Status',
+      header: t('labels.status'),
       render: (val) => <StatusBadge status={val} size="sm" />,
     },
     {
       key: 'actions',
-      header: 'Action',
+      header: t('labels.actions'),
       align: 'right',
       render: (_, row) => (
         <Link to={ROUTES.RETURN_DETAIL(row.id)}>
           <Button variant="ghost" size="xs" leftIcon={<Eye size={13} />}>
-            View
+            {t('actions.view')}
           </Button>
         </Link>
       ),
@@ -131,58 +135,65 @@ export default function ReturnListPage() {
   const paginatedData = returns.slice((page - 1) * pageSize, page * pageSize)
   const totalPages = Math.ceil(returns.length / pageSize) || 1
 
-  const renderReturnCard = (row) => (
-    <GlassCard
-      key={row.id}
-      level={1}
-      interactive={true}
-      cursorLight={true}
-      onClick={() => navigate(ROUTES.RETURN_DETAIL(row.id))}
-      className="p-5 flex flex-col justify-between"
-    >
-      <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <span className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 bg-forest-500/10 px-2 py-0.5 rounded-lg border border-forest-500/20">
-            {row.voucher_number}
+  const renderReturnCard = (row) => {
+    const count = row.items?.length || 0
+    return (
+      <GlassCard
+        key={row.id}
+        level={1}
+        interactive={true}
+        cursorLight={true}
+        onClick={() => navigate(ROUTES.RETURN_DETAIL(row.id))}
+        className="p-5 flex flex-col justify-between"
+      >
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="font-mono text-xs font-bold text-forest-700 dark:text-forest-300 bg-forest-500/10 px-2 py-0.5 rounded-lg border border-forest-500/20">
+              {row.voucher_number}
+            </span>
+            <StatusBadge status={row.status} size="xs" />
+          </div>
+
+          <h3 className="text-xs font-bold text-forest-950 dark:text-forest-50 mb-1">
+            {row.returning_department}
+          </h3>
+          <p className="text-[11px] text-forest-600 dark:text-forest-400 mb-2">
+            {t('transactions.returns.returnedByPrefix')} <span className="font-bold">{row.returned_by_person}</span>
+          </p>
+
+          <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
+            <div className="flex items-center justify-between">
+              <span className="text-forest-500">{t('transactions.returns.returnDate')}:</span>
+              <span>{formatDate(row.return_date)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-forest-500">{t('transactions.returns.linkedIssue')}:</span>
+              <span className="font-mono">
+                {row.original_issue_voucher || t('transactions.returns.directLabel')}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-forest-500">{t('transactions.returns.returnedItemsCol')}:</span>
+              <span className="font-bold font-mono">
+                {count} {count === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 pt-2 flex items-center justify-between text-xs">
+          <span className="text-[11px] text-forest-500 truncate max-w-[170px]">
+            {row.return_reason}
           </span>
-          <StatusBadge status={row.status} size="xs" />
+          <Link to={ROUTES.RETURN_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
+              {t('actions.view')}
+            </Button>
+          </Link>
         </div>
-
-        <h3 className="text-xs font-bold text-forest-950 dark:text-forest-50 mb-1">
-          {row.returning_department}
-        </h3>
-        <p className="text-[11px] text-forest-600 dark:text-forest-400 mb-2">
-          Returned by: <span className="font-bold">{row.returned_by_person}</span>
-        </p>
-
-        <div className="py-2 border-y border-forest-500/10 dark:border-forest-300/10 space-y-1 text-xs text-forest-700 dark:text-forest-300">
-          <div className="flex items-center justify-between">
-            <span className="text-forest-500">Return Date:</span>
-            <span>{formatDate(row.return_date)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-forest-500">Linked Issue:</span>
-            <span className="font-mono">{row.original_issue_voucher || 'Direct'}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-forest-500">Items:</span>
-            <span className="font-bold font-mono">{row.items?.length || 0} line items</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3 pt-2 flex items-center justify-between text-xs">
-        <span className="text-[11px] text-forest-500 truncate max-w-[170px]">
-          {row.return_reason}
-        </span>
-        <Link to={ROUTES.RETURN_DETAIL(row.id)} onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="xs" leftIcon={<Eye size={12} />}>
-            View
-          </Button>
-        </Link>
-      </div>
-    </GlassCard>
-  )
+      </GlassCard>
+    )
+  }
 
   return (
     <motion.div
@@ -192,15 +203,15 @@ export default function ReturnListPage() {
       className="space-y-6 max-w-7xl mx-auto"
     >
       <PageHeader
-        title="Stock Return & Redeposit Register"
-        subtitle="Manage returned equipment, unutilized consumables, and store restocking inspection"
+        title={t('transactions.returns.pageTitle')}
+        subtitle={t('transactions.returns.listSubtitle')}
         actions={
           <div className="flex items-center gap-2.5 flex-wrap">
             <ViewToggle view={viewMode} onViewChange={handleViewChange} />
             {canCreate && (
               <Link to={ROUTES.RETURNS_NEW}>
                 <Button variant="primary" size="sm" leftIcon={<RotateCcw size={15} />}>
-                  + New Stock Return
+                  {t('transactions.returns.newReturnBtn')}
                 </Button>
               </Link>
             )}
@@ -214,7 +225,7 @@ export default function ReturnListPage() {
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-forest-400" />
           <input
             type="text"
-            placeholder="Search return voucher, officer, issue ref..."
+            placeholder={t('transactions.returns.searchPlaceholderFull')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value)
@@ -236,8 +247,8 @@ export default function ReturnListPage() {
           total={returns.length}
           totalPages={totalPages}
           onPageChange={setPage}
-          emptyTitle="No stock returns found"
-          emptyDescription="There are no stock return vouchers matching your search query."
+          emptyTitle={t('transactions.returns.emptyTitle')}
+          emptyDescription={t('transactions.returns.emptyDesc')}
         />
       ) : (
         <CardView
@@ -249,6 +260,8 @@ export default function ReturnListPage() {
           total={returns.length}
           totalPages={totalPages}
           onPageChange={setPage}
+          emptyTitle={t('transactions.returns.emptyTitle')}
+          emptyDescription={t('transactions.returns.emptyDesc')}
         />
       )}
     </motion.div>

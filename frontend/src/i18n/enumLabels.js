@@ -12,8 +12,10 @@ export const ENUM_TRANSLATION_KEYS = {
   CONSUMABLE_STOCK: 'itemType.consumableStock',
 
   // Conditions
+  NEW: 'condition.new',
   GOOD: 'condition.good',
   FAIR: 'condition.fair',
+  POOR: 'condition.poor',
   DAMAGED: 'condition.damaged',
   SCRAP: 'condition.scrap',
 
@@ -24,6 +26,7 @@ export const ENUM_TRANSLATION_KEYS = {
   DISPATCHED_TO_VENDOR: 'operationalStatus.dispatchedToVendor',
   PENDING_CONDEMNATION: 'operationalStatus.pendingCondemnation',
   PENDING_DISPOSAL: 'operationalStatus.pendingDisposal',
+  NON_FUNCTIONAL: 'operationalStatus.nonFunctional',
   DISPOSED: 'operationalStatus.disposed',
 
   // Classifications
@@ -60,6 +63,14 @@ export const ENUM_TRANSLATION_KEYS = {
   SCRAP_SALE: 'disposalMethod.scrapSale',
   E_WASTE_RECYCLING: 'disposalMethod.eWasteRecycling',
   DESTRUCTION: 'disposalMethod.destruction',
+  BUYBACK: 'disposalMethod.buyback',
+  DESTRUCTION_BURIAL: 'disposalMethod.destructionBurial',
+  DONATION_TRANSFER: 'disposalMethod.donationTransfer',
+
+  // Condemnation Reasons
+  BEYOND_ECONOMIC_REPAIR: 'condemnationReason.beyondEconomicRepair',
+  DAMAGED_BEYOND_RECOVERY: 'condemnationReason.damagedBeyondRecovery',
+  DESTROYED: 'condemnationReason.destroyed',
 
   // Alert Types
   INACTIVITY: 'alertType.inactivity',
@@ -94,10 +105,49 @@ export const ENUM_TRANSLATION_KEYS = {
   IT_ROOM: 'locationType.itRoom',
   ARCHIVE: 'locationType.archive',
 
-  // Scope Types
+  // Scope Types & Verification Sessions / Results
   FULL_OFFICE: 'scopeType.fullOffice',
   LOCATION: 'scopeType.location',
   CATEGORY: 'scopeType.category',
+  PLANNED: 'status.planned',
+
+  // Discrepancy Flags & Verification Results
+  NONE: 'verification.enums.none',
+  NOT_FOUND: 'verification.enums.notFound',
+  UNEXPECTED_ITEM: 'verification.enums.unexpectedItem',
+  LOCATION_MISMATCH: 'verification.enums.locationMismatch',
+  CONDITION_MISMATCH: 'verification.enums.conditionMismatch',
+  DUPLICATE_SUSPECTED: 'verification.enums.duplicateSuspected',
+  MATCHED_VERIFIED: 'verification.enums.matchedVerified',
+  UNKNOWN_BARCODE: 'verification.enums.unknownBarcode',
+  DUPLICATE_SCAN_REPEATED: 'verification.enums.duplicateScanRepeated',
+  IGNORED: 'verification.enums.ignored',
+
+  // Extra Location Types & Audit Events
+  RECORD_ROOM: 'locationType.recordRoom',
+  OPEN_YARD: 'locationType.openYard',
+  VERIFICATION_SCAN: 'auditEvents.verificationScan',
+  VERIFICATION_AUDIT: 'auditEvents.verificationAudit',
+  VERIFY_UPDATE: 'auditEvents.verifyUpdate',
+  MAINTENANCE: 'auditEvents.maintenance',
+  RECEIPT: 'auditEvents.receipt',
+  ISSUE: 'auditEvents.issue',
+  RETURN: 'auditEvents.return',
+  TRANSFER: 'auditEvents.transfer',
+}
+
+/**
+ * Translates seeded master records (default categories, UOMs, offices) by code
+ * while keeping custom user-entered master names verbatim as fallback.
+ */
+export function translateMasterName(t, kind, code, fallbackName) {
+  if (!code) return fallbackName || ''
+  const key = `master.${kind}.${code}`
+  const translated = t(key)
+  if (translated && translated !== key) {
+    return translated
+  }
+  return fallbackName || code
 }
 
 /**

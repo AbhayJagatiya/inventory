@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -16,28 +16,31 @@ import { extractApiError } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../i18n'
+import { translateMasterName } from '../../i18n/enumLabels'
 
-const assetSchema = z.object({
-  item_type: z.enum(['DURABLE_ASSET', 'CONSUMABLE_STOCK']),
-  item_name: z.string().min(2, 'Item name is required'),
-  category_id: z.string().min(1, 'Please select a category'),
-  location_id: z.string().min(1, 'Please select a storage room / location'),
-  uom: z.string().min(1, 'Unit of measure is required'),
-  brand: z.string().optional(),
-  model_number: z.string().optional(),
-  serial_number: z.string().optional(),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unit_purchase_cost: z.coerce.number().min(0, 'Unit cost must be non-negative'),
-  purchase_date: z.string().min(1, 'Acquisition date is required'),
-  invoice_number: z.string().optional(),
-  supplier_name: z.string().optional(),
-  condition: z.enum(['GOOD', 'FAIR', 'DAMAGED', 'SCRAP']),
-  current_custodian: z.string().optional(),
-  current_department: z.string().optional(),
-  min_stock_level: z.coerce.number().optional(),
-  is_legacy: z.boolean().default(false),
-  remarks: z.string().optional(),
-})
+function createAssetSchema(t) {
+  return z.object({
+    item_type: z.enum(['DURABLE_ASSET', 'CONSUMABLE_STOCK']),
+    item_name: z.string().min(2, t('inventory.assetForm.validation.itemNameMin')),
+    category_id: z.string().min(1, t('inventory.assetForm.validation.categoryRequired')),
+    location_id: z.string().min(1, t('inventory.assetForm.validation.locationRequired')),
+    uom: z.string().min(1, t('inventory.assetForm.validation.uomRequired')),
+    brand: z.string().optional(),
+    model_number: z.string().optional(),
+    serial_number: z.string().optional(),
+    quantity: z.coerce.number().min(1, t('inventory.assetForm.validation.quantityPositive')),
+    unit_purchase_cost: z.coerce.number().min(0, t('inventory.assetForm.validation.costNegative')),
+    purchase_date: z.string().min(1, t('validation.required')),
+    invoice_number: z.string().optional(),
+    supplier_name: z.string().optional(),
+    condition: z.enum(['NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED', 'SCRAP']),
+    current_custodian: z.string().optional(),
+    current_department: z.string().optional(),
+    min_stock_level: z.coerce.number().optional(),
+    is_legacy: z.boolean().default(false),
+    remarks: z.string().optional(),
+  })
+}
 
 export default function AddEditAssetPage() {
   const { id } = useParams()
@@ -50,6 +53,8 @@ export default function AddEditAssetPage() {
   const [categories, setCategories] = useState([])
   const [locations, setLocations] = useState([])
   const [uoms, setUoms] = useState([])
+
+  const assetSchema = useMemo(() => createAssetSchema(t), [t])
 
   const {
     register,
@@ -116,6 +121,7 @@ export default function AddEditAssetPage() {
             unit_purchase_cost: item.unit_purchase_cost ?? 0,
             purchase_date: item.purchase_date || new Date().toISOString().split('T')[0],
             invoice_number: item.invoice_number || '',
+            supplier_name: item.supplier_name || '',
             condition: item.condition || 'GOOD',
             current_custodian: item.current_custodian || '',
             current_department: item.current_department || '',
@@ -125,7 +131,7 @@ export default function AddEditAssetPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setApiError(extractApiError(err) || 'Unable to retrieve item record from database.')
+          setApiError(extractApiError(err) || t('inventory.assetForm.loadError'))
         }
       }
     }
@@ -239,7 +245,7 @@ export default function AddEditAssetPage() {
                 <option value="" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.selectCategoryOpt')}</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                    {c.name} ({c.code})
+                    {translateMasterName(t, 'category', c.code, c.name)} ({c.code})
                   </option>
                 ))}
               </select>
@@ -347,8 +353,10 @@ export default function AddEditAssetPage() {
                 {...register('condition')}
                 className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               >
+                <option value="NEW" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condNew')}</option>
                 <option value="GOOD" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condGood')}</option>
                 <option value="FAIR" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condFair')}</option>
+                <option value="POOR" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condPoor')}</option>
                 <option value="DAMAGED" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condDamaged')}</option>
                 <option value="SCRAP" className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">{t('inventory.assetForm.condScrap')}</option>
               </select>
@@ -403,7 +411,7 @@ export default function AddEditAssetPage() {
               >
                 {uoms.map((u) => (
                   <option key={u.id} value={u.code} className="bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white">
-                    {u.code} - {u.name}
+                    {u.code} - {translateMasterName(t, 'uom', u.code, u.name)}
                   </option>
                 ))}
               </select>

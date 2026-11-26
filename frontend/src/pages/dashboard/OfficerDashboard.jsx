@@ -312,7 +312,7 @@ function OfficerDashboard() {
           </div>
 
           <div className="mt-4 pt-3 border-t border-forest-500/10 dark:border-forest-400/10 flex items-center justify-between text-xs text-forest-600 dark:text-forest-400">
-            <span>{t('dashboard.officer.criticalAlertsActive')}</span>
+            <span>{t('dashboard.officer.criticalAlertsActive', { count: alertsData?.critical_count ?? 0 })}</span>
             <span className="font-bold text-rose-600 dark:text-rose-400 font-mono">
               {alertsData?.critical_count ?? 0}
             </span>

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.common_schemas import ResponseMeta, StandardSuccessResponse
 from app.core.database import get_db
 from app.core.dependencies import require_permission
+from app.core.i18n import get_request_language
 from app.core.permissions import ROLE_SYSTEM_ADMIN
 
 from app.features.users.models import User
@@ -285,9 +286,10 @@ def download_session_report(
     session = VerificationService.get_session(db, session_id)
     _check_session_access(session, current_user)
 
-    csv_data, filename = VerificationService.export_session_report_csv(db, session_id)
+    lang = get_request_language()
+    csv_data, filename = VerificationService.export_session_report_csv(db, session_id, lang=lang)
     return StreamingResponse(
-        iter([csv_data]),
-        media_type="text/csv",
+        iter([csv_data.encode("utf-8-sig")]),
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
 import { Camera, CameraOff, Upload, RefreshCw, AlertCircle, Loader2 } from 'lucide-react'
 import Button from '../common/Button'
+import { useLanguage } from '../../i18n'
 
 const SUPPORTED_FORMATS = [
   Html5QrcodeSupportedFormats.QR_CODE,
@@ -19,8 +20,9 @@ export default function QrCameraScanner({
   onError,
   autoStart = false,
   compact = false,
-  label = 'Camera QR / Barcode Scanner',
+  label,
 }) {
+  const { t } = useLanguage()
   const rawId = useId()
   const readerElementId = `qr-reader-${rawId.replace(/:/g, '')}`
   const scannerRef = useRef(null)
@@ -95,7 +97,10 @@ export default function QrCameraScanner({
       const devices = await navigator.mediaDevices.enumerateDevices()
       const videoInputs = devices
         .filter((d) => d.kind === 'videoinput')
-        .map((d, idx) => ({ id: d.deviceId, label: d.label || `Camera ${idx + 1}` }))
+        .map((d, idx) => ({
+          id: d.deviceId,
+          label: d.label || t('verification.camera.cameraLabelN', { n: idx + 1 }),
+        }))
       if (!unmountedRef.current) {
         setCameras(videoInputs)
       }
@@ -174,9 +179,7 @@ export default function QrCameraScanner({
       setIsScanning(true)
       refreshCameraListPassive()
     } catch (err) {
-      const msg =
-        err?.message ||
-        'Unable to access camera. Allow browser camera permission or use Manual Entry / Image Upload.'
+      const msg = err?.message || t('verification.camera.accessErr')
       releaseAllVideoTracks()
       if (!unmountedRef.current) {
         setCameraError(msg)
@@ -206,8 +209,7 @@ export default function QrCameraScanner({
       await fileScanner.clear()
       handleDecoded(decodedText)
     } catch (err) {
-      const msg =
-        'Could not detect a valid QR code or barcode in the uploaded image. Try a clearer image or manual entry.'
+      const msg = t('verification.camera.imageDecodeErr')
       setCameraError(msg)
       if (onError) onError(err?.message || msg)
     }
@@ -230,10 +232,10 @@ export default function QrCameraScanner({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-100">
           <Camera size={15} className="text-emerald-600 dark:text-emerald-400" />
-          <span>{label}</span>
+          <span>{label || t('verification.camera.title')}</span>
           {isScanning && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
-              Camera Active
+              {t('verification.camera.cameraActive')}
             </span>
           )}
         </div>
@@ -249,10 +251,10 @@ export default function QrCameraScanner({
               }}
               className="px-2.5 py-1 text-xs rounded-lg bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 text-slate-800 dark:text-slate-100"
             >
-              <option value="">Default Camera</option>
+              <option value="">{t('verification.camera.defaultCamera')}</option>
               {cameras.map((cam, idx) => (
                 <option key={cam.id || idx} value={cam.id}>
-                  {cam.label || `Camera ${idx + 1}`}
+                  {cam.label || t('verification.camera.cameraLabelN', { n: idx + 1 })}
                 </option>
               ))}
             </select>
@@ -273,7 +275,7 @@ export default function QrCameraScanner({
             leftIcon={<Upload size={12} />}
             onClick={() => fileInputRef.current?.click()}
           >
-            Scan QR Image
+            {t('verification.camera.scanImageBtn')}
           </Button>
 
           {!isScanning && !isStarting ? (
@@ -284,7 +286,7 @@ export default function QrCameraScanner({
               leftIcon={<Camera size={12} />}
               onClick={() => startScanner()}
             >
-              Start Camera
+              {t('verification.camera.startCamera')}
             </Button>
           ) : (
             <>
@@ -296,7 +298,7 @@ export default function QrCameraScanner({
                   leftIcon={<RefreshCw size={12} />}
                   onClick={() => startScanner()}
                 >
-                  Restart
+                  {t('verification.camera.restartBtn')}
                 </Button>
               )}
               <Button
@@ -306,7 +308,7 @@ export default function QrCameraScanner({
                 leftIcon={<CameraOff size={12} />}
                 onClick={stopScanner}
               >
-                Stop Camera
+                {t('verification.camera.stopCamera')}
               </Button>
             </>
           )}
@@ -314,11 +316,15 @@ export default function QrCameraScanner({
       </div>
 
       {/* Live Video Mount Point + Immediate Loading Feedback */}
-      <div className={`relative w-full overflow-hidden rounded-xl bg-slate-900/90 text-white ${isStarting || isScanning ? (compact ? 'min-h-[220px]' : 'min-h-[260px]') : 'hidden'}`}>
+      <div
+        className={`relative w-full overflow-hidden rounded-xl bg-slate-900/90 text-white ${
+          isStarting || isScanning ? (compact ? 'min-h-[220px]' : 'min-h-[260px]') : 'hidden'
+        }`}
+      >
         {isStarting && !isScanning && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 text-xs text-slate-200 bg-slate-900/95">
             <Loader2 size={22} className="animate-spin text-emerald-400" />
-            <span>Opening camera stream...</span>
+            <span>{t('verification.camera.startingHint')}</span>
           </div>
         )}
         <div id={readerElementId} className="w-full h-full" />
@@ -326,8 +332,7 @@ export default function QrCameraScanner({
 
       {!isScanning && !isStarting && !cameraError && (
         <p className="text-[11px] text-slate-500 dark:text-slate-400">
-          Click <strong>Start Camera</strong> to scan QR codes or barcodes using your desktop webcam or mobile camera,
-          or upload a QR image with <strong>Scan QR Image</strong>.
+          {t('verification.camera.idleHint')}
         </p>
       )}
 

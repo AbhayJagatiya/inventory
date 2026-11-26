@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  ArrowLeft, Printer, CheckCircle2, AlertCircle, Building,
-  FileText, ShieldCheck, Clock, User, Package
+  ArrowLeft, Printer, CheckCircle2, Building,
+  FileText, ShieldCheck, Clock, Package
 } from 'lucide-react'
 import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
@@ -17,12 +17,11 @@ import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import { useLanguage } from '../../i18n'
-import { translateEnum } from '../../i18n/enumLabels'
+import { translateEnum, translateMasterName } from '../../i18n/enumLabels'
 import toast from 'react-hot-toast'
 
 export default function ReceiptDetailPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { user, hasPermission } = useAuth()
   const { t } = useLanguage()
 
@@ -41,7 +40,7 @@ export default function ReceiptDetailPage() {
     setShowConfirmPost(false)
     setIsPosting(true)
     try {
-      await postReceipt(id, user?.full_name || 'Store Officer')
+      await postReceipt(id, user?.full_name || t('transactions.returns.detail.storeOfficer'))
       toast.success(t('transactions.receipts.messages.posted'))
       refetch()
     } catch (err) {
@@ -107,20 +106,24 @@ export default function ReceiptDetailPage() {
           <div className="flex items-center gap-2 font-medium">
             <ShieldCheck size={18} className="text-emerald-700" />
             <span>
-              <strong>VOUCHER POSTED:</strong> Stock balances incremented on{' '}
-              {formatDate(receipt.posted_at || receipt.receipt_date)} by {receipt.posted_by || 'Store Officer'}.
-              Immutable government record.
+              <strong>{t('transactions.receipts.detailPage.voucherPostedLabel')}</strong>{' '}
+              {t('transactions.receipts.detailPage.voucherPostedDesc', {
+                date: formatDate(receipt.posted_at || receipt.receipt_date),
+                by: receipt.posted_by || t('transactions.returns.detail.storeOfficer'),
+              })}
             </span>
           </div>
-          <span className="font-mono text-emerald-800 font-bold">LOCKED</span>
+          <span className="font-mono text-emerald-800 font-bold">
+            {t('transactions.receipts.detailPage.lockedBadge')}
+          </span>
         </div>
       ) : (
         <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-between text-amber-900 text-xs">
           <div className="flex items-center gap-2 font-medium">
             <Clock size={16} className="text-amber-700" />
             <span>
-              <strong>DRAFT VOUCHER:</strong> Physical items received but not yet confirmed into store balance.
-              Review item details below before posting.
+              <strong>{t('transactions.receipts.detailPage.draftBannerLabel')}</strong>{' '}
+              {t('transactions.receipts.detailPage.draftBannerDesc')}
             </span>
           </div>
           <StatusBadge status="DRAFT" size="sm" />
@@ -133,28 +136,42 @@ export default function ReceiptDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Building size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Supplier & Procurement Details
+            {t('transactions.receipts.detailPage.sectionSupplier')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Supplier / Vendor:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.supplierVendor')}
+              </span>
               <span className="font-semibold text-slate-900 dark:text-white">{receipt.supplier_name}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Supplier Contact:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.supplierContact')}
+              </span>
               <span className="font-mono text-slate-800 dark:text-slate-200">{receipt.supplier_contact || '—'}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">PO / GeM Contract No:</span>
-              <span className="font-mono font-medium text-slate-900 dark:text-white">{receipt.po_number || 'Direct Proc.'}</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.poContract')}
+              </span>
+              <span className="font-mono font-medium text-slate-900 dark:text-white">
+                {receipt.po_number || t('transactions.receipts.directProc')}
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Supplier Invoice No:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.supplierInvoice')}
+              </span>
               <span className="font-mono text-slate-800 dark:text-slate-200">{receipt.invoice_number || '—'}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Invoice Date:</span>
-              <span className="text-slate-800 dark:text-slate-200">{receipt.invoice_date ? formatDate(receipt.invoice_date) : '—'}</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.invoiceDate')}
+              </span>
+              <span className="text-slate-800 dark:text-slate-200">
+                {receipt.invoice_date ? formatDate(receipt.invoice_date) : '—'}
+              </span>
             </div>
           </div>
         </div>
@@ -163,29 +180,43 @@ export default function ReceiptDetailPage() {
         <div className="bg-white dark:bg-[#0E1D19] rounded-2xl border border-slate-200 dark:border-emerald-500/20 p-5 shadow-sm space-y-3">
           <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide flex items-center gap-1.5 border-b border-slate-100 dark:border-emerald-500/15 pb-2">
             <Package size={14} className="text-emerald-600 dark:text-emerald-400" />
-            Receiving Custody & Office
+            {t('transactions.receipts.detailPage.sectionReceiving')}
           </h2>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Receiving Office:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.receivingOffice')}
+              </span>
               <span className="font-medium text-slate-900 dark:text-white">{receipt.receiving_office}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Store Room / Bay:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{receipt.receiving_location || 'Central Store'}</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.storeRoomBay')}
+              </span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">
+                {receipt.receiving_location || t('transactions.receipts.detailPage.centralStore')}
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Receiving Officer:</span>
-              <span className="font-medium text-slate-800 dark:text-slate-200">{receipt.receiving_officer || 'Store Officer'}</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.receivingOfficer')}
+              </span>
+              <span className="font-medium text-slate-800 dark:text-slate-200">
+                {receipt.receiving_officer || t('transactions.returns.detail.storeOfficer')}
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Delivery Challan Attachment:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.challanAttachment')}
+              </span>
               <span className="font-medium text-emerald-600 dark:text-emerald-400 underline cursor-pointer">
                 {receipt.attachment_name || 'Challan_Document.pdf'}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-slate-100 dark:border-emerald-500/10">
-              <span className="text-slate-500 dark:text-slate-400">Total Accepted Value:</span>
+              <span className="text-slate-500 dark:text-slate-400">
+                {t('transactions.receipts.detailPage.totalAcceptedVal')}
+              </span>
               <span className="font-mono font-bold text-sm text-slate-900 dark:text-white">
                 {formatCurrency(receipt.total_accepted_value || 0)}
               </span>
@@ -199,9 +230,11 @@ export default function ReceiptDetailPage() {
         <div className="px-5 py-4 border-b border-slate-200 dark:border-emerald-500/15 flex items-center justify-between bg-slate-50/70 dark:bg-[#0A1513]">
           <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <FileText size={15} className="text-emerald-600 dark:text-emerald-400" />
-            Itemized Goods Inward Schedule ({receipt.items?.length || 0})
+            {t('transactions.receipts.detailPage.scheduleHeading', { count: receipt.items?.length || 0 })}
           </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">Values in INR (₹)</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {t('transactions.receipts.detailPage.valuesInInr')}
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -209,14 +242,18 @@ export default function ReceiptDetailPage() {
             <thead className="bg-slate-100/70 dark:bg-[#0A1513] border-b border-slate-200 dark:border-emerald-500/20 text-slate-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="py-2.5 px-4">#</th>
-                <th className="py-2.5 px-4">Item Name & Type</th>
-                <th className="py-2.5 px-3 text-center">Ordered</th>
-                <th className="py-2.5 px-3 text-center">Received</th>
-                <th className="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">Accepted</th>
-                <th className="py-2.5 px-3 text-center text-rose-600 dark:text-rose-400">Rejected</th>
-                <th className="py-2.5 px-4">Rejection Reason</th>
-                <th className="py-2.5 px-4 text-right">Unit Cost</th>
-                <th className="py-2.5 px-4 text-right">Accepted Total</th>
+                <th className="py-2.5 px-4">{t('transactions.receipts.detailPage.colItemType')}</th>
+                <th className="py-2.5 px-3 text-center">{t('transactions.receipts.detailPage.colOrdered')}</th>
+                <th className="py-2.5 px-3 text-center">{t('transactions.receipts.detailPage.colReceived')}</th>
+                <th className="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">
+                  {t('transactions.receipts.detailPage.colAccepted')}
+                </th>
+                <th className="py-2.5 px-3 text-center text-rose-600 dark:text-rose-400">
+                  {t('transactions.receipts.detailPage.colRejected')}
+                </th>
+                <th className="py-2.5 px-4">{t('transactions.receipts.detailPage.colRejectionReason')}</th>
+                <th className="py-2.5 px-4 text-right">{t('transactions.receipts.detailPage.colUnitCost')}</th>
+                <th className="py-2.5 px-4 text-right">{t('transactions.receipts.detailPage.colAcceptedTotal')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-emerald-500/10 text-slate-800 dark:text-slate-200">
@@ -226,7 +263,7 @@ export default function ReceiptDetailPage() {
                   <td className="py-3 px-4">
                     <span className="font-semibold text-slate-900 dark:text-white block text-xs">{line.item_name}</span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {line.item_type === 'DURABLE_ASSET' ? 'Durable Asset' : 'Consumable Stock'} · {line.uom}
+                      {translateEnum(t, line.item_type)} · {translateMasterName(t, 'uom', line.uom, line.uom)}
                     </span>
                     {line.serial_numbers && line.serial_numbers.length > 0 && (
                       <div className="mt-1 flex flex-wrap gap-1">
@@ -264,7 +301,7 @@ export default function ReceiptDetailPage() {
             <tfoot className="bg-slate-50 dark:bg-[#0A1513] border-t border-slate-200 dark:border-emerald-500/20 font-semibold text-xs text-slate-900 dark:text-white">
               <tr>
                 <td colSpan={8} className="py-3 px-4 text-right uppercase tracking-wide">
-                  Total Accepted Inward Valuation:
+                  {t('transactions.receipts.detailPage.totalValuationLabel')}
                 </td>
                 <td className="py-3 px-4 text-right font-mono text-sm text-emerald-700 dark:text-emerald-400 font-bold">
                   {formatCurrency(receipt.total_accepted_value || 0)}
@@ -280,9 +317,9 @@ export default function ReceiptDetailPage() {
         isOpen={showConfirmPost}
         onClose={() => setShowConfirmPost(false)}
         onConfirm={handleConfirmPost}
-        title="Confirm & Post Goods Inward"
-        message="Posting this receipt will permanently update store inventory records. This operation cannot be reversed without an authorized administrative correction voucher. Proceed?"
-        confirmText="Yes, Post to Inventory"
+        title={t('transactions.receipts.detailPage.confirmTitle')}
+        message={t('transactions.receipts.detailPage.confirmMessage')}
+        confirmText={t('transactions.receipts.detailPage.confirmBtn')}
         variant="primary"
       />
     </div>

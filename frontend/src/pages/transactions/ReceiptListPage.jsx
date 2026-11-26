@@ -169,7 +169,7 @@ export default function ReceiptListPage() {
             <span>{formatDate(row.receipt_date)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-forest-500">{t('transactions.receipts.itemsCount')}</span>
+            <span className="text-forest-500">{t('transactions.receipts.receivedItems')}:</span>
             <span className="font-bold font-mono">{row.items?.length || 0} {row.items?.length === 1 ? t('transactions.common.lineItem') : t('transactions.common.lineItems')}</span>
           </div>
           <div className="flex items-center justify-between">

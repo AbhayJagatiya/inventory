@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ShieldAlert, Plus, Filter, Search, RotateCcw,
-  CheckCircle, Clock, AlertTriangle, ArrowRight,
-  FileText, ShieldCheck, X, Trash2
+  ShieldAlert, Plus, Search, RotateCcw,
+  ArrowRight, Trash2
 } from 'lucide-react'
 import { getCondemnations, createCondemnation } from '../../api/disposal.api'
 import { getItems } from '../../api/inventory.api'
@@ -12,15 +11,16 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import Modal from '../../components/common/Modal'
+import StatusBadge from '../../components/common/StatusBadge'
 import { DataTable } from '../../components/tables/DataTable'
 import ErrorState from '../../components/feedback/ErrorState'
-import EmptyState from '../../components/feedback/EmptyState'
-import { formatNumber, formatDate, formatDateTime, formatCurrency } from '../../utils/formatters'
+import { formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 
 export default function CondemnationListPage() {
   const { user, hasPermission } = useAuth()
@@ -59,11 +59,11 @@ export default function CondemnationListPage() {
           item_id: proposeItemParam,
           item_condition: 'DAMAGED',
           assessed_scrap_value: 0,
-          inspector_remarks: 'Nominated from Dead Stock Register',
+          inspector_remarks: t('deadStock.condemnation.defaultNominatedRemark'),
         },
       ])
     }
-  }, [searchParams])
+  }, [searchParams, t])
 
   // Fetch available store items for selection
   const { data: itemsRes } = useQuery({
@@ -112,14 +112,19 @@ export default function CondemnationListPage() {
       queryClient.invalidateQueries({ queryKey: ['dead-stock-register'] })
       queryClient.invalidateQueries({ queryKey: ['classification-summary'] })
       const created = res?.data || res
-      toast.success(`Condemnation proposal ${created.request_number} submitted to Survey Committee!`)
+      toast.success(
+        t('deadStock.condemnation.toastSubmittedWithNo', { number: created.request_number || '' })
+      )
       setIsNewModalOpen(false)
       if (created.id) {
         navigate(ROUTES.CONDEMNATION_DETAIL(created.id))
       }
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to submit condemnation.'
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        t('deadStock.condemnation.toastSubmitFail')
       toast.error(msg)
     },
   })
@@ -138,7 +143,7 @@ export default function CondemnationListPage() {
 
   const handleRemoveItemLine = (idx) => {
     if (proposalItems.length === 1) {
-      toast.error('A proposal must include at least one item.')
+      toast.error(t('deadStock.condemnation.errMinOneAsset'))
       return
     }
     setProposalItems(proposalItems.filter((_, i) => i !== idx))
@@ -153,16 +158,16 @@ export default function CondemnationListPage() {
   const handleCreateSubmit = (e) => {
     e.preventDefault()
     if (!officeId) {
-      toast.error('Unable to determine user office identity.')
+      toast.error(t('deadStock.condemnation.errOfficeId'))
       return
     }
     if (!conditionSummary.trim() || conditionSummary.trim().length < 5) {
-      toast.error('Please provide a condition summary of at least 5 characters.')
+      toast.error(t('deadStock.condemnation.errSummaryMin'))
       return
     }
     const hasEmptyItem = proposalItems.some((itm) => !itm.item_id)
     if (hasEmptyItem) {
-      toast.error('Please select an item for all proposal rows.')
+      toast.error(t('deadStock.condemnation.errSelectAllItems'))
       return
     }
 
@@ -182,21 +187,24 @@ export default function CondemnationListPage() {
   const columns = [
     {
       key: 'request_number',
-      header: 'Proposal Reference & Reason',
+      header: t('deadStock.condemnation.colProposalRef'),
       render: (_, row) => (
         <div>
           <div className="font-mono font-bold text-slate-900 dark:text-emerald-400">
             {row.request_number}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            Reason: <span className="font-semibold text-slate-700 dark:text-slate-300">{row.reason_code}</span>
+            {t('deadStock.condemnation.reasonPrefix')}{' '}
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              {translateEnum(t, row.reason_code)}
+            </span>
           </div>
         </div>
       ),
     },
     {
       key: 'condition_summary',
-      header: 'Condition Summary',
+      header: t('deadStock.condemnation.colConditionSummary'),
       render: (_, row) => (
         <p className="text-xs text-slate-700 dark:text-slate-300 max-w-sm truncate" title={row.condition_summary}>
           {row.condition_summary}
@@ -205,38 +213,21 @@ export default function CondemnationListPage() {
     },
     {
       key: 'items_count',
-      header: 'Items Nominated',
+      header: t('deadStock.condemnation.colItemsNominated'),
       render: (_, row) => (
         <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
-          {row.items?.length || 1} asset(s)
+          {t('deadStock.condemnation.assetsCount', { count: row.items?.length || 1 })}
         </span>
       ),
     },
     {
       key: 'status',
-      header: 'Workflow Stage',
-      render: (_, row) => {
-        const badgeColors = {
-          SUBMITTED: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-          UNDER_REVIEW: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-          APPROVED: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-          REJECTED: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
-          MORE_INFO_REQUIRED: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
-        }
-        return (
-          <span
-            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-              badgeColors[row.status] || 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {row.status}
-          </span>
-        )
-      },
+      header: t('deadStock.condemnation.colWorkflowStage'),
+      render: (_, row) => <StatusBadge status={row.status} size="xs" />,
     },
     {
       key: 'created_at',
-      header: 'Submitted On',
+      header: t('deadStock.condemnation.colSubmittedOn'),
       render: (_, row) => (
         <span className="text-xs text-slate-600 dark:text-slate-400">
           {formatDate(row.created_at)}
@@ -245,12 +236,12 @@ export default function CondemnationListPage() {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: t('deadStock.condemnation.colActions'),
       align: 'right',
       render: (_, row) => (
         <Link to={ROUTES.CONDEMNATION_DETAIL(row.id)}>
           <Button variant="secondary" size="xs" rightIcon={<ArrowRight size={12} />}>
-            Review & Sanction
+            {t('deadStock.condemnation.reviewSanctionBtn')}
           </Button>
         </Link>
       ),
@@ -260,13 +251,13 @@ export default function CondemnationListPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Condemnation Proposals & Sanction Workflow"
-        subtitle="Formal survey, condition assessment, and administrative sanction under Gujarat Panchayat Rules"
+        title={t('deadStock.condemnation.pageTitle')}
+        subtitle={t('deadStock.condemnation.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.DEAD_STOCK_REGISTER}>
               <Button variant="secondary" size="sm" leftIcon={<ShieldAlert size={14} />}>
-                Dead Stock Register
+                {t('deadStock.condemnation.btnDeadStockRegister')}
               </Button>
             </Link>
             {hasPermission(PERMISSIONS.CONDEMN_SUBMIT) && (
@@ -276,7 +267,7 @@ export default function CondemnationListPage() {
                 leftIcon={<Plus size={14} />}
                 onClick={() => setIsNewModalOpen(true)}
               >
-                New Condemnation Proposal
+                {t('deadStock.condemnation.btnNewProposal')}
               </Button>
             )}
           </div>
@@ -291,13 +282,15 @@ export default function CondemnationListPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search proposals by number, reason, description..."
+            placeholder={t('deadStock.condemnation.searchPlaceholderFull')}
             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <label className="font-semibold text-slate-600 dark:text-slate-400">Stage:</label>
+          <label className="font-semibold text-slate-600 dark:text-slate-400">
+            {t('deadStock.condemnation.stageLabel')}
+          </label>
           <select
             value={selectedStatus}
             onChange={(e) => {
@@ -306,12 +299,12 @@ export default function CondemnationListPage() {
             }}
             className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
-            <option value="ALL">All Stages</option>
-            <option value="SUBMITTED">Submitted</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="APPROVED">Approved (Sanctioned)</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="MORE_INFO_REQUIRED">More Info Required</option>
+            <option value="ALL">{t('deadStock.condemnation.allStages')}</option>
+            <option value="SUBMITTED">{t('deadStock.condemnation.stageSubmitted')}</option>
+            <option value="UNDER_REVIEW">{t('deadStock.condemnation.stageUnderReview')}</option>
+            <option value="APPROVED">{t('deadStock.condemnation.stageApproved')}</option>
+            <option value="REJECTED">{t('deadStock.condemnation.stageRejected')}</option>
+            <option value="MORE_INFO_REQUIRED">{t('deadStock.condemnation.stageMoreInfo')}</option>
           </select>
 
           <Button
@@ -324,7 +317,7 @@ export default function CondemnationListPage() {
               setPage(1)
             }}
           >
-            Reset
+            {t('actions.reset')}
           </Button>
         </div>
       </GlassCard>
@@ -332,11 +325,11 @@ export default function CondemnationListPage() {
       {/* Main Proposals Table */}
       {isError ? (
         <ErrorState
-          title="Error Loading Condemnation Proposals"
+          title={t('deadStock.condemnation.loadErrorTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to fetch condemnation proposals from PostgreSQL. Verify FastAPI backend is online.'
+            t('deadStock.condemnation.loadErrorMsg')
           }
           onRetry={refetch}
         />
@@ -351,8 +344,8 @@ export default function CondemnationListPage() {
           totalPages={totalPages}
           onPageChange={setPage}
           onLimitChange={setLimit}
-          emptyTitle="No Condemnation Proposals"
-          emptyDescription="There are no condemnation proposals recorded in the database for the active criteria."
+          emptyTitle={t('deadStock.condemnation.emptyTitle')}
+          emptyDescription={t('deadStock.condemnation.emptyDesc')}
         />
       )}
 
@@ -361,7 +354,7 @@ export default function CondemnationListPage() {
         <Modal
           isOpen={isNewModalOpen}
           onClose={() => setIsNewModalOpen(false)}
-          title="Submit Condemnation Proposal to Survey Committee"
+          title={t('deadStock.condemnation.modalTitle')}
           size="lg"
           footer={
             <>
@@ -370,7 +363,7 @@ export default function CondemnationListPage() {
                 size="sm"
                 onClick={() => setIsNewModalOpen(false)}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -378,43 +371,43 @@ export default function CondemnationListPage() {
                 loading={createMutation.isPending}
                 onClick={handleCreateSubmit}
               >
-                Submit Proposal
+                {t('deadStock.condemnation.submitProposalBtn')}
               </Button>
             </>
           }
         >
           <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
             <div className="p-3 rounded-xl bg-forest-500/10 dark:bg-forest-950/50 border border-forest-500/20 text-forest-800 dark:text-forest-200">
-              <strong>Procedural Note:</strong> Submitted condemnation proposals are evaluated by the Survey Committee.
-              Approved items are transitioned to <code>PENDING_DISPOSAL</code> status in PostgreSQL and locked from active store operations.
+              <strong>{t('deadStock.condemnation.proceduralNoteTitle')}</strong>{' '}
+              {t('deadStock.condemnation.proceduralNoteBody')}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Statutory Condemnation Reason <span className="text-red-500">*</span>
+                  {t('deadStock.condemnation.reasonFieldLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={reasonCode}
                   onChange={(e) => setReasonCode(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
-                  <option value="BEYOND_ECONOMIC_REPAIR">BEYOND_ECONOMIC_REPAIR (Repair cost exceeds current asset value)</option>
-                  <option value="OBSOLETE">OBSOLETE (Exceeded useful lifespan & technologically obsolete)</option>
-                  <option value="DAMAGED_BEYOND_RECOVERY">DAMAGED_BEYOND_RECOVERY (Severe physical breakdown / unserviceable)</option>
-                  <option value="DESTROYED">DESTROYED (Natural calamity / accidental damage)</option>
+                  <option value="BEYOND_ECONOMIC_REPAIR">{t('deadStock.condemnation.reasonBeyondEconomic')}</option>
+                  <option value="OBSOLETE">{t('deadStock.condemnation.reasonObsolete')}</option>
+                  <option value="DAMAGED_BEYOND_RECOVERY">{t('deadStock.condemnation.reasonDamagedBeyondRecovery')}</option>
+                  <option value="DESTROYED">{t('deadStock.condemnation.reasonDestroyed')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Condition Summary & Justification <span className="text-red-500">*</span>
+                  {t('deadStock.condemnation.summaryFieldLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={conditionSummary}
                   onChange={(e) => setConditionSummary(e.target.value)}
-                  placeholder="e.g. Obsolete computers and damaged printers in central store..."
+                  placeholder={t('deadStock.condemnation.summaryPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 />
@@ -425,7 +418,7 @@ export default function CondemnationListPage() {
             <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-emerald-500/15">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-slate-800 dark:text-slate-200">
-                  Nominated Assets for Condemnation ({proposalItems.length})
+                  {t('deadStock.condemnation.nominatedAssetsHeading', { count: proposalItems.length })}
                 </h4>
                 <Button
                   type="button"
@@ -434,7 +427,7 @@ export default function CondemnationListPage() {
                   leftIcon={<Plus size={12} />}
                   onClick={handleAddItemLine}
                 >
-                  Add Asset
+                  {t('deadStock.condemnation.addAssetBtn')}
                 </Button>
               </div>
 
@@ -445,14 +438,14 @@ export default function CondemnationListPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-slate-700 dark:text-slate-300">
-                      Asset #{idx + 1}
+                      {t('deadStock.condemnation.assetLineHeading', { num: idx + 1 })}
                     </span>
                     {proposalItems.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveItemLine(idx)}
                         className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300"
-                        title="Remove line"
+                        title={t('deadStock.condemnation.removeLineTitle')}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -462,7 +455,7 @@ export default function CondemnationListPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                        Select Asset <span className="text-red-500">*</span>
+                        {t('deadStock.condemnation.selectAssetLabel')} <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={line.item_id}
@@ -470,7 +463,7 @@ export default function CondemnationListPage() {
                         className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0E1D19] text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                         required
                       >
-                        <option value="">-- Choose Asset --</option>
+                        <option value="">{t('deadStock.condemnation.chooseAssetOpt')}</option>
                         {availableItems.map((itm) => (
                           <option key={itm.id} value={itm.id}>
                             {itm.item_code} - {itm.item_name}
@@ -481,23 +474,23 @@ export default function CondemnationListPage() {
 
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                        Inspection Condition
+                        {t('deadStock.condemnation.inspectionConditionLabel')}
                       </label>
                       <select
                         value={line.item_condition}
                         onChange={(e) => handleItemChange(idx, 'item_condition', e.target.value)}
                         className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0E1D19] text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                       >
-                        <option value="DAMAGED">Damaged (Faulty / Broken)</option>
-                        <option value="SCRAP">Scrap (Uneconomical / Waste)</option>
-                        <option value="POOR">Poor (Severely degraded)</option>
-                        <option value="OBSOLETE">Obsolete (End of service)</option>
+                        <option value="DAMAGED">{t('deadStock.condemnation.condDamagedOpt')}</option>
+                        <option value="SCRAP">{t('deadStock.condemnation.condScrapOpt')}</option>
+                        <option value="POOR">{t('deadStock.condemnation.condPoorOpt')}</option>
+                        <option value="OBSOLETE">{t('deadStock.condemnation.condObsoleteOpt')}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                        Estimated Scrap Realization (₹)
+                        {t('deadStock.condemnation.estScrapValueLabel')}
                       </label>
                       <input
                         type="number"
@@ -515,7 +508,7 @@ export default function CondemnationListPage() {
                       type="text"
                       value={line.inspector_remarks}
                       onChange={(e) => handleItemChange(idx, 'inspector_remarks', e.target.value)}
-                      placeholder="Technical defect details / inspection notes..."
+                      placeholder={t('deadStock.condemnation.inspectorRemarksPlaceholder')}
                       className="w-full px-2.5 py-1.5 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0E1D19] text-slate-900 dark:text-white text-xs placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                     />
                   </div>

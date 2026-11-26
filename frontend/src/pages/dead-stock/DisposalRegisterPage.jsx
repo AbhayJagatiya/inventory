@@ -2,9 +2,8 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Trash2, Plus, Filter, Search, RotateCcw,
-  CheckCircle, DollarSign, ShieldAlert, FileText,
-  Clock, ShieldCheck, ArrowRight, Building, X
+  Trash2, Plus, Search, RotateCcw,
+  DollarSign, ShieldAlert, ShieldCheck
 } from 'lucide-react'
 import {
   getDisposals,
@@ -15,16 +14,16 @@ import PageHeader from '../../components/layout/PageHeader'
 import Button from '../../components/common/Button'
 import GlassCard from '../../components/common/GlassCard'
 import Modal from '../../components/common/Modal'
+import StatusBadge from '../../components/common/StatusBadge'
 import { DataTable } from '../../components/tables/DataTable'
 import ErrorState from '../../components/feedback/ErrorState'
-import EmptyState from '../../components/feedback/EmptyState'
-import { CardSkeleton } from '../../components/feedback/LoadingSkeleton'
 import { formatCurrency, formatNumber, formatDate } from '../../utils/formatters'
 import { ROUTES } from '../../constants/routes'
 import { useAuth } from '../../context/AuthContext'
 import { PERMISSIONS } from '../../constants/permissions'
 import toast from 'react-hot-toast'
 import { useLanguage } from '../../i18n'
+import { translateEnum } from '../../i18n/enumLabels'
 
 export default function DisposalRegisterPage() {
   const { user, hasPermission } = useAuth()
@@ -102,12 +101,17 @@ export default function DisposalRegisterPage() {
       queryClient.invalidateQueries({ queryKey: ['classification-summary'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       const created = res?.data || res
-      toast.success(`Disposal ${created.disposal_number} executed! Assets written off from active inventory.`)
+      toast.success(
+        t('deadStock.disposal.toastExecuted', { number: created.disposal_number || '' })
+      )
       setIsModalOpen(false)
       resetModalForm()
     },
     onError: (err) => {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Disposal execution failed.'
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        t('deadStock.disposal.toastExecuteFail')
       toast.error(msg)
     },
   })
@@ -152,23 +156,23 @@ export default function DisposalRegisterPage() {
   const handleExecuteSubmit = (e) => {
     e.preventDefault()
     if (!officeId) {
-      toast.error('Unable to determine user office identity.')
+      toast.error(t('deadStock.disposal.errOfficeId'))
       return
     }
     if (!selectedRequestId) {
-      toast.error('Please select an approved condemnation proposal.')
+      toast.error(t('deadStock.disposal.errSelectProposal'))
       return
     }
     if (!recipientAgency.trim()) {
-      toast.error('Please enter the purchasing buyer / recycler agency name.')
+      toast.error(t('deadStock.disposal.errRecipient'))
       return
     }
     if (!referenceOrderNumber.trim()) {
-      toast.error('Please enter the disposal order / auction gazette reference.')
+      toast.error(t('deadStock.disposal.errOrderRef'))
       return
     }
     if (disposalLines.length === 0) {
-      toast.error('No items to dispose.')
+      toast.error(t('deadStock.disposal.errNoItems'))
       return
     }
 
@@ -191,58 +195,40 @@ export default function DisposalRegisterPage() {
   const columns = [
     {
       key: 'disposal_number',
-      header: 'Disposal Reference',
+      header: t('deadStock.disposal.colDisposalRef'),
       render: (_, row) => (
         <div>
           <div className="font-mono font-bold text-slate-900 dark:text-emerald-400">
             {row.disposal_number}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-            Order: {row.reference_order_number}
+            {t('deadStock.disposal.orderPrefix')} {row.reference_order_number}
           </div>
         </div>
       ),
     },
     {
       key: 'disposal_method',
-      header: 'Regulated Method',
-      render: (_, row) => {
-        const methodBadges = {
-          PUBLIC_AUCTION: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-          E_WASTE_RECYCLING: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-          SCRAP_SALE: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
-          BUYBACK: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
-          DESTRUCTION_BURIAL: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
-          DONATION_TRANSFER: 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20',
-        }
-        return (
-          <span
-            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-              methodBadges[row.disposal_method] || 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {row.disposal_method}
-          </span>
-        )
-      },
+      header: t('deadStock.disposal.colRegulatedMethod'),
+      render: (_, row) => <StatusBadge status={row.disposal_method} size="xs" />,
     },
     {
       key: 'recipient_agency',
-      header: 'Purchasing Agency / Recipient',
+      header: t('deadStock.disposal.colPurchasingAgency'),
       render: (_, row) => (
         <div className="max-w-xs">
           <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
             {row.recipient_agency}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            {row.items?.length || 1} asset(s) derecognized
+            {t('deadStock.disposal.assetsDerecognized', { count: row.items?.length || 1 })}
           </p>
         </div>
       ),
     },
     {
       key: 'total_sale_proceeds',
-      header: 'Proceeds Realized',
+      header: t('deadStock.disposal.colProceedsRealized'),
       align: 'right',
       render: (_, row) => (
         <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 text-sm">
@@ -252,7 +238,7 @@ export default function DisposalRegisterPage() {
     },
     {
       key: 'disposal_date',
-      header: 'Execution Date',
+      header: t('deadStock.disposal.colExecutionDate'),
       render: (_, row) => (
         <span className="text-xs text-slate-600 dark:text-slate-400">
           {formatDate(row.disposal_date)}
@@ -264,13 +250,13 @@ export default function DisposalRegisterPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Official Regulated Disposal Register & Scrap Ledger"
-        subtitle="Statutory archive of auctioned, scrapped, recycled, or destroyed government assets"
+        title={t('deadStock.disposal.pageTitle')}
+        subtitle={t('deadStock.disposal.subtitle')}
         actions={
           <div className="flex items-center gap-3">
             <Link to={ROUTES.CONDEMNATIONS}>
               <Button variant="secondary" size="sm" leftIcon={<ShieldAlert size={14} />}>
-                Condemnation Dossiers
+                {t('deadStock.disposal.btnCondemnationDossiers')}
               </Button>
             </Link>
             {hasPermission(PERMISSIONS.DISPOSAL_EXECUTE) && (
@@ -280,7 +266,7 @@ export default function DisposalRegisterPage() {
                 leftIcon={<Plus size={14} />}
                 onClick={() => setIsModalOpen(true)}
               >
-                Execute Regulated Disposal
+                {t('deadStock.disposal.btnExecuteDisposal')}
               </Button>
             )}
           </div>
@@ -292,13 +278,13 @@ export default function DisposalRegisterPage() {
         <GlassCard level={1} className="p-5 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Completed Disposals
+              {t('deadStock.disposal.kpiCompletedTitle')}
             </p>
             <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
               {formatNumber(totalRecords)}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Statutory write-offs executed
+              {t('deadStock.disposal.kpiCompletedSub')}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-forest-500/10 text-forest-600 dark:text-forest-300 border border-forest-500/20 flex items-center justify-center">
@@ -309,13 +295,13 @@ export default function DisposalRegisterPage() {
         <GlassCard level={1} className="p-5 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Total Scrap Proceeds Realized
+              {t('deadStock.disposal.kpiProceedsTitle')}
             </p>
             <p className="text-2xl sm:text-3xl font-extrabold text-emerald-700 dark:text-emerald-300 mt-1 font-mono">
               {formatCurrency(totalRealizedRevenue)}
             </p>
             <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">
-              Credited to Panchayat revenue account
+              {t('deadStock.disposal.kpiProceedsSub')}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20 flex items-center justify-center">
@@ -326,13 +312,13 @@ export default function DisposalRegisterPage() {
         <GlassCard level={1} className="p-5 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              Sanctioned Ready for Disposal
+              {t('deadStock.disposal.kpiReadyTitle')}
             </p>
             <p className="text-2xl sm:text-3xl font-extrabold text-amber-800 dark:text-amber-200 mt-1">
               {formatNumber(approvedProposals.length)}
             </p>
             <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-1">
-              Approved condemnation orders
+              {t('deadStock.disposal.kpiReadySub')}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20 flex items-center justify-center">
@@ -349,13 +335,15 @@ export default function DisposalRegisterPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search disposals by number, agency, order..."
+            placeholder={t('deadStock.disposal.searchPlaceholderFull')}
             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
         <div className="flex items-center gap-2 text-xs">
-          <label className="font-semibold text-slate-600 dark:text-slate-400">Method:</label>
+          <label className="font-semibold text-slate-600 dark:text-slate-400">
+            {t('deadStock.disposal.methodLabel')}
+          </label>
           <select
             value={selectedMethod}
             onChange={(e) => {
@@ -364,13 +352,13 @@ export default function DisposalRegisterPage() {
             }}
             className="bg-white dark:bg-[#0A1513] border border-slate-300 dark:border-emerald-500/25 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
-            <option value="ALL">All Regulated Methods</option>
-            <option value="PUBLIC_AUCTION">Public Auction</option>
-            <option value="E_WASTE_RECYCLING">E-Waste Recycling</option>
-            <option value="SCRAP_SALE">Scrap Sale</option>
-            <option value="BUYBACK">Buyback Scheme</option>
-            <option value="DESTRUCTION_BURIAL">Destruction / Burial</option>
-            <option value="DONATION_TRANSFER">Donation / Transfer</option>
+            <option value="ALL">{t('deadStock.disposal.allMethods')}</option>
+            <option value="PUBLIC_AUCTION">{t('deadStock.disposal.methodPublicAuction')}</option>
+            <option value="E_WASTE_RECYCLING">{t('deadStock.disposal.methodEWaste')}</option>
+            <option value="SCRAP_SALE">{t('deadStock.disposal.methodScrapSale')}</option>
+            <option value="BUYBACK">{t('deadStock.disposal.methodBuyback')}</option>
+            <option value="DESTRUCTION_BURIAL">{t('deadStock.disposal.methodDestructionBurial')}</option>
+            <option value="DONATION_TRANSFER">{t('deadStock.disposal.methodDonationTransfer')}</option>
           </select>
 
           <Button
@@ -383,7 +371,7 @@ export default function DisposalRegisterPage() {
               setPage(1)
             }}
           >
-            Reset
+            {t('actions.reset')}
           </Button>
         </div>
       </GlassCard>
@@ -391,11 +379,11 @@ export default function DisposalRegisterPage() {
       {/* Main Table */}
       {isError ? (
         <ErrorState
-          title="Error Loading Disposal Register"
+          title={t('deadStock.disposal.loadErrorTitle')}
           message={
             error?.response?.data?.error?.message ||
             error?.response?.data?.detail ||
-            'Unable to fetch disposal register from PostgreSQL. Verify FastAPI backend service is online.'
+            t('deadStock.disposal.loadErrorMsg')
           }
           onRetry={refetch}
         />
@@ -410,8 +398,8 @@ export default function DisposalRegisterPage() {
           totalPages={totalPages}
           onPageChange={setPage}
           onLimitChange={setLimit}
-          emptyTitle="No Disposals Recorded"
-          emptyDescription="There are no completed regulated disposals in the PostgreSQL register for this office."
+          emptyTitle={t('deadStock.disposal.emptyTitle')}
+          emptyDescription={t('deadStock.disposal.emptyDesc')}
         />
       )}
 
@@ -420,7 +408,7 @@ export default function DisposalRegisterPage() {
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          title="Execute Regulated Disposal & Asset Write-Off"
+          title={t('deadStock.disposal.modalTitle')}
           size="lg"
           footer={
             <>
@@ -429,7 +417,7 @@ export default function DisposalRegisterPage() {
                 size="sm"
                 onClick={() => setIsModalOpen(false)}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button
                 variant="primary"
@@ -437,20 +425,21 @@ export default function DisposalRegisterPage() {
                 loading={executeMutation.isPending}
                 onClick={handleExecuteSubmit}
               >
-                Execute Write-Off & Derecognize
+                {t('deadStock.disposal.btnExecuteWriteOff')}
               </Button>
             </>
           }
         >
           <form onSubmit={handleExecuteSubmit} className="space-y-4 text-xs">
             <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-200">
-              <strong>Irreversible Write-Off Warning:</strong> Executing disposal commits a <code>DISPOSAL_WRITEOFF</code> transaction to the movement ledger, sets item status to <code>DISPOSED</code> in PostgreSQL, and permanently locks the items from future store issues or transfers.
+              <strong>{t('deadStock.disposal.warningTitle')}</strong>{' '}
+              {t('deadStock.disposal.warningBody')}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Select Approved Condemnation Proposal <span className="text-red-500">*</span>
+                  {t('deadStock.disposal.selectProposalLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedRequestId}
@@ -458,35 +447,36 @@ export default function DisposalRegisterPage() {
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 >
-                  <option value="">-- Choose Sanctioned Proposal --</option>
+                  <option value="">{t('deadStock.disposal.chooseProposalOpt')}</option>
                   {approvedProposals.map((prop) => (
                     <option key={prop.id} value={prop.id}>
-                      {prop.request_number} ({prop.reason_code}) – {prop.items?.length || 1} asset(s)
+                      {prop.request_number} ({translateEnum(t, prop.reason_code)}) –{' '}
+                      {t('deadStock.disposal.optionAssetsSuffix', { count: prop.items?.length || 1 })}
                     </option>
                   ))}
                 </select>
                 {approvedProposals.length === 0 && (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
-                    No approved condemnation proposals available. Propose and approve a condemnation first.
+                    {t('deadStock.disposal.noApprovedMsg')}
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Regulated Disposal Method <span className="text-red-500">*</span>
+                  {t('deadStock.disposal.regulatedMethodLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={disposalMethod}
                   onChange={(e) => setDisposalMethod(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                 >
-                  <option value="PUBLIC_AUCTION">PUBLIC_AUCTION (Highest Bidder Open E-Auction)</option>
-                  <option value="E_WASTE_RECYCLING">E_WASTE_RECYCLING (Authorized State Pollution Control Board Recycler)</option>
-                  <option value="SCRAP_SALE">SCRAP_SALE (Direct Scrap Dealer Tender / GeM)</option>
-                  <option value="BUYBACK">BUYBACK (Vendor OEM Exchange Scheme)</option>
-                  <option value="DESTRUCTION_BURIAL">DESTRUCTION_BURIAL (Biological / Unusable Waste Burial)</option>
-                  <option value="DONATION_TRANSFER">DONATION_TRANSFER (Inter-Departmental Transfer)</option>
+                  <option value="PUBLIC_AUCTION">{t('deadStock.disposal.methodPublicAuctionOpt')}</option>
+                  <option value="E_WASTE_RECYCLING">{t('deadStock.disposal.methodEWasteOpt')}</option>
+                  <option value="SCRAP_SALE">{t('deadStock.disposal.methodScrapSaleOpt')}</option>
+                  <option value="BUYBACK">{t('deadStock.disposal.methodBuybackOpt')}</option>
+                  <option value="DESTRUCTION_BURIAL">{t('deadStock.disposal.methodDestructionBurialOpt')}</option>
+                  <option value="DONATION_TRANSFER">{t('deadStock.disposal.methodDonationTransferOpt')}</option>
                 </select>
               </div>
             </div>
@@ -494,7 +484,7 @@ export default function DisposalRegisterPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Disposal / Auction Date <span className="text-red-500">*</span>
+                  {t('deadStock.disposal.disposalDateLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -507,13 +497,13 @@ export default function DisposalRegisterPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Purchaser / Recipient Agency <span className="text-red-500">*</span>
+                  {t('deadStock.disposal.recipientAgencyLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={recipientAgency}
                   onChange={(e) => setRecipientAgency(e.target.value)}
-                  placeholder="e.g. M/s Gujarat E-Waste Recyclers"
+                  placeholder={t('deadStock.disposal.recipientPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 />
@@ -521,13 +511,13 @@ export default function DisposalRegisterPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Sanction Order / Challan No <span className="text-red-500">*</span>
+                  {t('deadStock.disposal.orderChallanLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={referenceOrderNumber}
                   onChange={(e) => setReferenceOrderNumber(e.target.value)}
-                  placeholder="e.g. DDO/AUCTION/2026/088"
+                  placeholder={t('deadStock.disposal.orderPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-emerald-500/25 rounded-xl font-mono bg-white dark:bg-[#0A1513] text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   required
                 />
@@ -538,9 +528,9 @@ export default function DisposalRegisterPage() {
             {disposalLines.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-emerald-500/15">
                 <div className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
-                  <span>Items to be Disposed ({disposalLines.length})</span>
+                  <span>{t('deadStock.disposal.itemsToDispose', { count: disposalLines.length })}</span>
                   <span className="font-mono text-emerald-700 dark:text-emerald-300">
-                    Total Proceeds: {formatCurrency(totalSaleProceeds)}
+                    {t('deadStock.disposal.totalProceedsLabel')} {formatCurrency(totalSaleProceeds)}
                   </span>
                 </div>
 
@@ -548,9 +538,9 @@ export default function DisposalRegisterPage() {
                   <table className="w-full text-left text-xs data-table">
                     <thead>
                       <tr>
-                        <th>Item ID</th>
-                        <th>Qty</th>
-                        <th>Realized Amount (₹)</th>
+                        <th>{t('deadStock.disposal.colItemId')}</th>
+                        <th>{t('deadStock.disposal.colQty')}</th>
+                        <th>{t('deadStock.disposal.colRealizedAmount')}</th>
                       </tr>
                     </thead>
                     <tbody>
