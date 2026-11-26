@@ -175,10 +175,33 @@ export const SUPPLIER_RETURN_STATUSES = {
 }
 
 export const MAINTENANCE_STATUSES = {
-  OPEN: 'OPEN',
-  IN_PROGRESS: 'IN_PROGRESS',
+  REPORTED: 'REPORTED',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  APPROVED: 'APPROVED',
+  IN_REPAIR: 'IN_REPAIR',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
+}
+
+export const MAINTENANCE_STATUS_LABELS = {
+  REPORTED: 'Reported',
+  UNDER_REVIEW: 'Under Review',
+  APPROVED: 'Approved',
+  IN_REPAIR: 'In Repair',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+}
+
+export const WARRANTY_STATUSES = {
+  ACTIVE: 'ACTIVE',
+  EXPIRING_SOON: 'EXPIRING_SOON',
+  EXPIRED: 'EXPIRED',
+}
+
+export const WARRANTY_STATUS_LABELS = {
+  ACTIVE: 'Active',
+  EXPIRING_SOON: 'Expiring Soon',
+  EXPIRED: 'Expired',
 }
 
 export const LOCATION_TYPES = {

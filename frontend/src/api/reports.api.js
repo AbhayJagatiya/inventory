@@ -16,6 +16,11 @@ const REPORT_PATHS = {
   'physical-verification': '/reports/physical-verification',
 }
 
+export const getReportsOverview = async () => {
+  const response = await apiClient.get('/reports/overview')
+  return response.data
+}
+
 export const getReport = async (reportType, params = {}) => {
   const path = REPORT_PATHS[reportType]
   if (!path) throw new Error(`Unknown report type: ${reportType}`)
@@ -23,11 +28,13 @@ export const getReport = async (reportType, params = {}) => {
   return response.data
 }
 
-export const generateExport = async ({ reportType, format, ...params }) => {
+export const generateExport = async ({ reportType, format, filters = {}, office_id } = {}) => {
   const response = await apiClient.post('/reports/generate-export', {
+    report_name: reportType,
     report_type: reportType,
     format,
-    ...params,
+    office_id,
+    filters,
   }, {
     responseType: 'blob',
   })

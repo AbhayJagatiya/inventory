@@ -77,6 +77,10 @@ export const ENUM_TRANSLATION_KEYS = {
   WARRANTY: 'alertType.warranty',
   MAINTENANCE: 'alertType.maintenance',
   STOCK: 'alertType.stock',
+  NON_MOVING_INACTIVITY: 'alertType.inactivity',
+  WARRANTY_EXPIRING: 'alertType.warranty',
+  MAINTENANCE_DUE: 'alertType.maintenance',
+  LOW_STOCK: 'alertType.stock',
 
   // Alert Priorities
   CRITICAL: 'alertPriority.critical',
@@ -93,6 +97,10 @@ export const ENUM_TRANSLATION_KEYS = {
   PASSWORD_RESET_REQUIRED: 'status.passwordResetRequired',
   OPEN: 'status.open',
   IN_PROGRESS: 'status.inProgress',
+  REPORTED: 'status.reported',
+  IN_REPAIR: 'status.inRepair',
+  EXPIRING_SOON: 'status.expiringSoon',
+  EXPIRED: 'status.expired',
   INITIATED: 'status.initiated',
   VENDOR_ASSESSING: 'status.vendorAssessing',
   REJECTED_BY_VENDOR: 'status.rejectedByVendor',

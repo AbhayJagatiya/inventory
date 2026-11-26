@@ -1,21 +1,20 @@
-
 """Reports, Dashboards and Export API Routes."""
 
-from io import BytesIO
-from typing import Optional
+from datetime import date
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.core.common_schemas import StandardSuccessResponse
+from app.core.common_schemas import ResponseMeta, StandardSuccessResponse
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_permission
 from app.core.exceptions import OfficeAccessDeniedError, ValidationError
 from app.core.i18n import get_request_language
 from app.core.permissions import ROLE_SYSTEM_ADMIN, ROLE_STORE_OFFICER
-
+from app.features.audit.services import AuditService
 from app.features.reports.schemas import ExportRequest
 from app.features.reports.services import ReportsService
 from app.features.users.models import User
@@ -52,20 +51,59 @@ def _resolve_office(office_id: Optional[UUID], user: User) -> Optional[UUID]:
     return user.office_id
 
 
-def _get_report(db: Session, report_name: str, office_id: Optional[UUID]):
-    if report_name not in ALLOWED_REPORTS:
-        raise ValidationError(
-            f"Unsupported report name: {report_name}",
-            code="UNSUPPORTED_REPORT",
-        )
+def _build_filters(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    category_id: Optional[UUID] = None,
+    location_id: Optional[UUID] = None,
+    supplier_id: Optional[UUID] = None,
+    status_f: Optional[str] = None,
+    classification: Optional[str] = None,
+    transaction_type: Optional[str] = None,
+    disposal_method: Optional[str] = None,
+    search: Optional[str] = None,
+) -> Dict[str, Any]:
+    flt: Dict[str, Any] = {}
+    if date_from:
+        flt["date_from"] = date_from.isoformat()
+    if date_to:
+        flt["date_to"] = date_to.isoformat()
+    if category_id:
+        flt["category_id"] = str(category_id)
+    if location_id:
+        flt["location_id"] = str(location_id)
+    if supplier_id:
+        flt["supplier_id"] = str(supplier_id)
+    if status_f:
+        flt["status"] = status_f
+    if classification:
+        flt["classification"] = classification
+    if transaction_type:
+        flt["transaction_type"] = transaction_type
+    if disposal_method:
+        flt["disposal_method"] = disposal_method
+    if search:
+        flt["search"] = search
+    return flt
 
-    headers, rows = ReportsService.get_report_data(
-        db=db,
-        report_name=report_name,
-        office_id=office_id,
+
+@router.get(
+    "/overview",
+    response_model=StandardSuccessResponse,
+    dependencies=[Depends(require_permission("reports:view"))],
+)
+def get_reports_overview(
+    office_id: Optional[UUID] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    resolved_office = _resolve_office(office_id, current_user)
+    overview = ReportsService.get_overview(db, office_id=resolved_office, current_user=current_user)
+    return StandardSuccessResponse(
+        success=True,
+        message="Reports overview retrieved successfully",
+        data=overview,
     )
-
-    return {"headers": headers, "rows": rows}
 
 
 @router.get(
@@ -112,137 +150,93 @@ def get_alerts_summary(
 def _report_response(
     report_name: str,
     office_id: Optional[UUID],
+    filters: Dict[str, Any],
+    page: int,
+    limit: int,
+    sort_by: Optional[str],
+    sort_dir: str,
     db: Session,
     current_user: User,
 ):
+    if report_name not in ALLOWED_REPORTS:
+        raise ValidationError(
+            f"Unsupported report name: {report_name}",
+            code="UNSUPPORTED_REPORT",
+        )
     resolved_office = _resolve_office(office_id, current_user)
-    report = _get_report(db, report_name, resolved_office)
+    payload = ReportsService.get_report_payload(
+        db=db,
+        report_name=report_name,
+        office_id=resolved_office,
+        filters=filters,
+        page=page,
+        limit=limit,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
 
     return StandardSuccessResponse(
         success=True,
         message=f"{report_name} report retrieved successfully",
-        data=report,
+        data={
+            "report_name": payload["report_name"],
+            "headers": payload["headers"],
+            "rows": payload["rows"],
+            "row_links": payload["row_links"],
+            "summary": payload["summary"],
+            "generated_at": payload["generated_at"],
+            "applied_filters": payload["applied_filters"],
+        },
+        meta=ResponseMeta(page=page, limit=limit, total=payload["total"]),
     )
 
 
-@router.get("/stock-register", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def stock_register(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("stock-register", office_id, db, current_user)
+def _register_report_route(path: str, report_key: str):
+    @router.get(
+        path,
+        response_model=StandardSuccessResponse,
+        dependencies=[Depends(require_permission("reports:view"))],
+        summary=f"Get {report_key} report",
+    )
+    def _endpoint(
+        office_id: Optional[UUID] = Query(None),
+        date_from: Optional[date] = Query(None),
+        date_to: Optional[date] = Query(None),
+        category_id: Optional[UUID] = Query(None),
+        location_id: Optional[UUID] = Query(None),
+        supplier_id: Optional[UUID] = Query(None),
+        record_status: Optional[str] = Query(None, alias="status"),
+        classification: Optional[str] = Query(None),
+        transaction_type: Optional[str] = Query(None),
+        disposal_method: Optional[str] = Query(None),
+        search: Optional[str] = Query(None),
+        page: int = Query(1, ge=1),
+        limit: int = Query(50, ge=1, le=500),
+        sort_by: Optional[str] = Query(None),
+        sort_dir: str = Query("asc"),
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+        _rk: str = report_key,
+    ):
+        flt = _build_filters(
+            date_from=date_from,
+            date_to=date_to,
+            category_id=category_id,
+            location_id=location_id,
+            supplier_id=supplier_id,
+            status_f=record_status,
+            classification=classification,
+            transaction_type=transaction_type,
+            disposal_method=disposal_method,
+            search=search,
+        )
+        return _report_response(_rk, office_id, flt, page, limit, sort_by, sort_dir, db, current_user)
+
+    _endpoint.__name__ = f"report_{report_key.replace('-', '_')}"
 
 
-@router.get("/asset-register", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def asset_register(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("asset-register", office_id, db, current_user)
-
-
-@router.get("/stock-quantity", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def stock_quantity(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("stock-quantity", office_id, db, current_user)
-
-
-@router.get("/asset-valuation", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def asset_valuation(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("asset-valuation", office_id, db, current_user)
-
-
-@router.get("/movements", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def movements(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("movements", office_id, db, current_user)
-
-
-@router.get("/dead-stock", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def dead_stock(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("dead-stock", office_id, db, current_user)
-
-
-@router.get("/condemnations", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def condemnations(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("condemnations", office_id, db, current_user)
-
-
-@router.get("/disposals", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def disposals(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("disposals", office_id, db, current_user)
-
-
-@router.get("/suppliers-procurement", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def suppliers_procurement(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("suppliers-procurement", office_id, db, current_user)
-
-
-@router.get("/warranties", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def warranties(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("warranties", office_id, db, current_user)
-
-
-@router.get("/maintenance", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def maintenance_report(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("maintenance", office_id, db, current_user)
-
-
-@router.get("/physical-verification", response_model=StandardSuccessResponse,
-            dependencies=[Depends(require_permission("reports:view"))])
-def physical_verification(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return _report_response("physical-verification", office_id, db, current_user)
+for _rkey in ALLOWED_REPORTS:
+    _register_report_route(f"/{_rkey}", _rkey)
 
 
 @router.post(
@@ -254,22 +248,37 @@ def generate_export(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    office_id = _resolve_office(payload.office_id, current_user)
-    report = _get_report(db, payload.report_name, office_id)
+    report_name = payload.report_name
+    if report_name not in ALLOWED_REPORTS:
+        raise ValidationError(
+            f"Unsupported report name: {report_name}",
+            code="UNSUPPORTED_REPORT",
+        )
 
-    headers = report["headers"]
-    rows = report["rows"]
+    office_id = _resolve_office(payload.office_id, current_user)
+    report_payload = ReportsService.get_report_payload(
+        db=db,
+        report_name=report_name,
+        office_id=office_id,
+        filters=payload.filters,
+        page=1,
+        limit=100000,
+    )
+
+    headers = report_payload["headers"]
+    rows = report_payload["all_rows"]
+    summary = report_payload["summary"]
     export_format = payload.format.lower()
     lang = get_request_language()
 
     if export_format == "csv":
         content = ReportsService.export_to_csv(headers, rows, lang=lang).encode("utf-8-sig")
-        media_type = "text/csv"
+        media_type = "text/csv; charset=utf-8"
         extension = "csv"
 
     elif export_format == "xlsx":
         content = ReportsService.export_to_xlsx(
-            payload.report_name, headers, rows, lang=lang
+            report_name, headers, rows, lang=lang, summary=summary
         )
         media_type = (
             "application/vnd.openxmlformats-officedocument."
@@ -279,7 +288,7 @@ def generate_export(
 
     elif export_format == "pdf":
         content = ReportsService.export_to_pdf(
-            payload.report_name, headers, rows, lang=lang
+            report_name, headers, rows, lang=lang, summary=summary
         )
         media_type = "application/pdf"
         extension = "pdf"
@@ -287,7 +296,18 @@ def generate_export(
     else:
         raise ValidationError("Unsupported export format")
 
-    filename = f"{payload.report_name}.{extension}"
+    AuditService.log_action(
+        db=db,
+        action="EXPORT",
+        module="REPORTS",
+        record_id=report_name,
+        actor=current_user,
+        office_id=office_id or current_user.office_id,
+        new_values={"report_name": report_name, "format": export_format, "row_count": len(rows)},
+    )
+    db.commit()
+
+    filename = f"dsims_{report_name}_{date.today().isoformat()}.{extension}"
 
     return Response(
         content=content,

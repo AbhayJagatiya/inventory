@@ -78,6 +78,7 @@ export const PERMISSIONS = {
   MAINTENANCE_LOG: 'maintenance:log',
   MAINTENANCE_UPDATE: 'maintenance:update',
   WARRANTY_VIEW: 'warranty:view',
+  WARRANTY_MANAGE: 'warranty:manage',
 
   // Alerts
   ALERTS_VIEW: 'alerts:view',

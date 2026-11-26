@@ -173,7 +173,11 @@ const hi = {
     "rejectedByVendor": "विक्रेता द्वारा अस्वीकृत",
     "closedCompleted": "बंद / पूर्ण",
     "passwordResetRequired": "पासवर्ड रीसेट आवश्यक",
-    "planned": "नियोजित"
+    "planned": "नियोजित",
+    "reported": "रिपोर्ट किया गया",
+    "inRepair": "मरम्मत में",
+    "expiringSoon": "शीघ्र समाप्त",
+    "expired": "समाप्त"
   },
   "condition": {
     "good": "अच्छी स्थिति",

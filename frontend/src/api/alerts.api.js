@@ -1,6 +1,11 @@
 import apiClient from './client'
 
 // ─── Alerts ───────────────────────────────────────────────────────────────────
+export const getAlertsSummary = async () => {
+  const response = await apiClient.get('/alerts/summary')
+  return response.data
+}
+
 export const getAlerts = async (params = {}) => {
   const response = await apiClient.get('/alerts', { params })
   return response.data

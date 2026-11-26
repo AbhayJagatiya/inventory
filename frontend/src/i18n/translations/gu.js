@@ -173,7 +173,11 @@ const gu = {
     "rejectedByVendor": "વિક્રેતા દ્વારા નામંજૂર",
     "closedCompleted": "બંધ / પૂર્ણ",
     "passwordResetRequired": "પાસવર્ડ રીસેટ જરૂરી",
-    "planned": "આયોજિત"
+    "planned": "આયોજિત",
+    "reported": "નોંધાયેલ",
+    "inRepair": "સમારકામમાં",
+    "expiringSoon": "ટૂંક સમયમાં સમાપ્ત",
+    "expired": "સમાપ્ત"
   },
   "condition": {
     "good": "સારી",

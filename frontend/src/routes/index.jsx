@@ -56,6 +56,7 @@ import SupplierReturnDetailPage from '../pages/suppliers/SupplierReturnDetailPag
 
 // Maintenance
 import MaintenanceListPage from '../pages/maintenance/MaintenanceListPage'
+import MaintenanceDetailPage from '../pages/maintenance/MaintenanceDetailPage'
 import WarrantyListPage from '../pages/maintenance/WarrantyListPage'
 
 // Alerts
@@ -403,6 +404,14 @@ export default function AppRoutes() {
                   element={
                     <ProtectedRoute requiredPermission={PERMISSIONS.MAINTENANCE_VIEW}>
                       <MaintenanceListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/maintenance/:id"
+                  element={
+                    <ProtectedRoute requiredPermission={PERMISSIONS.MAINTENANCE_VIEW}>
+                      <MaintenanceDetailPage />
                     </ProtectedRoute>
                   }
                 />

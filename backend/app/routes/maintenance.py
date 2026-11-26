@@ -1,6 +1,6 @@
-
 """Maintenance and Repair API Routes."""
 
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
@@ -15,7 +15,9 @@ from app.core.permissions import ROLE_SYSTEM_ADMIN
 from app.features.maintenance.schemas import (
     MaintenanceComplete,
     MaintenanceCreate,
+    MaintenanceDetailOut,
     MaintenanceOut,
+    MaintenanceSummaryOut,
     MaintenanceUpdate,
 )
 from app.features.maintenance.services import MaintenanceService
@@ -36,6 +38,28 @@ def _check_office_access(record, current_user: User) -> None:
 
 
 @router.get(
+    "/summary",
+    response_model=StandardSuccessResponse[MaintenanceSummaryOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get maintenance dashboard summary and charts",
+)
+def get_maintenance_summary(
+    office_id: Optional[UUID] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("maintenance:view")),
+):
+    summary = MaintenanceService.get_summary(
+        db=db,
+        office_id=office_id,
+        current_user=current_user,
+    )
+    return StandardSuccessResponse(
+        data=summary,
+        message="Maintenance summary retrieved successfully",
+    )
+
+
+@router.get(
     "/",
     response_model=StandardSuccessResponse[List[MaintenanceOut]],
     status_code=status.HTTP_200_OK,
@@ -44,7 +68,14 @@ def _check_office_access(record, current_user: User) -> None:
 def list_maintenance(
     office_id: Optional[UUID] = Query(None),
     item_id: Optional[UUID] = Query(None),
+    category_id: Optional[UUID] = Query(None),
+    service_provider: Optional[str] = Query(None),
     record_status: Optional[str] = Query(None, alias="status"),
+    search: Optional[str] = Query(None),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    sort_by: str = Query("created_at"),
+    sort_dir: str = Query("desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -54,7 +85,14 @@ def list_maintenance(
         db=db,
         office_id=office_id,
         item_id=item_id,
+        category_id=category_id,
+        service_provider=service_provider,
         status=record_status,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
         current_user=current_user,
         page=page,
         limit=limit,
@@ -92,9 +130,9 @@ def create_maintenance(
 
 @router.get(
     "/{maintenance_id}",
-    response_model=StandardSuccessResponse[MaintenanceOut],
+    response_model=StandardSuccessResponse[MaintenanceDetailOut],
     status_code=status.HTTP_200_OK,
-    summary="Get maintenance record",
+    summary="Get maintenance record details",
 )
 def get_maintenance(
     maintenance_id: UUID,
@@ -106,9 +144,10 @@ def get_maintenance(
         maintenance_id=maintenance_id,
     )
     _check_office_access(record, current_user)
+    detail = MaintenanceService.get_maintenance_detail(db=db, maintenance_id=maintenance_id)
 
     return StandardSuccessResponse(
-        data=record,
+        data=detail,
         message="Maintenance record retrieved successfully",
     )
 

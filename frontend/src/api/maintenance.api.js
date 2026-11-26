@@ -6,6 +6,11 @@ export const getWarranties = async (params = {}) => {
   return response.data
 }
 
+export const getWarrantySummary = async () => {
+  const response = await apiClient.get('/warranties/summary')
+  return response.data
+}
+
 export const createWarranty = async (data) => {
   const response = await apiClient.post('/warranties', data)
   return response.data
@@ -27,6 +32,11 @@ export const getExpiringWarranties = async (params = {}) => {
 }
 
 // ─── Maintenance ──────────────────────────────────────────────────────────────
+export const getMaintenanceSummary = async () => {
+  const response = await apiClient.get('/maintenance/summary')
+  return response.data
+}
+
 export const getMaintenanceRecords = async (params = {}) => {
   const response = await apiClient.get('/maintenance', { params })
   return response.data

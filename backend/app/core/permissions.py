@@ -92,6 +92,7 @@ PERMISSIONS_CATALOGUE = {
     "maintenance:log": ("Maintenance", "create", "Log issue / maintenance request"),
     "maintenance:update": ("Maintenance", "edit", "Record repair completion and cost"),
     "warranty:view": ("Maintenance", "view", "View warranty tracking and alerts"),
+    "warranty:manage": ("Maintenance", "manage", "Create and update warranty records"),
 
     # Alerts
     "alerts:view": ("Alerts", "view", "View alert center notifications"),
@@ -133,7 +134,7 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "barcode:scan", "barcode:print",
         "verify:view",
         "supplier:view", "supplier:manage", "supplier:rma_view",
-        "maintenance:view", "maintenance:log", "maintenance:update", "warranty:view",
+        "maintenance:view", "maintenance:log", "maintenance:update", "warranty:view", "warranty:manage",
         "alerts:view", "alerts:resolve",
         "condemn:view", "condemn:approve",
         "disposal:view", "disposal:execute",
@@ -153,7 +154,7 @@ DEFAULT_ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "barcode:scan", "barcode:print",
         "verify:view", "verify:create", "verify:scan", "verify:reconcile",
         "supplier:view", "supplier:manage", "supplier:rma_view", "supplier:rma_manage",
-        "maintenance:view", "maintenance:log", "maintenance:update", "warranty:view",
+        "maintenance:view", "maintenance:log", "maintenance:update", "warranty:view", "warranty:manage",
         "alerts:view", "alerts:resolve",
         "condemn:view", "condemn:submit", "condemn:review", "condemn:approve",
         "disposal:view", "disposal:execute",

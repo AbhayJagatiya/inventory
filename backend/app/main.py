@@ -117,7 +117,7 @@ def _register_routes(application: FastAPI) -> None:
     from app.routes.verification import router as verification_router
     from app.routes.warranties import router as warranties_router
     from app.routes.maintenance import router as maintenance_router
-    from app.routes.alerts import router as alerts_router
+    from app.routes.alerts import router as alerts_router, notifications_router
     from app.routes.condemnation import router as condemnation_router
     from app.routes.disposal import router as disposal_router
     from app.routes.documents import router as documents_router
@@ -166,6 +166,7 @@ def _register_routes(application: FastAPI) -> None:
     application.include_router(warranties_router, prefix=f"{PREFIX}/warranties", tags=["Warranties"])
     application.include_router(maintenance_router, prefix=f"{PREFIX}/maintenance", tags=["Maintenance"])
     application.include_router(alerts_router, prefix=f"{PREFIX}/alerts", tags=["Alerts & Notifications"])
+    application.include_router(notifications_router, prefix=f"{PREFIX}/notifications", tags=["Notifications"])
     application.include_router(condemnation_router, prefix=f"{PREFIX}/condemnations", tags=["Condemnation"])
     application.include_router(disposal_router, prefix=f"{PREFIX}/disposals", tags=["Disposal"])
     application.include_router(documents_router, prefix=f"{PREFIX}/documents", tags=["Documents"])

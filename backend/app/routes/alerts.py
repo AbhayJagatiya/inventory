@@ -1,6 +1,6 @@
-
 """Alerts and In-App Notifications API Routes."""
 
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
@@ -16,6 +16,7 @@ from app.features.alerts.schemas import (
     AlertOut,
     AlertResolveRequest,
     AlertSnoozeRequest,
+    AlertSummaryOut,
     NotificationOut,
     UnreadCountOut,
 )
@@ -23,6 +24,7 @@ from app.features.alerts.services import AlertService
 from app.features.users.models import User
 
 router = APIRouter()
+notifications_router = APIRouter()
 
 
 def _check_alert_access(alert, current_user: User) -> None:
@@ -36,6 +38,28 @@ def _check_alert_access(alert, current_user: User) -> None:
 
 
 @router.get(
+    "/summary",
+    response_model=StandardSuccessResponse[AlertSummaryOut],
+    summary="Get alerts dashboard summary",
+)
+def get_alerts_summary(
+    office_id: Optional[UUID] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("alerts:view")),
+):
+    if ROLE_SYSTEM_ADMIN not in current_user.role_names:
+        if office_id and office_id != current_user.office_id:
+            raise OfficeAccessDeniedError("Access to another office is denied")
+        office_id = current_user.office_id
+
+    summary = AlertService.get_summary(db=db, office_id=office_id, current_user=current_user)
+    return StandardSuccessResponse(
+        data=summary,
+        message="Alerts summary retrieved successfully",
+    )
+
+
+@router.get(
     "/",
     response_model=StandardSuccessResponse[List[AlertOut]],
     summary="List alerts",
@@ -45,6 +69,11 @@ def list_alerts(
     alert_type: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     record_status: Optional[str] = Query(None, alias="status"),
+    search: Optional[str] = Query(None),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    sort_by: str = Query("created_at"),
+    sort_dir: str = Query("desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -61,6 +90,11 @@ def list_alerts(
         alert_type=alert_type,
         priority=priority,
         status=record_status,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
         page=page,
         limit=limit,
     )
@@ -69,6 +103,33 @@ def list_alerts(
         data=alerts,
         message="Alerts retrieved successfully",
         meta=ResponseMeta(page=page, limit=limit, total=total),
+    )
+
+
+@router.post(
+    "/run-check",
+    response_model=StandardSuccessResponse[int],
+    summary="Run alert evaluation",
+)
+def run_alert_check(
+    office_id: Optional[UUID] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings:manage")),
+):
+    if ROLE_SYSTEM_ADMIN not in current_user.role_names:
+        if office_id and office_id != current_user.office_id:
+            raise OfficeAccessDeniedError("Access to another office is denied")
+        office_id = current_user.office_id
+
+    count = AlertService.run_alert_evaluation_job(
+        db=db,
+        office_id=office_id,
+        actor=current_user,
+    )
+
+    return StandardSuccessResponse(
+        data=count,
+        message=f"Alert evaluation completed. {count} new or reactivated alert(s).",
     )
 
 
@@ -92,32 +153,6 @@ def get_alert(
 
 
 @router.post(
-    "/run-check",
-    response_model=StandardSuccessResponse[int],
-    summary="Run alert evaluation",
-)
-def run_alert_check(
-    office_id: Optional[UUID] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings:manage")),
-):
-    if ROLE_SYSTEM_ADMIN not in current_user.role_names:
-        if office_id and office_id != current_user.office_id:
-            raise OfficeAccessDeniedError("Access to another office is denied")
-        office_id = current_user.office_id
-
-    count = AlertService.run_alert_evaluation_job(
-        db=db,
-        office_id=office_id,
-    )
-
-    return StandardSuccessResponse(
-        data=count,
-        message=f"Alert evaluation completed. Service reported {count} generated alerts.",
-    )
-
-
-@router.post(
     "/{alert_id}/acknowledge",
     response_model=StandardSuccessResponse[AlertOut],
     summary="Acknowledge alert",
@@ -127,7 +162,7 @@ def acknowledge_alert(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("alerts:resolve")),
 ):
-    alert = AlertService.get_alert(db, alert_id)
+    alert = AlertService.get_alert_model(db, alert_id)
     _check_alert_access(alert, current_user)
 
     updated = AlertService.acknowledge_alert(
@@ -153,7 +188,7 @@ def resolve_alert(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("alerts:resolve")),
 ):
-    alert = AlertService.get_alert(db, alert_id)
+    alert = AlertService.get_alert_model(db, alert_id)
     _check_alert_access(alert, current_user)
 
     updated = AlertService.resolve_alert(
@@ -180,7 +215,7 @@ def snooze_alert(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("alerts:resolve")),
 ):
-    alert = AlertService.get_alert(db, alert_id)
+    alert = AlertService.get_alert_model(db, alert_id)
     _check_alert_access(alert, current_user)
 
     updated = AlertService.snooze_alert(
@@ -196,16 +231,17 @@ def snooze_alert(
     )
 
 
-# -------------------- In-App Notifications --------------------
+# -------------------- In-App Notifications (/api/v1/notifications) --------------------
 
 
-@router.get(
-    "/notifications",
+@notifications_router.get(
+    "/",
     response_model=StandardSuccessResponse[List[NotificationOut]],
     summary="List current user's notifications",
 )
 def list_notifications(
     is_read: Optional[bool] = Query(None),
+    notification_type: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -215,6 +251,7 @@ def list_notifications(
         db=db,
         user=current_user,
         is_read=is_read,
+        notification_type=notification_type,
         page=page,
         limit=limit,
     )
@@ -226,8 +263,8 @@ def list_notifications(
     )
 
 
-@router.get(
-    "/notifications/unread-count",
+@notifications_router.get(
+    "/unread-count",
     response_model=StandardSuccessResponse[UnreadCountOut],
     summary="Get unread notification count",
 )
@@ -243,8 +280,8 @@ def get_unread_count(
     )
 
 
-@router.patch(
-    "/notifications/{notification_id}/read",
+@notifications_router.patch(
+    "/{notification_id}/read",
     response_model=StandardSuccessResponse[NotificationOut],
     summary="Mark notification as read",
 )
@@ -265,8 +302,8 @@ def mark_notification_read(
     )
 
 
-@router.post(
-    "/notifications/mark-all-read",
+@notifications_router.post(
+    "/mark-all-read",
     response_model=StandardSuccessResponse[int],
     summary="Mark all notifications as read",
 )

@@ -3,14 +3,40 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ExportRequest(BaseModel):
-    report_name: str
+    report_name: Optional[str] = None
+    report_type: Optional[str] = None
     office_id: Optional[UUID] = None
     format: str = Field(default="csv", pattern="^(csv|xlsx|pdf)$")
     filters: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def ensure_report_name(self):
+        if not self.report_name and self.report_type:
+            self.report_name = self.report_type
+        if not self.report_name:
+            raise ValueError("report_name is required")
+        return self
+
+
+class ReportsOverviewOut(BaseModel):
+    total_registered_assets: int
+    current_stock_quantity: float
+    total_acquisition_value: float
+    estimated_current_valuation: float
+    dead_stock_count: int
+    dead_stock_value: float
+    total_stock_movements: int
+    total_disposals: int
+    total_disposal_proceeds: float
+    maintenance_expenditure: float
+    active_warranties_count: int
+    expiring_warranties_count: int
+    expired_warranties_count: int
+    calculated_at: datetime
 
 
 class AdminDashboardOut(BaseModel):
@@ -59,4 +85,3 @@ class AlertsSummaryOut(BaseModel):
     low_count: int
     by_type: Dict[str, int] = {}
     unread_notifications_count: int
-

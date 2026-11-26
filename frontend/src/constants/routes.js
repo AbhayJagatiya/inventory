@@ -52,6 +52,7 @@ export const ROUTES = {
 
   // Maintenance
   MAINTENANCE: '/maintenance',
+  MAINTENANCE_DETAIL: (id = ':id') => `/maintenance/${id}`,
   WARRANTIES: '/maintenance/warranties',
 
   // Alerts

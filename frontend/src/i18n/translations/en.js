@@ -173,7 +173,11 @@ const en = {
     "rejectedByVendor": "Rejected by Vendor",
     "closedCompleted": "Closed / Completed",
     "passwordResetRequired": "Password Reset Required",
-    "planned": "Planned"
+    "planned": "Planned",
+    "reported": "Reported",
+    "inRepair": "In Repair",
+    "expiringSoon": "Expiring Soon",
+    "expired": "Expired"
   },
   "condition": {
     "good": "Good",

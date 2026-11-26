@@ -96,6 +96,9 @@ PERMISSION_ALIASES = {
     "master:categories_manage": ["master:categories_manage", "MANAGE_INVENTORY"],
     "master:locations_view": ["master:locations_view", "master:locations_manage", "MANAGE_INVENTORY", "inventory:create", "inventory:view"],
     "master:locations_manage": ["master:locations_manage", "MANAGE_INVENTORY"],
+    "VIEW_WARRANTIES": ["warranty:view", "VIEW_WARRANTIES"],
+    "MANAGE_WARRANTIES": ["warranty:manage", "supplier:manage", "maintenance:update", "MANAGE_WARRANTIES"],
+    "warranty:manage": ["warranty:manage", "supplier:manage", "maintenance:update", "MANAGE_WARRANTIES"],
 }
 
 

@@ -1,15 +1,19 @@
 """Alerts and Notifications Pydantic Schemas"""
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AlertOut(BaseModel):
     id: UUID
+    alert_reference: Optional[str] = None
     office_id: UUID
+    office_name: Optional[str] = None
     item_id: Optional[UUID] = None
+    item_code: Optional[str] = None
+    item_name: Optional[str] = None
     alert_type: str
     priority: str
     title: str
@@ -17,10 +21,25 @@ class AlertOut(BaseModel):
     status: str
     snoozed_until: Optional[datetime] = None
     resolved_by: Optional[UUID] = None
+    resolver_name: Optional[str] = None
     resolved_at: Optional[datetime] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AlertSummaryOut(BaseModel):
+    total_active: int
+    critical_count: int
+    high_count: int
+    medium_count: int
+    low_count: int
+    unacknowledged_count: int
+    acknowledged_count: int
+    snoozed_count: int
+    resolved_count: int
+    by_type: Dict[str, int] = {}
+    recent_alerts: List[AlertOut] = []
 
 
 class AlertResolveRequest(BaseModel):
@@ -53,4 +72,3 @@ class NotificationOut(BaseModel):
 
 class UnreadCountOut(BaseModel):
     unread_count: int
-
