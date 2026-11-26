@@ -319,6 +319,10 @@ export default function AppRoutes() {
 
                 {/* Barcode & Physical Verification */}
                 <Route
+                  path="/verification"
+                  element={<Navigate to={ROUTES.VERIFICATION_SESSIONS} replace />}
+                />
+                <Route
                   path={ROUTES.BARCODE_LOOKUP}
                   element={
                     <ProtectedRoute requiredPermission={PERMISSIONS.BARCODE_SCAN}>

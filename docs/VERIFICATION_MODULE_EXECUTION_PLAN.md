@@ -3,7 +3,8 @@
 **Project:** Dead Stock Inventory Management System (PS000214)  
 **Organization:** District Development Office – Gir Somnath, Veraval  
 **Target Design:** PPT Workflows (Slides 3–4) + Authoritative Specs (`docs/`) + Option B Live Audit Updates  
-**Camera Scanner Library:** `html5-qrcode` (Desktop Webcam + Mobile Camera + Manual / USB Scanner fallback)
+**Camera Scanner Library:** `html5-qrcode` (Desktop Webcam + Mobile Camera + Manual / USB Scanner fallback)  
+**Operational Guide:** See [VERIFICATION_AUDIT_GUIDE.md](file:///d:/seva/inventory/docs/VERIFICATION_AUDIT_GUIDE.md) for the complete end-to-end audit session walkthrough.
 
 ---
 
@@ -22,12 +23,12 @@
 
 | Step | Scope | Status | Verification Evidence |
 | :--- | :--- | :--- | :--- |
-| **Step 1** | Backend: Enrich Barcode Lookup, Human-Readable Verification Schemas, Option B Scan Updates, Reconciliation Fixes & Report Export | `DONE` | `create_app()` + `app.openapi()` verified all 9 barcode/verification routes |
+| **Step 1** | Backend: Enrich Barcode Lookup, Human-Readable Verification Schemas, Option B Scan Updates, Reconciliation Fixes & Report Export | `DONE` | `create_app()` + `app.openapi()` verified all barcode/verification routes |
 | **Step 2** | Frontend: Install `html5-qrcode` & Build Reusable `QrCameraScanner` Component | `DONE` | `npm install html5-qrcode` succeeded; `vite build` passed |
 | **Step 3** | Frontend: Real Printable QR & Barcode Labels on `AssetDetailPage` | `DONE` | `vite build` passed (`2792 modules transformed`) |
 | **Step 4** | Frontend: Upgrade `BarcodeLookupPage` with Camera QR Scan + Enriched Asset Card | `DONE` | `vite build` passed (`2818 modules transformed`) |
 | **Step 5** | Frontend: Upgrade `VerificationSessionListPage` & `VerificationSessionDetailPage` (Audit Cycles, Guided 2-Step Scan & Update, Readable Names, Report Export) | `DONE` | `vite build` passed (`2818 modules transformed`) |
-| **Step 6** | Automated Tests (`backend/tests/test_verification.py`) & Final `pytest` + `npm run build` Verification | `IN_PROGRESS` | — |
+| **Step 6** | Camera Optimization, Track Cleanup, Automated Tests (`backend/tests/test_verification.py`) & Final `pytest` + `npm run build` | `DONE` | `pytest tests/test_verification.py -v` (`2 passed`); `npm run build` (`vite build` exited 0) |
 
 ---
 
@@ -46,15 +47,6 @@
 - Updated [verification.api.js](file:///d:/seva/inventory/frontend/src/api/verification.api.js) to add `downloadVerificationReport`.
 - **Verification:** Ran `npm run build` (`vite build`) — exited 0 (`2792 modules transformed`).
 
-### Step 4 Completed (Quick Asset Info Search)
-- Updated [BarcodeLookupPage.jsx](file:///d:/seva/inventory/frontend/src/pages/verification/BarcodeLookupPage.jsx) with a dual **Manual Number / USB Scanner** + **Camera QR Scan** (`QrCameraScanner`) toggle, full enriched Asset Details Card (location, custodian, department, condition, classification, status, specs, cost), Print QR Label action, and Recent Lookups history.
-- **Verification:** Ran `npm run build` (`vite build`) — exited 0 (`2818 modules transformed`).
-
-### Step 5 Completed (Audit Sessions & Guided Scan/Update Workspace)
-- Updated [VerificationSessionListPage.jsx](file:///d:/seva/inventory/frontend/src/pages/verification/VerificationSessionListPage.jsx) with Monthly/Quarterly/Annual/Spot Check audit cycle options and readable room/category/lead-verifier display.
-- Updated [VerificationSessionDetailPage.jsx](file:///d:/seva/inventory/frontend/src/pages/verification/VerificationSessionDetailPage.jsx) with dual Manual + Camera QR scanning, Guided 2-Step preview-then-update flow (plus optional Rapid Auto-Submit toggle), all 6 conditions (`NEW`, `GOOD`, `FAIR`, `POOR`, `DAMAGED`, `SCRAP`), readable asset/location names, Officer resolution modal (`RESOLVED` / `IGNORED`), and CSV reconciliation report export.
-- **Verification:** Ran `npm run build` (`vite build`) — exited 0 (`2818 modules transformed`).
-
 ### Step 3 Completed (Real Printable QR & Barcode Labels)
 - Updated [AssetDetailPage.jsx](file:///d:/seva/inventory/frontend/src/pages/inventory/AssetDetailPage.jsx) to load the real Code 128 + QR label image from `GET /api/v1/barcodes/{item_id}/label` and added **Print QR Label** plus **PNG / PDF / SVG** download buttons.
 - **Verification:** Ran `npm run build` (`vite build`) — exited 0 (`2792 modules transformed`).
@@ -67,3 +59,10 @@
 - Updated [VerificationSessionListPage.jsx](file:///d:/seva/inventory/frontend/src/pages/verification/VerificationSessionListPage.jsx) with Monthly/Quarterly/Annual/Spot Check audit cycle options and readable room/category/lead-verifier display.
 - Updated [VerificationSessionDetailPage.jsx](file:///d:/seva/inventory/frontend/src/pages/verification/VerificationSessionDetailPage.jsx) with dual Manual + Camera QR scanning, Guided 2-Step preview-then-update flow (plus optional Rapid Auto-Submit toggle), all 6 conditions (`NEW`, `GOOD`, `FAIR`, `POOR`, `DAMAGED`, `SCRAP`), readable asset/location names, Officer resolution modal (`RESOLVED` / `IGNORED`), and CSV reconciliation report export.
 - **Verification:** Ran `npm run build` (`vite build`) — exited 0 (`2818 modules transformed`).
+
+### Step 6 Completed (Camera Optimization, Track Cleanup & Full Verification)
+- Optimized [QrCameraScanner.jsx](file:///d:/seva/inventory/frontend/src/components/verification/QrCameraScanner.jsx): removed the slow pre-flight `Html5Qrcode.getCameras()` probe so cameras start directly via `facingMode`, added `autoStart` on Camera tab switch, enabled `useBarCodeDetectorIfSupported`, and added explicit `MediaStreamTrack.stop()` cleanup so the laptop/phone camera turns off immediately when clicking **Stop Camera** or navigating away.
+- Created [test_verification.py](file:///d:/seva/inventory/backend/tests/test_verification.py) testing case-insensitive QR/barcode/serial lookup, cross-office isolation, disposed-item rejection, PNG/SVG label generation, RBAC permission enforcement, Option B live condition & location updates (`items` + `stock_balances` + `audit_logs`), duplicate scan detection, Officer reconciliation, session completion, and CSV report export.
+- **Final Verification Results:**
+  - Backend: `.venv\Scripts\python.exe -m pytest tests/test_verification.py -v` -> **2 passed** (`19.60s`).
+  - Frontend: `npm run build` -> **exited 0** (`2818 modules transformed`).

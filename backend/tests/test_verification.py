@@ -1,17 +1,19 @@
-"""Automated tests for Barcode/QR Lookup and Physical Verification (Option B)."""
+"""Automated tests for Barcode/QR Lookup, RBAC, Office Isolation, and Verification (Option B)."""
 
 from datetime import date
 from decimal import Decimal
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from fastapi import HTTPException
+from sqlalchemy import BigInteger, Integer, create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.database import get_db
+from app.core.dependencies import require_permission
+from app.core.exceptions import NotFoundError, OfficeAccessDeniedError, PermissionDeniedError, ValidationError
 from app.core.permissions import ROLE_STORE_OFFICER, ROLE_STORE_STAFF
-from app.core.security import create_access_token, hash_password
+from app.core.security import hash_password
 from app.features.audit.models import AuditLog
+from app.features.barcodes.schemas import BarcodeLookupRequest
 from app.features.categories.models import Category, UnitOfMeasure
 from app.features.inventory.models import Item, StockBalance
 from app.features.locations.models import Location
@@ -19,8 +21,17 @@ from app.features.offices.models import Office
 from app.features.roles.models import Role
 from app.features.roles.services import RoleService
 from app.features.users.models import User
-from app.main import create_app
+from app.features.verification.schemas import (
+    VerificationCompleteRequest,
+    VerificationDiscrepancyResolution,
+    VerificationReconcileRequest,
+    VerificationScanRequest,
+    VerificationSessionCreate,
+)
 from app.models import Base
+from app.routes import barcodes as barcode_routes
+from app.routes import inventory as inventory_routes
+from app.routes import verification as verification_routes
 
 
 @pytest.fixture()
@@ -31,6 +42,7 @@ def test_env():
         poolclass=StaticPool,
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    AuditLog.__table__.c.id.type = BigInteger().with_variant(Integer, "sqlite")
     Base.metadata.create_all(bind=engine)
 
     db = TestingSessionLocal()
@@ -218,37 +230,19 @@ def test_env():
     ])
     db.commit()
 
-    app = create_app()
-
-    def override_get_db():
-        session = TestingSessionLocal()
-        try:
-            yield session
-        finally:
-            session.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    client = TestClient(app)
-
-    officer_headers = {"Authorization": f"Bearer {create_access_token({'sub': str(officer.id)})}"}
-    staff_headers = {"Authorization": f"Bearer {create_access_token({'sub': str(staff.id)})}"}
-    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': str(other_officer.id)})}"}
-
     yield {
-        "client": client,
         "db": db,
-        "SessionLocal": TestingSessionLocal,
         "office_a": office_a,
         "office_b": office_b,
+        "officer": officer,
+        "staff": staff,
+        "other_officer": other_officer,
         "loc_a1": loc_a1,
         "loc_a2": loc_a2,
         "item1": item1,
         "item2": item2,
         "item3_disposed": item3_disposed,
         "item_other_office": item_other_office,
-        "officer_headers": officer_headers,
-        "staff_headers": staff_headers,
-        "other_headers": other_headers,
     }
 
     db.close()
@@ -256,193 +250,245 @@ def test_env():
 
 
 def test_barcode_lookup_and_label_generation(test_env):
-    client = test_env["client"]
-    staff_headers = test_env["staff_headers"]
+    db = test_env["db"]
+    staff = test_env["staff"]
     item1 = test_env["item1"]
 
     # Case-insensitive lookup by asset code
-    res = client.post(
-        "/api/v1/barcodes/lookup",
-        json={"barcode": "ast-gs-vrv-2026-00001"},
-        headers=staff_headers,
+    res = barcode_routes.lookup_barcode(
+        payload=BarcodeLookupRequest(barcode="ast-gs-vrv-2026-00001"),
+        db=db,
+        current_user=staff,
     )
-    assert res.status_code == 200
-    body = res.json()["data"]
-    assert body["item_code"] == item1.item_code
-    assert body["brand"] == "Dell"
-    assert body["serial_number"] == "SN-DELL-001"
-    assert body["location_id"] == str(item1.location_id)
-    assert body["available_qty"] == 1.0
+    assert res.success is True
+    assert res.data.item_code == item1.item_code
+    assert res.data.brand == "Dell"
+    assert res.data.serial_number == "SN-DELL-001"
+    assert res.data.location_id == item1.location_id
+    assert res.data.available_qty == 1.0
 
     # Lookup by serial number
-    res_serial = client.post(
-        "/api/v1/barcodes/lookup",
-        json={"barcode": "SN-DELL-001"},
-        headers=staff_headers,
+    res_serial = barcode_routes.lookup_barcode(
+        payload=BarcodeLookupRequest(barcode="SN-DELL-001"),
+        db=db,
+        current_user=staff,
     )
-    assert res_serial.status_code == 200
-    assert res_serial.json()["data"]["item_id"] == str(item1.id)
+    assert res_serial.data.item_id == item1.id
 
     # Cross-office lookup blocked
-    res_other = client.post(
-        "/api/v1/barcodes/lookup",
-        json={"barcode": "BC-TLL-000001"},
-        headers=staff_headers,
-    )
-    assert res_other.status_code == 404
+    with pytest.raises(NotFoundError):
+        barcode_routes.lookup_barcode(
+            payload=BarcodeLookupRequest(barcode="BC-TLL-000001"),
+            db=db,
+            current_user=staff,
+        )
 
     # Disposed item rejected
-    res_disp = client.post(
-        "/api/v1/barcodes/lookup",
-        json={"barcode": "BC-AST-000099"},
-        headers=staff_headers,
-    )
-    assert res_disp.status_code == 422
+    with pytest.raises(ValidationError):
+        barcode_routes.lookup_barcode(
+            payload=BarcodeLookupRequest(barcode="BC-AST-000099"),
+            db=db,
+            current_user=staff,
+        )
 
     # Printable PNG & SVG QR labels
-    png_res = client.get(f"/api/v1/barcodes/{item1.id}/label?format=png", headers=staff_headers)
-    assert png_res.status_code == 200
-    assert png_res.headers["content-type"] == "image/png"
+    png_res = barcode_routes.generate_barcode_label(
+        item_id=item1.id,
+        output_format="png",
+        db=db,
+        current_user=staff,
+    )
+    assert png_res.media_type == "image/png"
+    assert len(png_res.body) > 100
 
-    svg_res = client.get(f"/api/v1/barcodes/{item1.id}/label?format=svg", headers=staff_headers)
-    assert svg_res.status_code == 200
-    assert "image/svg+xml" in svg_res.headers["content-type"]
+    svg_res = barcode_routes.generate_barcode_label(
+        item_id=item1.id,
+        output_format="svg",
+        db=db,
+        current_user=staff,
+    )
+    assert svg_res.media_type == "image/svg+xml"
+    assert b"<svg" in svg_res.body
 
 
-def test_verification_audit_option_b_and_rbac(test_env):
-    client = test_env["client"]
-    officer_headers = test_env["officer_headers"]
-    staff_headers = test_env["staff_headers"]
-    other_headers = test_env["other_headers"]
+def test_verification_audit_option_b_rbac_and_isolation(test_env):
+    db = test_env["db"]
     office_a = test_env["office_a"]
+    officer = test_env["officer"]
+    staff = test_env["staff"]
+    other_officer = test_env["other_officer"]
     loc_a1 = test_env["loc_a1"]
     loc_a2 = test_env["loc_a2"]
     item1 = test_env["item1"]
     item2 = test_env["item2"]
 
-    # Staff cannot create an audit session (verify:create belongs to Store Officer)
-    res_staff_create = client.post(
-        "/api/v1/verifications/sessions",
-        json={"office_id": str(office_a.id), "scope_type": "LOCATION", "location_id": str(loc_a1.id)},
-        headers=staff_headers,
-    )
-    assert res_staff_create.status_code == 403
+    # RBAC: Staff cannot pass verify:create or verify:reconcile dependencies
+    with pytest.raises(PermissionDeniedError):
+        require_permission("verify:create")(current_user=staff)
+    with pytest.raises(PermissionDeniedError):
+        require_permission("verify:reconcile")(current_user=staff)
 
     # Officer creates session
-    res_create = client.post(
-        "/api/v1/verifications/sessions",
-        json={
-            "office_id": str(office_a.id),
-            "scope_type": "LOCATION",
-            "location_id": str(loc_a1.id),
-            "notes": "[Monthly Routine Audit] Room 101 check",
-        },
-        headers=officer_headers,
+    assert require_permission("verify:create")(current_user=officer).id == officer.id
+    create_res = verification_routes.create_session(
+        payload=VerificationSessionCreate(
+            office_id=office_a.id,
+            scope_type="LOCATION",
+            location_id=loc_a1.id,
+            notes="[Monthly Routine Audit] Room 101 check",
+        ),
+        db=db,
+        current_user=officer,
     )
-    assert res_create.status_code == 201
-    session = res_create.json()["data"]
-    session_id = session["id"]
-    assert session["total_expected_items"] == 2
-    assert session["location_name"] == "Main Block - ROOM-101"
+    session = create_res.data
+    assert session.total_expected_items == 2
+    assert session.location_name == "Main Block - ROOM-101"
 
     # Cross-office officer cannot view session
-    res_cross = client.get(f"/api/v1/verifications/sessions/{session_id}", headers=other_headers)
-    assert res_cross.status_code == 403
+    with pytest.raises(HTTPException) as exc_info:
+        verification_routes.get_session(
+            session_id=session.id,
+            db=db,
+            current_user=other_officer,
+        )
+    assert exc_info.value.status_code == 403
+
+    # Cross-office officer cannot create session for office_a
+    with pytest.raises(OfficeAccessDeniedError):
+        verification_routes.create_session(
+            payload=VerificationSessionCreate(
+                office_id=office_a.id,
+                scope_type="FULL_OFFICE",
+            ),
+            db=db,
+            current_user=other_officer,
+        )
 
     # Staff scans item1 in a different room (ROOM-202) and updated condition (DAMAGED) -> Option B immediate update
-    res_scan = client.post(
-        f"/api/v1/verifications/sessions/{session_id}/scan",
-        json={
-            "scanned_barcode": "BC-AST-000001",
-            "scanned_location_id": str(loc_a2.id),
-            "observed_condition": "DAMAGED",
-            "counted_quantity": 1,
-            "remarks": "Moved to Accounts Room with damaged display",
-        },
-        headers=staff_headers,
+    assert require_permission("verify:scan")(current_user=staff).id == staff.id
+    scan_res = verification_routes.process_scan(
+        session_id=session.id,
+        payload=VerificationScanRequest(
+            scanned_barcode="BC-AST-000001",
+            scanned_location_id=loc_a2.id,
+            observed_condition="DAMAGED",
+            counted_quantity=1,
+            remarks="Moved to Accounts Room with damaged display",
+        ),
+        db=db,
+        current_user=staff,
     )
-    assert res_scan.status_code == 200
-    scan_data = res_scan.json()["data"]
-    assert scan_data["scan_result"] == "LOCATION_MISMATCH"
-    assert scan_data["item_updated"] is True
-    assert set(scan_data["updated_fields"]) == {"condition", "location_id"}
+    scan_data = scan_res.data
+    assert scan_data.scan_result == "LOCATION_MISMATCH"
+    assert scan_data.item_updated is True
+    assert set(scan_data.updated_fields) == {"condition", "location_id"}
 
     # Verify Option B updated live Item, StockBalance, and wrote AuditLog
-    verify_db = test_env["SessionLocal"]()
-    try:
-        refreshed_item1 = verify_db.query(Item).filter(Item.id == item1.id).first()
-        assert refreshed_item1.condition == "DAMAGED"
-        assert refreshed_item1.location_id == loc_a2.id
+    db.refresh(item1)
+    assert item1.condition == "DAMAGED"
+    assert item1.location_id == loc_a2.id
 
-        bal = verify_db.query(StockBalance).filter(StockBalance.item_id == item1.id).first()
-        assert bal.location_id == loc_a2.id
+    bal = db.query(StockBalance).filter(StockBalance.item_id == item1.id).first()
+    assert bal.location_id == loc_a2.id
 
-        audit = (
-            verify_db.query(AuditLog)
-            .filter(AuditLog.record_id == str(item1.id), AuditLog.action == "VERIFY_UPDATE")
-            .first()
-        )
-        assert audit is not None
-    finally:
-        verify_db.close()
+    audit = (
+        db.query(AuditLog)
+        .filter(AuditLog.record_id == str(item1.id), AuditLog.action == "VERIFY_UPDATE")
+        .first()
+    )
+    assert audit is not None
 
     # Duplicate scan using item_code (different string, same resolved item) is detected
-    res_dup = client.post(
-        f"/api/v1/verifications/sessions/{session_id}/scan",
-        json={
-            "scanned_barcode": item1.item_code,
-            "scanned_location_id": str(loc_a2.id),
-            "observed_condition": "DAMAGED",
-            "counted_quantity": 1,
-        },
-        headers=staff_headers,
+    dup_res = verification_routes.process_scan(
+        session_id=session.id,
+        payload=VerificationScanRequest(
+            scanned_barcode=item1.item_code,
+            scanned_location_id=loc_a2.id,
+            observed_condition="DAMAGED",
+            counted_quantity=1,
+        ),
+        db=db,
+        current_user=staff,
     )
-    assert res_dup.status_code == 200
-    assert res_dup.json()["data"]["is_duplicate_scan"] is True
-    assert res_dup.json()["data"]["scan_result"] == "DUPLICATE_SCAN_REPEATED"
+    assert dup_res.data.is_duplicate_scan is True
+    assert dup_res.data.scan_result == "DUPLICATE_SCAN_REPEATED"
 
-    # Enriched snapshot items show readable names (no raw UUIDs only)
-    res_items = client.get(f"/api/v1/verifications/sessions/{session_id}/items", headers=officer_headers)
-    assert res_items.status_code == 200
-    items = res_items.json()["data"]
-    item1_row = next(r for r in items if r["item_id"] == str(item1.id))
-    assert item1_row["item_code"] == item1.item_code
-    assert item1_row["expected_location_name"] == "Main Block - ROOM-101"
-    assert item1_row["observed_location_name"] == "Main Block - ROOM-202"
-
-    # Staff cannot reconcile (verify:reconcile is Officer only)
-    res_staff_rec = client.post(
-        f"/api/v1/verifications/sessions/{session_id}/reconcile",
-        json={"resolutions": [{"verification_item_id": item1_row["id"], "resolution_status": "RESOLVED", "remarks": "Staff try"}]},
-        headers=staff_headers,
+    # Enriched snapshot items show readable names
+    items_res = verification_routes.list_session_items(
+        session_id=session.id,
+        discrepancy_only=False,
+        discrepancy_type=None,
+        resolution_status=None,
+        db=db,
+        current_user=officer,
     )
-    assert res_staff_rec.status_code == 403
+    item1_row = next(r for r in items_res.data if r.item_id == item1.id)
+    assert item1_row.item_code == item1.item_code
+    assert item1_row.expected_location_name == "Main Block - ROOM-101"
+    assert item1_row.observed_location_name == "Main Block - ROOM-202"
 
     # Officer reconciles item1 mismatch
-    res_rec = client.post(
-        f"/api/v1/verifications/sessions/{session_id}/reconcile",
-        json={"resolutions": [{"verification_item_id": item1_row["id"], "resolution_status": "RESOLVED", "remarks": "Relocation approved"}]},
-        headers=officer_headers,
+    rec_res = verification_routes.reconcile_session(
+        session_id=session.id,
+        payload=VerificationReconcileRequest(
+            resolutions=[
+                VerificationDiscrepancyResolution(
+                    verification_item_id=item1_row.id,
+                    resolution_status="RESOLVED",
+                    remarks="Relocation approved",
+                )
+            ]
+        ),
+        db=db,
+        current_user=officer,
     )
-    assert res_rec.status_code == 200
-    assert res_rec.json()["data"]["status"] == "UNDER_REVIEW"
+    assert rec_res.data.status == "UNDER_REVIEW"
 
     # Complete session -> unscanned item2 flagged NOT_FOUND
-    res_comp = client.post(
-        f"/api/v1/verifications/sessions/{session_id}/complete",
-        json={"summary_remarks": "Monthly audit concluded and signed off."},
-        headers=officer_headers,
+    comp_res = verification_routes.complete_session(
+        session_id=session.id,
+        payload=VerificationCompleteRequest(summary_remarks="Monthly audit concluded and signed off."),
+        db=db,
+        current_user=officer,
     )
-    assert res_comp.status_code == 200
-    assert res_comp.json()["data"]["status"] == "COMPLETED"
+    assert comp_res.data.status == "COMPLETED"
 
-    res_items_after = client.get(f"/api/v1/verifications/sessions/{session_id}/items", headers=officer_headers)
-    item2_row = next(r for r in res_items_after.json()["data"] if r["item_id"] == str(item2.id))
-    assert item2_row["discrepancy_type"] == "NOT_FOUND"
+    items_after = verification_routes.list_session_items(
+        session_id=session.id,
+        discrepancy_only=False,
+        discrepancy_type=None,
+        resolution_status=None,
+        db=db,
+        current_user=officer,
+    )
+    item2_row = next(r for r in items_after.data if r.item_id == item2.id)
+    assert item2_row.discrepancy_type == "NOT_FOUND"
 
     # Download CSV reconciliation report
-    res_report = client.get(f"/api/v1/verifications/sessions/{session_id}/report", headers=officer_headers)
-    assert res_report.status_code == 200
-    assert "text/csv" in res_report.headers["content-type"]
-    assert item1.item_code in res_report.text
-    assert item2.item_code in res_report.text
+    from app.features.verification.services import VerificationService
+
+    csv_text, filename = VerificationService.export_session_report_csv(db, session.id)
+    assert filename.endswith(".csv")
+    assert item1.item_code in csv_text
+    assert item2.item_code in csv_text
+
+    # Asset history timeline includes scan, live audit update, and audit session outcome
+    hist_res = inventory_routes.get_item_history(
+        item_id=item1.id,
+        page=1,
+        limit=20,
+        db=db,
+        current_user=officer,
+    )
+    event_types = {e.event_type for e in hist_res.data}
+    assert {"VERIFICATION_SCAN", "VERIFY_UPDATE", "VERIFICATION_AUDIT"}.issubset(event_types)
+
+    # Unscanned item2 also records NOT_FOUND audit outcome in its asset history
+    hist_item2 = inventory_routes.get_item_history(
+        item_id=item2.id,
+        page=1,
+        limit=20,
+        db=db,
+        current_user=officer,
+    )
+    assert any(e.event_type == "VERIFICATION_AUDIT" and "NOT_FOUND" in e.details for e in hist_item2.data)

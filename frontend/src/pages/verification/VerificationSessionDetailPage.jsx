@@ -598,6 +598,7 @@ export default function VerificationSessionDetailPage() {
 
               {inputMode === 'CAMERA' && (
                 <QrCameraScanner
+                  autoStart
                   compact
                   label="Camera QR / Barcode Audit Scanner"
                   onScanSuccess={(decodedCode) => handleCodeDetected(decodedCode)}

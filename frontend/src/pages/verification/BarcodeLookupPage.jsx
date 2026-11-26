@@ -186,6 +186,7 @@ export default function BarcodeLookupPage() {
         {/* Camera QR Scanner Panel */}
         {inputMode === 'CAMERA' && (
           <QrCameraScanner
+            autoStart
             label="Desktop Webcam / Phone Camera QR Scanner"
             onScanSuccess={(decodedCode) => runLookup(decodedCode)}
             onError={(msg) => toast.error(msg)}

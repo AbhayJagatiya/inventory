@@ -12,6 +12,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 from app.core.exceptions import ConflictError, NotFoundError, OfficeAccessDeniedError, ValidationError
 from app.core.permissions import ROLE_SYSTEM_ADMIN
+from app.features.audit.models import AuditLog
 from app.features.audit.services import AuditService
 from app.features.categories.models import Category, UnitOfMeasure
 from app.features.inventory.models import Item, StockBalance
@@ -22,7 +23,7 @@ from app.features.maintenance.models import MaintenanceRecord
 from app.features.offices.models import Office
 from app.features.suppliers.models import Supplier
 from app.features.users.models import User
-from app.features.verification.models import VerificationScanEvent
+from app.features.verification.models import VerificationItem, VerificationScanEvent
 
 
 class InventoryService:
@@ -320,9 +321,22 @@ class InventoryService:
         return item
 
     @staticmethod
-    def get_item_history(db: Session, item_id: UUID, current_user: Optional[User] = None) -> List[ItemHistoryEventOut]:
+    def get_item_history(
+        db: Session,
+        item_id: UUID,
+        page: int = 1,
+        limit: int = 20,
+        current_user: Optional[User] = None,
+    ) -> Tuple[List[ItemHistoryEventOut], int]:
         item = InventoryService.get_item(db, item_id, current_user=current_user)
         events: List[ItemHistoryEventOut] = []
+
+        def _ensure_utc(dt: Optional[datetime]) -> datetime:
+            if dt is None:
+                return datetime.now(timezone.utc)
+            if dt.tzinfo is None:
+                return dt.replace(tzinfo=timezone.utc)
+            return dt
 
         # 1. Stock movements (Receipts, Issues, Returns, Transfers)
         txn_lines = (
@@ -336,10 +350,10 @@ class InventoryService:
             events.append(
                 ItemHistoryEventOut(
                     event_type=txn.transaction_type,
-                    event_date=txn.posted_at or txn.created_at,
+                    event_date=_ensure_utc(txn.posted_at or txn.created_at),
                     reference_number=txn.transaction_number,
                     actor_name=txn.actor.full_name if txn.actor else "System",
-                    details=f"{txn.transaction_type} voucher: {line.quantity} units. {txn.remarks or ''}",
+                    details=f"{txn.transaction_type} voucher: {line.quantity} units. {txn.remarks or ''}".strip(),
                     quantity=float(line.quantity),
                     condition=line.condition_observed,
                 )
@@ -361,21 +375,88 @@ class InventoryService:
         # 3. Verification Scan Events
         scans = db.query(VerificationScanEvent).filter(VerificationScanEvent.item_id == item.id).all()
         for s in scans:
+            loc_label = (
+                f"{s.scanned_location.building_name} - {s.scanned_location.room_number}"
+                if s.scanned_location
+                else None
+            )
+            remarks_part = f" Remarks: {s.remarks}" if s.remarks else ""
             events.append(
                 ItemHistoryEventOut(
                     event_type="VERIFICATION_SCAN",
-                    event_date=s.scanned_at,
+                    event_date=_ensure_utc(s.scanned_at),
                     reference_number=s.session.session_number if s.session else None,
                     actor_name=s.scanner_user.full_name if s.scanner_user else "Auditor",
-                    details=f"Audit scan result: {s.scan_result}. Observed condition: {s.observed_condition}",
+                    details=(
+                        f"Audit scan: {s.scan_result} | Condition: {s.observed_condition} | "
+                        f"Counted: {float(s.counted_quantity)}{remarks_part}"
+                    ),
+                    quantity=float(s.counted_quantity),
                     condition=s.observed_condition,
-                    location_name=s.scanned_location.room_number if s.scanned_location else None,
+                    location_name=loc_label,
                 )
             )
 
+        # 4. Verification Session Snapshot Outcomes / Resolutions (including NOT_FOUND / Reconciled)
+        v_items = db.query(VerificationItem).filter(VerificationItem.item_id == item.id).all()
+        for v in v_items:
+            sess = v.session
+            if not sess:
+                continue
+            if v.discrepancy_type == "NOT_FOUND" or v.resolution_status in ("RESOLVED", "IGNORED") or sess.status == "COMPLETED":
+                obs_loc = (
+                    f"{v.observed_location.building_name} - {v.observed_location.room_number}"
+                    if v.observed_location
+                    else None
+                )
+                event_dt = v.verified_at or sess.completed_at or sess.created_at
+                remarks_str = f" Notes: {v.resolution_remarks}" if v.resolution_remarks else ""
+                events.append(
+                    ItemHistoryEventOut(
+                        event_type="VERIFICATION_AUDIT",
+                        event_date=_ensure_utc(event_dt),
+                        reference_number=sess.session_number,
+                        actor_name=(v.verifier.full_name if v.verifier else (sess.lead_verifier.full_name if sess.lead_verifier else "Store Officer")),
+                        details=(
+                            f"Audit session {sess.session_number} ({sess.status}): "
+                            f"Flag={v.discrepancy_type}, Review={v.resolution_status}.{remarks_str}"
+                        ),
+                        quantity=float(v.counted_qty),
+                        condition=v.observed_condition or v.expected_condition,
+                        location_name=obs_loc,
+                    )
+                )
+
+        # 5. Direct / Audit Update Logs on this item
+        audit_rows = (
+            db.query(AuditLog)
+            .filter(AuditLog.module == "INVENTORY", AuditLog.record_id == str(item.id))
+            .all()
+        )
+        for a in audit_rows:
+            if a.action == "VERIFY_UPDATE":
+                old_str = ", ".join(f"{k}: {v}" for k, v in (a.old_values or {}).items())
+                new_str = ", ".join(
+                    f"{k}: {v}"
+                    for k, v in (a.new_values or {}).items()
+                    if k not in ("session_number", "remarks")
+                )
+                sess_ref = (a.new_values or {}).get("session_number")
+                events.append(
+                    ItemHistoryEventOut(
+                        event_type="VERIFY_UPDATE",
+                        event_date=_ensure_utc(a.timestamp),
+                        reference_number=sess_ref,
+                        actor_name=a.user.full_name if a.user else a.username,
+                        details=f"Asset updated during physical audit ({old_str} -> {new_str}).",
+                    )
+                )
+
         # Sort chronologically descending
         events.sort(key=lambda x: x.event_date, reverse=True)
-        return events
+        total = len(events)
+        paged = events[(page - 1) * limit : page * limit]
+        return paged, total
 
     @staticmethod
     def bulk_import_items(

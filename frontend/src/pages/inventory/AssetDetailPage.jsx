@@ -40,44 +40,13 @@ export default function AssetDetailPage() {
   })
 
   // Fetch History Query
-  const { data: historyData } = useQuery({
+  const { data: historyData, isLoading: isHistoryLoading } = useQuery({
     queryKey: ['item-history', id],
     queryFn: async () => {
-      try {
-        const res = await getItemHistory(id)
-        return res?.data || res
-      } catch {
-        return [
-          {
-            id: 'evt-01',
-            event_type: 'GOODS_INWARD_RECEIPT',
-            title: 'Goods Inward Receipt Posted',
-            reference_number: 'RCV-2024-00018',
-            created_at: itemData?.purchase_date ? `${itemData.purchase_date}T10:30:00Z` : new Date(Date.now() - 86400000 * 40).toISOString(),
-            actor_name: 'H. N. Rathod',
-            remarks: 'Inward receipt verified against PO reference.',
-          },
-          {
-            id: 'evt-02',
-            event_type: 'STOCK_ISSUE',
-            title: 'Issued to Accounts Branch',
-            reference_number: 'ISS-2024-00052',
-            created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
-            actor_name: 'R. K. Parmar',
-            remarks: `Custodian assigned: ${itemData?.current_custodian || 'Store Section'}`,
-          },
-          {
-            id: 'evt-03',
-            event_type: 'ANNUAL_VERIFICATION',
-            title: 'Physical Stock Verification Audit',
-            reference_number: 'PVS-2026-00001',
-            created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-            actor_name: 'R. K. Parmar',
-            remarks: 'Physical barcode verified in Room 102. Condition confirmed Good.',
-          },
-        ]
-      }
+      const res = await getItemHistory(id, { limit: 100 })
+      return res?.data || []
     },
+    enabled: Boolean(id),
   })
 
   const item = itemData || {}
@@ -471,33 +440,67 @@ export default function AssetDetailPage() {
         <GlassCard level={1} className="p-6">
           <h2 className="text-sm font-bold text-forest-950 dark:text-forest-50 mb-4 flex items-center gap-2">
             <Clock size={16} className="text-forest-600 dark:text-forest-400" />
-            Complete Custody & Movement Audit Trail
+            Complete Custody, Movement & Physical Audit Trail
           </h2>
 
-          <div className="relative border-l-2 border-forest-500/20 dark:border-forest-400/20 ml-3 space-y-6 py-2">
-            {historyEvents.map((event, i) => (
-              <div key={event.id || i} className="relative pl-6">
-                <div className="absolute -left-2 top-1 w-4 h-4 rounded-full bg-forest-500 border-2 border-white dark:border-forest-900 ring-4 ring-forest-500/10" />
-                <div className="p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10">
-                  <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-                    <span className="text-xs font-bold text-forest-950 dark:text-forest-50">
-                      {event.title}
-                    </span>
-                    <span className="font-mono text-[11px] text-forest-500">
-                      {formatDateTime(event.created_at)}
-                    </span>
+          {isHistoryLoading ? (
+            <div className="space-y-3">
+              <div className="h-16 bg-forest-500/10 rounded-xl animate-pulse" />
+              <div className="h-16 bg-forest-500/10 rounded-xl animate-pulse" />
+            </div>
+          ) : historyEvents.length === 0 ? (
+            <p className="text-xs text-forest-500 dark:text-forest-400 py-6 text-center">
+              No stock movements, maintenance tickets, or physical audit events recorded for this asset yet.
+            </p>
+          ) : (
+            <div className="relative border-l-2 border-forest-500/20 dark:border-forest-400/20 ml-3 space-y-6 py-2">
+              {historyEvents.map((event, i) => {
+                const eventLabels = {
+                  VERIFICATION_SCAN: 'Physical Verification Scan',
+                  VERIFICATION_AUDIT: 'Audit Session Review & Outcome',
+                  VERIFY_UPDATE: 'Live Audit Condition / Location Update',
+                  MAINTENANCE: 'Maintenance & Repair',
+                  RECEIPT: 'Goods Inward Receipt',
+                  ISSUE: 'Stock Issue',
+                  RETURN: 'Stock Return',
+                  TRANSFER: 'Stock Transfer',
+                }
+                const title = event.title || eventLabels[event.event_type] || event.event_type
+                const timestamp = event.event_date || event.created_at
+                const detailsText = event.details || event.remarks || '—'
+                return (
+                  <div key={event.id || `${event.event_type}-${timestamp}-${i}`} className="relative pl-6">
+                    <div className="absolute -left-2 top-1 w-4 h-4 rounded-full bg-forest-500 border-2 border-white dark:border-forest-900 ring-4 ring-forest-500/10" />
+                    <div className="p-4 rounded-xl bg-forest-500/5 dark:bg-forest-950/40 border border-forest-500/10">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-forest-950 dark:text-forest-50">
+                            {title}
+                          </span>
+                          {event.condition && <StatusBadge status={event.condition} size="xs" />}
+                          {event.location_name && (
+                            <span className="text-[11px] px-2 py-0.5 rounded bg-forest-500/10 text-forest-700 dark:text-forest-300">
+                              {event.location_name}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-[11px] text-forest-500">
+                          {timestamp ? formatDateTime(timestamp) : '—'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-forest-600 dark:text-forest-300 mt-1">
+                        {detailsText}
+                      </p>
+                      <div className="mt-2 text-[11px] text-forest-500 flex items-center gap-2 font-mono flex-wrap">
+                        <span>Ref: {event.reference_number || 'N/A'}</span> ·
+                        <span>Logged by: {event.actor_name || 'System'}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-xs text-forest-600 dark:text-forest-300 mt-1">
-                    {event.remarks}
-                  </p>
-                  <div className="mt-2 text-[11px] text-forest-500 flex items-center gap-2 font-mono">
-                    <span>Ref: {event.reference_number}</span> ·
-                    <span>Logged by: {event.actor_name}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </GlassCard>
       )}
     </motion.div>
